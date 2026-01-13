@@ -5980,5 +5980,50 @@ Write a complete, well-structured document. Ensure:
     }
   });
 
+  // Screenplay Generator - Converts source material to properly formatted screenplay
+  app.post("/api/screenplay-generator", async (req: Request, res: Response) => {
+    try {
+      const { text, targetWordCount, customInstructions } = req.body;
+
+      if (!text) {
+        return res.status(400).json({
+          success: false,
+          message: "Source text is required"
+        });
+      }
+
+      const wordCount = text.trim().split(/\s+/).length;
+      
+      // Validate and sanitize target word count
+      let validatedTargetWords = 20000;
+      if (targetWordCount !== undefined && targetWordCount !== null) {
+        const parsed = parseInt(targetWordCount);
+        if (!isNaN(parsed) && parsed > 0) {
+          validatedTargetWords = Math.min(parsed, 100000); // Cap at 100k words
+        }
+      }
+      
+      console.log(`[Screenplay Generator] Starting - Source: ${wordCount} words, Target: ${validatedTargetWords} words`);
+
+      const { generateScreenplay } = await import('./services/screenplayGenerator');
+      const result = await generateScreenplay(text, validatedTargetWords, customInstructions);
+
+      res.json({
+        success: true,
+        screenplay: result.screenplay,
+        wordCount: result.wordCount,
+        structure: result.structure,
+        processingTimeMs: result.processingTimeMs
+      });
+
+    } catch (error: any) {
+      console.error("[Screenplay Generator] Error:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Screenplay generation failed"
+      });
+    }
+  });
+
   return app;
 }

@@ -24,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Brain, Trash2, FileEdit, Loader2, Zap, Clock, Sparkles, Download, Shield, ShieldCheck, RefreshCw, Upload, FileText, BookOpen, BarChart3, AlertCircle, FileCode, Search, Copy, CheckCircle, Target, ChevronUp, ChevronDown, MessageSquareWarning, Circle, ArrowRight, Settings, ScanText, X, Play, Eye } from "lucide-react";
+import { Brain, Trash2, FileEdit, Loader2, Zap, Clock, Sparkles, Download, Shield, ShieldCheck, RefreshCw, Upload, FileText, BookOpen, BarChart3, AlertCircle, FileCode, Search, Copy, CheckCircle, Target, ChevronUp, ChevronDown, MessageSquareWarning, Circle, ArrowRight, Settings, ScanText, X, Play, Eye, Film, Send } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
@@ -271,6 +271,17 @@ DOES THE AUTHOR USE OTHER AUTHORS TO DEVELOP HIS IDEAS OR TO CLOAK HIS OWN LACK 
   const [objectionProofRefineInstructions, setObjectionProofRefineInstructions] = useState("");
   const [objectionProofRefinedOutput, setObjectionProofRefinedOutput] = useState("");
   const [objectionProofRefineLoading, setObjectionProofRefineLoading] = useState(false);
+  
+  // Screenplay Generator State
+  const [screenplayInputText, setScreenplayInputText] = useState("");
+  const [screenplayTargetWords, setScreenplayTargetWords] = useState<string>("20000");
+  const [screenplayCustomInstructions, setScreenplayCustomInstructions] = useState("");
+  const [screenplayOutput, setScreenplayOutput] = useState("");
+  const [screenplayLoading, setScreenplayLoading] = useState(false);
+  const [screenplayDragOver, setScreenplayDragOver] = useState(false);
+  const [screenplayWordCount, setScreenplayWordCount] = useState<number | null>(null);
+  const [screenplayStructure, setScreenplayStructure] = useState<{actOneWords: number; actTwoWords: number; actThreeWords: number} | null>(null);
+  const [screenplayProcessingTime, setScreenplayProcessingTime] = useState<number | null>(null);
   
   // Coherence Meter State
   const [coherenceInputText, setCoherenceInputText] = useState("");
@@ -902,6 +913,82 @@ DOES THE AUTHOR USE OTHER AUTHORS TO DEVELOP HIS IDEAS OR TO CLOAK HIS OWN LACK 
       title: "Text available to Chat",
       description: "The text is now available as context for AI chat"
     });
+  };
+
+  // Screenplay Generator Handler
+  const handleGenerateScreenplay = async () => {
+    if (!screenplayInputText.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide source material for the screenplay",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setScreenplayLoading(true);
+    setScreenplayOutput("");
+    setScreenplayWordCount(null);
+    setScreenplayStructure(null);
+    setScreenplayProcessingTime(null);
+    
+    try {
+      let targetWords = 20000;
+      if (screenplayTargetWords && screenplayTargetWords.trim()) {
+        const parsed = parseInt(screenplayTargetWords);
+        if (!isNaN(parsed) && parsed > 0) {
+          targetWords = parsed;
+        }
+      }
+      
+      const response = await fetch('/api/screenplay-generator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: screenplayInputText,
+          targetWordCount: targetWords,
+          customInstructions: screenplayCustomInstructions || undefined
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Screenplay generation failed');
+      }
+      
+      const data = await response.json();
+      if (data.success) {
+        setScreenplayOutput(data.screenplay);
+        setScreenplayWordCount(data.wordCount);
+        setScreenplayStructure(data.structure);
+        setScreenplayProcessingTime(data.processingTimeMs);
+        toast({
+          title: "Screenplay Generated",
+          description: `Complete screenplay with ${data.wordCount.toLocaleString()} words`
+        });
+      } else {
+        throw new Error(data.message || 'Screenplay generation failed');
+      }
+    } catch (error: any) {
+      console.error("Screenplay generation error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate screenplay",
+        variant: "destructive"
+      });
+    } finally {
+      setScreenplayLoading(false);
+    }
+  };
+
+  const handleClearScreenplay = () => {
+    setScreenplayInputText("");
+    setScreenplayTargetWords("20000");
+    setScreenplayCustomInstructions("");
+    setScreenplayOutput("");
+    setScreenplayWordCount(null);
+    setScreenplayStructure(null);
+    setScreenplayProcessingTime(null);
   };
 
   // Test Strict Outline Generator Handler
@@ -8275,6 +8362,189 @@ Generated on: ${new Date().toLocaleString()}`;
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Screenplay Generator Section */}
+      <div className="bg-white dark:bg-gray-900 rounded-lg border border-purple-200 dark:border-purple-800 p-6 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center gap-3">
+            <Film className="w-6 h-6 text-purple-600" />
+            <h2 className="text-xl font-bold text-purple-800 dark:text-purple-200">Screenplay Generator</h2>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClearScreenplay}
+            className="text-gray-500 hover:text-gray-700"
+            data-testid="button-clear-screenplay"
+          >
+            <RefreshCw className="w-4 h-4 mr-1" />
+            Clear All
+          </Button>
+        </div>
+        
+        <p className="text-sm text-purple-600 dark:text-purple-400 mb-4">
+          Convert source material into a properly formatted screenplay with three-act structure, scene headings, action lines, and dialogue.
+        </p>
+        
+        <div className="space-y-4">
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-semibold text-purple-700 dark:text-purple-300">
+                Source Material (story concept, notes, outline, or any content)
+              </label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => document.getElementById('screenplay-file-upload')?.click()}
+                className="text-purple-600 hover:text-purple-700"
+                data-testid="button-upload-screenplay"
+              >
+                <Upload className="w-4 h-4 mr-1" />
+                Upload document
+              </Button>
+              <input
+                id="screenplay-file-upload"
+                type="file"
+                accept=".txt,.doc,.docx,.pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleGeneratorFileUpload(file, setScreenplayInputText);
+                }}
+              />
+            </div>
+            <div
+              className={`relative ${screenplayDragOver ? 'ring-2 ring-purple-400 bg-purple-50 dark:bg-purple-900/20' : ''}`}
+              onDragOver={(e) => { e.preventDefault(); setScreenplayDragOver(true); }}
+              onDragLeave={() => setScreenplayDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setScreenplayDragOver(false);
+                const file = e.dataTransfer.files[0];
+                if (file) handleGeneratorFileUpload(file, setScreenplayInputText);
+              }}
+            >
+              <Textarea
+                value={screenplayInputText}
+                onChange={(e) => setScreenplayInputText(e.target.value)}
+                placeholder="Paste or upload your source material here (story concept, notes, outline, character sketches, etc.)..."
+                className="min-h-[120px] border-purple-300 dark:border-purple-700 focus:border-purple-500"
+                data-testid="textarea-screenplay-input"
+              />
+            </div>
+            {screenplayInputText && (
+              <p className="text-xs text-purple-500 mt-1">
+                Source: {screenplayInputText.trim().split(/\s+/).length.toLocaleString()} words
+              </p>
+            )}
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-purple-700 dark:text-purple-300 mb-2">
+                Target Word Count
+              </label>
+              <Input
+                type="number"
+                value={screenplayTargetWords}
+                onChange={(e) => setScreenplayTargetWords(e.target.value)}
+                placeholder="20000"
+                className="border-purple-300 dark:border-purple-700"
+                data-testid="input-screenplay-target-words"
+              />
+              <p className="text-xs text-purple-500 mt-1">Default: 20,000 words. Structural beats scale proportionally.</p>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-purple-700 dark:text-purple-300 mb-2">
+                Custom Instructions (optional)
+              </label>
+              <Input
+                value={screenplayCustomInstructions}
+                onChange={(e) => setScreenplayCustomInstructions(e.target.value)}
+                placeholder="e.g., dark thriller tone, focus on protagonist's internal conflict..."
+                className="border-purple-300 dark:border-purple-700"
+                data-testid="input-screenplay-instructions"
+              />
+            </div>
+          </div>
+          
+          <Button
+            onClick={handleGenerateScreenplay}
+            disabled={screenplayLoading || !screenplayInputText.trim()}
+            className="w-full"
+            data-testid="button-generate-screenplay"
+          >
+            {screenplayLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generating Screenplay...
+              </>
+            ) : (
+              <>
+                <Film className="w-4 h-4 mr-2" />
+                Generate Screenplay
+              </>
+            )}
+          </Button>
+          
+          {screenplayOutput && (
+            <div className="mt-4">
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-semibold text-purple-700 dark:text-purple-300">
+                  Generated Screenplay
+                </label>
+                <div className="flex items-center gap-2 text-xs text-purple-600">
+                  {screenplayWordCount && (
+                    <span>{screenplayWordCount.toLocaleString()} words</span>
+                  )}
+                  {screenplayProcessingTime && (
+                    <span>({Math.round(screenplayProcessingTime / 1000)}s)</span>
+                  )}
+                </div>
+              </div>
+              
+              {screenplayStructure && (
+                <div className="flex gap-4 mb-2 text-xs text-purple-600 dark:text-purple-400">
+                  <span>Act I: ~{screenplayStructure.actOneWords.toLocaleString()} words (25%)</span>
+                  <span>Act II: ~{screenplayStructure.actTwoWords.toLocaleString()} words (50%)</span>
+                  <span>Act III: ~{screenplayStructure.actThreeWords.toLocaleString()} words (25%)</span>
+                </div>
+              )}
+              
+              <Textarea
+                value={screenplayOutput}
+                readOnly
+                className="min-h-[400px] font-mono text-sm border-purple-300 dark:border-purple-700 bg-gray-50 dark:bg-gray-800"
+                data-testid="textarea-screenplay-output"
+              />
+              
+              <div className="flex gap-2 mt-2">
+                <Button
+                  onClick={() => {
+                    navigator.clipboard.writeText(screenplayOutput);
+                    toast({ title: "Copied", description: "Screenplay copied to clipboard" });
+                  }}
+                  variant="outline"
+                  size="sm"
+                  data-testid="button-copy-screenplay"
+                >
+                  <Copy className="w-3 h-3 mr-1" />
+                  Copy
+                </Button>
+                <Button
+                  onClick={() => handleSendToHumanizer(screenplayOutput)}
+                  variant="outline"
+                  size="sm"
+                  data-testid="button-send-screenplay-humanizer"
+                >
+                  <Send className="w-3 h-3 mr-1" />
+                  To Humanizer
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

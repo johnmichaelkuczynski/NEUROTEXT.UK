@@ -8,6 +8,12 @@ import { setupWebSocketServer, cleanupOldJobs } from "./services/ccStreamingServ
 import { testDbConnection } from "./services/dbHelper";
 
 const app = express();
+
+// Stripe webhook needs raw body for signature verification
+// Must be before express.json() middleware
+app.use('/webhook/stripe', express.raw({ type: 'application/json' }));
+
+// Standard JSON parsing for all other routes
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 

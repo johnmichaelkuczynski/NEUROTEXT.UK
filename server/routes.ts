@@ -573,14 +573,18 @@ export async function registerRoutes(app: Express): Promise<Express> {
   // Simple Stripe webhook for payment link purchases
   // This uses the direct payment link: https://buy.stripe.com/cNibJ33W8ddG2Laa1sdZ600
   app.post("/webhook/stripe", async (req: Request, res: Response) => {
-    const Stripe = require('stripe');
+    const { stripe } = await import('./lib/stripe-config');
     
-    if (!process.env.STRIPE_SECRET_KEY) {
+    if (!stripe) {
       console.error("[Stripe Webhook] STRIPE_SECRET_KEY not configured");
       return res.status(503).send("Stripe not configured");
     }
     
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    if (!process.env.STRIPE_WEBHOOK_SECRET) {
+      console.error("[Stripe Webhook] STRIPE_WEBHOOK_SECRET not configured");
+      return res.status(503).send("Webhook secret not configured");
+    }
+    
     const sig = req.headers["stripe-signature"];
     
     if (!sig) {
@@ -593,7 +597,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
       // Use raw body for signature verification
       event = stripe.webhooks.constructEvent(
         req.body,
-        sig,
+        sig as string,
         process.env.STRIPE_WEBHOOK_SECRET
       );
     } catch (err: any) {

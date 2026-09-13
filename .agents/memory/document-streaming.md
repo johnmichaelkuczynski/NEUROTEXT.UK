@@ -21,7 +21,7 @@ A requested generation must not terminate in a generic failed state. Automatical
 
 **How to apply:** Preserve partial output, resume it after stream or quality failures, retry zero-output disconnects, rotate through provider fallback, and stop only for an explicit access requirement or user cancellation.
 
-Generation targets above 10,000 words must take controlled rests after each 5,000-word milestone, with a longer rest at each 10,000-word milestone.
+Generation targets above 10,000 words must take controlled rests after each 1,000-word milestone, with longer rests at each 5,000- and 10,000-word milestone.
 
 **Why:** The user explicitly prioritizes avoiding provider overload, crashes, and token-related interruptions during thesis, dissertation, and other very long runs over uninterrupted generation speed.
 

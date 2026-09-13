@@ -4,6 +4,15 @@
   "files": [],
   "references": [
     {
+      "path": "./lib/integrations-anthropic-ai"
+    },
+    {
+      "path": "./lib/integrations-openai-ai-server"
+    },
+    {
+      "path": "./lib/integrations-openrouter-ai"
+    },
+    {
       "path": "./lib/db"
     },
     {

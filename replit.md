@@ -1,45 +1,45 @@
-# [Project name]
+# NEUROTEXT
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+NEUROTEXT is a persistent, streaming document-intelligence platform with ten specialized long-form writing and analysis functions.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/neurotext run dev` — run the React/Vite web artifact
+- `pnpm --filter @workspace/api-server run dev` — run the Express API server on `PORT`
+- `pnpm run typecheck` — typecheck all workspace packages
+- `pnpm run build` — typecheck and build all packages
+- `pnpm --filter @workspace/api-spec run codegen` — regenerate typed API hooks and Zod schemas
+- `pnpm --filter @workspace/db run push` — apply development database schema changes
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- pnpm workspace, Node.js, and TypeScript
+- React and Vite frontend in `artifacts/neurotext`
+- Express API in `artifacts/api-server`
+- PostgreSQL and Drizzle ORM in `lib/db`
+- OpenAPI contract in `lib/api-spec/openapi.yaml`
+- Generated React Query hooks and Zod schemas
+- Server-side OpenAI, Anthropic, OpenRouter, and Venice AI clients
 
-## Where things live
+## Architecture
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
-
-## Architecture decisions
-
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The browser consumes generation streams directly with `fetch`, `ReadableStream`, and SSE frame parsing.
+- All provider streams are normalized through the same NEUROTEXT SSE event protocol.
+- Each of the ten functions has an independently persisted workspace.
+- ZHI model labels are stable product-facing aliases; provider model identifiers remain server-side.
+- Grok and DeepSeek use Replit-managed OpenRouter access. OpenAI and Anthropic use their Replit-managed integrations. Venice AI uses `VENICE_API_KEY`.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Functions 01–10 retain independent instructions, sources, output, progress, and model choices.
+- Long-document generation can continue across multiple provider calls until the requested word target is reached.
+- Generated documents can be interrupted, resumed, copied, downloaded, and transferred between functions.
+- `/diagnostics` records provider, first-word latency, elapsed time, word count, status, and failure evidence.
 
-## User preferences
+## Important behavior
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
-
-## Gotchas
-
-_Populate as you build — sharp edges, "always run X before Y" rules._
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Do not lower the function-specific minimum word targets.
+- Function 01 defaults to the supplied scholarly 5,000-word instruction.
+- A transfer must not clear the source workspace or discard unrelated destination work.
+- Never expose provider keys in browser code, responses, logs, or chat.
+- Do not silently substitute one provider when the selected provider fails; return explicit evidence.

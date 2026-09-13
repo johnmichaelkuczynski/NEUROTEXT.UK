@@ -316,7 +316,7 @@ workspaceRouter.post("/coherence/analyze", async (req, res) => {
     res.json(await runCoherenceJob(parsed.data));
   } catch (error) {
     req.log.error({ error }, "Coherence evaluation failed");
-    res.status(503).json({ error: "The coherence run could not complete. Please try again." });
+    res.status(503).json({ error: "The coherence analysis was interrupted and will be retried automatically." });
   }
 });
 
@@ -833,7 +833,7 @@ workspaceRouter.post("/coherence/stream", async (req, res) => {
     });
   } catch (error) {
     req.log.error({ error }, "Streaming coherence evaluation failed");
-    writeStreamEvent(res, { type: "error", message: "The coherence run could not complete." });
+    writeStreamEvent(res, { type: "error", message: "The coherence analysis was interrupted and will be retried automatically." });
   } finally {
     res.end();
   }

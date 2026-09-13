@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "NEUROTEXT"
+description = "A multi-model AI evaluation and generation workspace for analyzing, expanding, reconstructing, refining, and stress-testing long-form writing."
+version = "1.0.0"
+id = "artifacts/neurotext"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22426
+
+[services.development]
+run = "pnpm --filter @workspace/neurotext run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/neurotext", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/neurotext/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22426"
+BASE_PATH = "/"

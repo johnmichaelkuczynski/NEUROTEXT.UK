@@ -1,0 +1,30 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "K-YfsPn8gVgBwBQNoLRLx"
+uri = "file://attached_assets/neurotext-tested-group-psychology-paper.txt"
+type = "text"
+title = "Tested 4,914-word scholarly paper"
+description = "The exact NEUROTEXT output generated and inspected during the repaired 5,000-word Document Manipulator test."
+logical_id = "2e9d4c64-4b6c-41a3-830c-ac2be68fe1b2"
+content_hash = "sha256:63759be360b6ad1bf4a9829594091a64a893a3a252d6437fe0b7b753aa63813e"
+size = 35320
+mtime_ms = 1789254332231
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:e2ad7e59-c0c8-4aef-9e05-a0bcf05c98c9/2e9d4c64-4b6c-41a3-830c-ac2be68fe1b2/ce622153-3f20-4ee2-a5b4-f97d932a2f8d"
+storage_version_token = "1789254389767551"
+content_type = "text/plain"
+
+[[outputs]]
+id = "lapwov3Xo6SNgR4kqjiuD"
+uri = "file://exports/Ego-Syntonic-and-Ego-Dystonic-Disturbance-plain-text.txt"
+type = "text"
+title = "Ego-Syntonic and Ego-Dystonic Disturbance — Plain Text"
+description = "Markdown emphasis removed; wording and 4,231-word count preserved."
+logical_id = "ad7ff131-9eff-45e4-acde-27da53c92d1b"
+content_hash = "sha256:8605c40deaeea5f4bfc7f07babd0c0d21b8bb0644aff048eae9e63f6009f0232"
+size = 28598
+mtime_ms = 1789302627703
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:e2ad7e59-c0c8-4aef-9e05-a0bcf05c98c9/ad7ff131-9eff-45e4-acde-27da53c92d1b/f5a507b5-1178-4844-9635-127ece7fd3f6"
+storage_version_token = "1789302632014276"
+content_type = "text/plain"

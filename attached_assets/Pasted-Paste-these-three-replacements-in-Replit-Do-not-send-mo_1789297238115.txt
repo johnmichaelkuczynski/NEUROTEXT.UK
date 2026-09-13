@@ -1,0 +1,76 @@
+Paste these three replacements in Replit. Do not send more files.
+1. workspace.ts — one token change
+Find:
+TypeScriptgenerateWithFallbackStreaming("ZHI 2",
+Change to:
+TypeScriptgenerateWithFallbackStreaming(provider,
+2. llm-router.ts — add this helper at the top of the file (after the imports) and wrap the three connect calls
+TypeScriptfunction withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error(`${label} timed out after ${ms} ms`)),
+      ms,
+    );
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
+const CONNECT_MS = 8000;
+Then change only the create lines inside generateWithFallbackStreaming:
+Genius:
+TypeScriptconst response = await withTimeout(
+  geniusRequest(prompt, options, true),
+  CONNECT_MS,
+  "Genius connect",
+);
+OpenAI:
+TypeScriptconst stream = await withTimeout(
+  openai.chat.completions.create({
+    model: "gpt-5.6-terra",
+    max_completion_tokens: options.maxWords ? Math.max(256, Math.ceil(options.maxWords * 1.6)) : 8192,
+    stream: true,
+    messages: [{ role: "user", content: prompt }],
+  }),
+  CONNECT_MS,
+  "OpenAI connect",
+);
+Anthropic:
+TypeScriptconst stream = await withTimeout(
+  Promise.resolve(
+    anthropic.messages.stream({
+      model: "claude-sonnet-4-6",
+      max_tokens: options.maxWords ? Math.max(256, Math.ceil(options.maxWords * 1.6)) : 8192,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  ),
+  CONNECT_MS,
+  "Anthropic connect",
+);
+Leave the for await loops unchanged.
+3. neurotext.tsx — two key names + SLA
+In followOnInstructions:
+TypeScriptmaxintel:
+  "Apply Function 06 to this complete document. Rewrite it for maximum intelligence, rigor, precision, and coherence without removing legitimate source acknowledgments.",
+profile:
+  "Apply Function 07 to this complete document. Produce the function's intended cognitive profile with specific textual evidence and careful limitations.",
+Delete the old intelligence and profiling keys.
+Then:
+TypeScriptconst streamedInTime = firstWordMs !== null && firstWordMs <= 8000;
+and change the 3000 timeout that only labels timing fail to 8000 so the label matches the score.
+4. Republish on Replit.
+5. Run the first diagnostic once. Reply with only:
+
+First generated word (ms)
+status
+first 20 words of the transcript
+
+That number decides whether anything else is required. Do not paste another source file unless those three fields show No words received.

@@ -1,0 +1,104 @@
+NEUROTEXT COHERENCE EVALUATION
+Mode: Autodetect — Conceptual Clarification Lens (document's dominant task is definitional refinement of clinical constructs through staged pedagogical contrast and qualification)
+Score: 81/100
+Requested model: ZHI 6
+Structure model used: OpenAI · GPT-5.6 Terra
+Audit model used: Anthropic · Claude Sonnet 4.6
+
+
+OVERALL SCORE: 81/100
+
+VERDICT: The document maintains a coherent conceptual architecture with careful internal qualifications, but harbors a structural discontinuity in narrative staging, a typographic error carried into the primary definition, and underspecified connective tissue between the compulsion illustrations and the governing thesis.
+
+MODE: Autodetect — Conceptual Clarification Lens (document's dominant task is definitional refinement of clinical constructs through staged pedagogical contrast and qualification)
+
+DIMENSIONS:
+
+- Thesis-to-Evidence Alignment: 85/100 — The governing thesis — that ego-syntonicity and ego-dystonicity describe a person's relation to experiences, not diagnosis, truth, distress, or agency alone — is consistently reinforced across seminar exchanges, the narrator's voiceovers, and Dr. Ruiz's qualifications. The Woman and Man illustrations both serve as embodied evidence for thesis claims rather than decorative asides. Mild slippage occurs when the compulsive handwashing scene is introduced without explicitly connecting it back to the ego-dystonic definition before extending the analysis; the link must be inferred.
+
+- Internal Consistency: 76/100 — The document correctly distinguishes ego-syntonicity from truth, comfort, identity, and approval, and correctly distinguishes ego-dystonicity from irrationality, distance from content, and simple failure of will. However, the definition as quoted in the seminar contains the word "allignment" (appearing twice, once in the ego-syntonic definition, once in the ego-dystonic definition). If this typographic error exists in the source text being quoted, it is reproduced faithfully and is not a coherence defect; if it is introduced by this document, it corrupts both definitional anchors. The document does not clarify which is the case, leaving both quoted definitions in an ambiguous evidentiary state.
+
+- Structural Progression: 79/100 — The document moves credibly from definition to qualified illustration to clinical complication, matching the outline's seven-stage structure. The abrupt reappearance of Jonah and Professor Hale after an unannounced staging shift introduces a continuity gap: the earlier seminar features Professor Vale and named students, then transitions without transition cue to Professor Hale, Dr. Ruiz, and the same named students, with Jonah reprising a role he appeared to have concluded. This gap is not resolved within the document and constitutes a structural seam rather than a deliberate narrative device.
+
+- Qualification Density and Precision: 83/100 — The document executes the REJECTS list with consistency: diagnosis does not determine ego-syntonicity; the surveillance example is explicitly not universal; obsessive-compulsive symptoms are not reduced to stubbornness; insight is treated as variable across time and symptoms. Professor Hale's caution that "alien need not mean wholly foreign" is a precise and non-redundant addition that advances rather than repeats earlier qualifications. The self-reinforcing belief diagram (BELIEF → INTERPRETATION → APPARENT CONFIRMATION → STRENGTHENED BELIEF) is productive but is introduced under Professor Vale and then re-engaged under Professor Hale without acknowledgment that it is the same structural claim, creating a minor redundancy that does not rise to contradiction.
+
+STRENGTHS:
+
+- The document sustains the separation of distress from ego-dystonicity and falsehood from psychosis across multiple speakers, staging contexts, and illustrative cases without collapsing any of the three into the others, which directly enacts the most technically demanding ASSERTS entries.
+
+- The Man's bathroom scene provides load-bearing negative evidence: he states knowledge, acts on that knowledge partially, then fails to enact it, embodying the knowledge-action gap without editorializing it into weakness or irrationality, preserving the REJECTS entry against treating symptoms as stubbornness or weak will.
+
+- Maya's final synthesis — "What role does the thought play in the person's economy of reasons, emotions, and actions?" — is a clinically and philosophically precise restatement of the thesis that emerges from accumulated evidence rather than assertion, demonstrating that the document's conclusion is argumentatively earned.
+
+CRITICAL BREAKS:
+
+1. Medium Location: "allignment" appearing in both quoted definitions | Problem: The misspelling appears inside quotation marks in both the ego-syntonic and ego-dystonic definitions, which the document frames as direct quotations from a source text. It is unresolvable from the document alone whether this reproduces a source error or introduces one. Either way, both definitional anchors — the two terms the entire document is built to clarify — are evidentiary unstable. | Why it matters: Under the conceptual clarification lens, the definitions are the load-bearing foundation; any ambiguity in their fidelity propagates forward through every downstream claim. | Repair: Add a bracketed notation such as [sic] if reproducing a source error, or correct the spelling and note the correction, so that the definitional anchor is unambiguous.
+
+2. Medium Location: Transition from Professor Vale's seminar to Professor Hale's seminar | Problem: The document shifts instructors, adds Dr. Ruiz, and retains named students without any staging signal, scene break, or narrative acknowledgment that a different session, speaker configuration, or time point is involved. Jonah, who had a concluded speaking role under Professor Vale, reappears with new dialogue under Professor Hale without reintroduction. | Why it matters: Readers using the document to track which claims are attributed to which analytic authority cannot reliably assign statements to speakers, which undermines the document's use of multiple perspectives as independent corroboration. | Repair: Insert an explicit scene or session marker distinguishing the two seminar configurations and reintroduce the instructor change as a staging fact.
+
+3. Low Location: BELIEF → INTERPRETATION → APPARENT CONFIRMATION → STRENGTHENED BELIEF (Professor Vale) and Professor Hale's restatement of the same structure via the surveillance case | Problem: The self-reinforcing belief diagram is introduced under Professor Vale and then substantively restated under Professor Hale without acknowledgment that it is the same structural claim. This is not a contradiction but is a redundancy that, in an audit context, could be misread as a second independent warrant when it is the same warrant restated. | Why it matters: Under the conceptual clarification lens, apparent independent corroboration that is actually repetition inflates the evidential weight of a claim. | Repair: Have Professor Hale's restatement explicitly reference the earlier diagram, or consolidate the structural claim into one location.
+
+4. Low Location: "damage to will, if that phrase is used narrowly and without moralizing" (Professor Hale, final seminar exchange) | Problem: This formulation partially rehabilitates a phrase the document has consistently avoided and does so without specifying what the narrow usage permits or excludes, leaving the qualification open-ended in a document that otherwise spec
+
+
+EXTRACTED SKELETON
+THESIS
+Ego-syntonicity and ego-dystonicity describe a person’s relation to experiences, not diagnosis, truth, distress, agency, or reality testing alone. Idealized contrasts can guide inquiry but cannot replace individualized clinical assessment.
+
+OUTLINE
+1. Defines ego-syntonic and ego-dystonic disturbances.
+2. Separates subjective endorsement from truth and reality testing.
+3. Uses surveillance-belief and obsessive-compulsive examples as limited contrasts.
+4. Distinguishes obsessions from compulsions; recognition from practical action.
+5. Explains possible self-reinforcing belief-evidence structures.
+6. Qualifies examples through variation in insight, context, and symptom course.
+7. Concludes that conceptual distinctions should clarify, not exhaust, persons.
+
+KEY TERMS
+Ego-syntonic — congruent with a person’s standpoint or apparent understanding of reality; not necessarily comfortable, approved, true, or non-distressing.
+Ego-dystonic — experienced as conflicting with a person’s orientation, judgment, or self-understanding; not necessarily wholly foreign in content.
+Reality testing — capacity to assess beliefs against shared external reality.
+Insight — capacity to question, contextualize, or recognize consequences of experiences; variable across time and symptoms.
+Obsession — intrusive thought, image, urge, or fear.
+Compulsion — repetitive behavior or mental act performed in response to distress or perceived threat.
+Subjective endorsement — inhabiting or treating an experience as one’s own standpoint; distinct from truth.
+Self-reinforcing belief structure — interpretation of events as confirmation of a belief, thereby strengthening it.
+Idealized contrast — analytic simplification that identifies relations without fully describing clinical persons or diagnoses.
+
+ASSERTS
+Diagnosis alone does not determine ego-syntonicity, ego-dystonicity, reality testing, distress, or agency.
+Ego-syntonicity is not equivalent to truth, psychosis, comfort, approval, identity, or choice.
+Ego-dystonicity is not equivalent to irrationality, distance from content, or simple failure of will.
+Distress and fear do not by themselves make a belief ego-dystonic.
+A person may experience a false or unusual belief as describing reality.
+A person may recognize a compulsion as excessive yet be unable to act accordingly.
+Beliefs can organize interpretation of apparent evidence in self-confirming ways.
+Insight, conviction, and the ability to question beliefs vary across persons and time.
+Clinical understanding requires attention to individual experience, context, functioning, culture, history, and consequences.
+
+REJECTS
+Equating ego-syntonicity with impaired reality testing.
+Treating the surveillance example as universal for schizophrenia or psychosis.
+Treating obsessive-compulsive symptoms as mere stubbornness or weak will.
+Reducing persons to diagnoses or symptoms.
+Using unusual content, falsehood, or distress as diagnostic shortcuts.
+Treating insight as simply present or absent.
+Treating conceptual distinctions as substitutes for assessment.
+
+ASSUMES
+Persons can have distinguishable relations to beliefs, impulses, symptoms, and actions.
+Reality orientation, emotional distress, conviction, and behavioral control can vary independently.
+Clinical language and patient statements require contextual interpretation.
+Conceptual tools are useful when applied cautiously and non-moralistically.
+Individual, cultural, medical, substance-related, trauma-related, and situational factors may affect interpretation.
+
+ENTITIES
+Professor Vale — seminar instructor introducing distinctions.
+Professor Hale — instructor refining the conceptual contrast.
+Dr. Ruiz — clinician emphasizing assessment complexity.
+Maya, Eli, Nora, Jonah, Student — seminar participants.
+Woman — illustrative person with a surveillance belief.
+Person — illustrative individual resisting repeated door checking.
+Man — illustrative individual engaging in compulsive handwashing.
+Schizophrenia/psychosis — diagnostic and experiential contexts discussed, not treated as uniform.
+Obsessive-compulsive phenomena — context for obsessions, compulsions, intrusive demands, and impaired practical enactment.

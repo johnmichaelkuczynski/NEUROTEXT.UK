@@ -1,0 +1,415 @@
+Extracted skeleton
+
+THESIS: Noam Chomsky's two contributions to philosophy are the poverty of stimulus argument for pre-experiential (a priori) knowledge and his argument for sub-personal thought. The first establishes that innate cognitive structure, not experience, is the primary determinant of linguistic and other cognitive competence. The second establishes that this structure is not merely physiological but genuinely cognitive, and that it operates below the level of consciousness, constituting the subject of awareness rather than being an object of it.
+
+OUTLINE:
+
+I. The Poverty of Stimulus Argument
+   A. The empirical datum: Humans acquire language from sparse, degraded data; animals and inanimate objects do not, even when exposed to identical stimuli.
+   B. The inference: Humans must possess innate cognitive structure that organizes and interprets sensory input, turning mere stimulation into knowledge.
+   C. The trigger metaphor: Experience does not create knowledge; it activates pre-existing cognitive structure. The structure "anticipates" or "prefigures" the knowledge acquired.
+   D. Conclusion: This pre-experiential structure is cognitive, hence constitutes a priori knowledge — knowledge that is a precondition for experience rather than a product of it.
+
+II. The Argument for Sub-Personal Thought
+   A. The objection: Why posit unconscious cognitive structure? Why not reduce all such structure to physiology?
+   B. The linguistic evidence: Language is productive (expressions combine into larger expressions) and systematic (parts of expressions recombine into new expressions).
+   C. The inference: Productivity and systematicity of language reflect corresponding properties of the mind. We understand logical relations of dependence mapping sentence-parts to sentence-meanings.
+   D. The physiology objection answered: Pure physiology yields training, not teaching; conditioning, not learning. The ability to handle novelty proves the mediating structures are cognitive, implemented by physiology as software is implemented by hardware.
+
+III. The Nature of Deep Unconsciousness
+   A. Distinction between knowledge one has (content of awareness) and knowledge that constitutes the framework of awareness.
+   B. The hotel analogy: Cognitive structure is the hotel; mental contents (thoughts, feelings, perceptions) are its occupants. The structure is deduced from the occupants' movements but is not identical to them.
+   C. The factory analogy: Thoughts are productions of the cognitive structure, not the structure itself.
+   D. Self-awareness is awareness of products of the framework, not the framework itself. Hence the framework is "deeply unconscious" — not merely repressed (Freudian) but structurally inaccessible to introspection.
+
+KEY TERMS WITH DEFINITIONS:
+
+1. Poverty of stimulus: The fact that the linguistic data available to a child are insufficient, in quantity and quality, to explain the child's eventual linguistic competence. This poverty is the empirical basis for positing innate structure.
+
+2. A priori knowledge: Knowledge that is pre-experiential; knowledge that is a precondition for having experiences of a certain kind, rather than being derived from those experiences. In Chomsky's framework, this is not knowledge the mind has but knowledge that constitutes the mind.
+
+3. Trigger: The role of experience in relation to innate structure. Experience does not create or shape knowledge; it activates or "turns on" pre-existing cognitive structure.
+
+4. Productivity: The property of language whereby expressions can be combined into larger expressions. "John loves Sally" and "Sally hates Fred" can combine into "John loves Sally and Sally hates Fred."
+
+5. Systematicity: The property of language whereby the parts of expressions can be rearranged to form new expressions. "John loves Sally" yields "John hates Fred," "Sally hates John," etc.
+
+6. Sub-personal thought: Cognitive processes that are not accessible to consciousness, not because they are repressed but because they constitute the framework within which consciousness operates. They are the subject of awareness, never its object.
+
+7. Deep unconsciousness: Unconsciousness of cognitive structure itself, as opposed to the Freudian unconscious, which contains contents that are unconscious but could in principle become conscious. Deep unconscious contents cannot become conscious because they are the conditions of consciousness.
+
+8. Competence vs. performance (implied): Competence is the underlying cognitive ability; performance is the deployment of that ability under real-world constraints (memory, attention, fatigue). The poverty of stimulus argument concerns competence, not performance.
+
+9. Cognitive vs. physiological structure: Cognitive structure embodies understanding of logical relations and content-appropriateness. Physiological structure, considered purely as such, does not. Cognition is implemented by physiology but not reducible to it.
+
+ASSERTS:
+
+1. Humans, unlike animals and inanimate objects, acquire language from sparse data because of innate cognitive structure.
+
+2. This innate structure is not merely physiological but genuinely cognitive — it embodies understanding of logical relations.
+
+3. Experience plays a causal, not rational, role in knowledge acquisition. It triggers latent knowledge; it does not generate knowledge.
+
+4. The productivity and systematicity of language are reflections of corresponding properties of the mind.
+
+5. The cognitive framework that enables knowledge is not itself an object of knowledge. It is the subject to which objects are known.
+
+6. Self-awareness is awareness of products of the cognitive framework, not of the framework itself.
+
+7. The structures mediating language acquisition are "deeply unconscious" — not in the Freudian sense of repressed contents, but in the sense that they constitute the conditions of consciousness.
+
+8. Where there is pure physiology, there can be training but not teaching; conditioning but not genuine learning.
+
+9. Cognitive properties are implemented by physiology in the way software is implemented by hardware.
+
+REJECTS:
+
+1. Rejects empiricism (in the Quinean behaviorist form): The view that all knowledge derives from experience. This is "one of the most unempirical theories of all time," contradicted by the fact that humans learn language and dogs do not, given identical stimuli.
+
+2. Rejects reduction of cognitive structure to physiology: If the mediating structures were purely physiological, we would respond to situations in "a few stereotyped ways" and could not keep pace with novelty.
+
+3. Rejects the idea that the relevant unconscious contents are Freudian: Freudian contents are unconscious but accessible in principle; Chomskyan structures are deeply unconscious, inaccessible because they are the conditions of access.
+
+4. Rejects the introspective objection: The fact that we are not aware of cognitive operations does not count against their existence. We are not aware of them because they are awareness itself.
+
+5. Rejects the idea that innate knowledge is knowledge the mind has: It is not content within the framework; it is the framework. "Knowledge that you have is knowledge that presupposes an existing cognitive structure."
+
+ASSUMES:
+
+1. Assumes the reality of knowledge and cognitive competence as genuine phenomena to be explained, not explained away.
+
+2. Assumes that the poverty of stimulus is a fact — that the data available to children are indeed insufficient to explain linguistic competence.
+
+3. Assumes that introspection is not a reliable guide to the structure of cognition.
+
+4. Assumes that logical relations (of dependence, of content-appropriateness) are real and that the mind grasps them.
+
+5. Assumes that evolution can explain the existence of innate structure (though this is not developed in this document, it is implied by the broader framework).
+
+6. Assumes a distinction between the subject and object of awareness, and that this distinction is fundamental.
+
+7. Assumes that language is productive and systematic, and that these properties are not merely statistical regularities but reflect underlying rules.
+
+8. Assumes that the mind is not a blank slate — that its structure prefigures the kinds of knowledge it can acquire.
+
+ENTITIES:
+
+1. Noam Chomsky: The theorist whose two contributions are being expounded.
+
+2. John and Sally: The subjects of the example sentences used to illustrate productivity and systematicity.
+
+3. The cognitive framework: The innate structure that constitutes the mind and enables knowledge acquisition.
+
+4. The Freudian unconscious: Contrasted with the Chomskyan deep unconscious. Contains repressed contents, accessible in principle.
+
+5. The deep unconscious: The Chomskyan unconscious — the cognitive structure that is the condition of consciousness and hence inaccessible to it.
+
+6. The hotel: An analogy for the cognitive framework. The framework is the hotel; mental contents are its occupants.
+
+7. The car factory: An analogy for the cognitive framework. Thoughts are its productions, as cars are productions of a factory.
+
+8. Physiology / wetware: The physical implementation of cognitive structure. Analogous to computer hardware.
+
+9. Software: The analog for cognitive structure. Implemented by hardware but not reducible to it.
+
+10. The rock, chair, tree, dog, cat, squirrel: Entities that, unlike humans, cannot acquire language from the same stimuli. Used to demonstrate the poverty of stimulus argument.
+
+11. Experience / sensory stimulation: The trigger for innate knowledge. Purely causal in its role.
+
+12. Language: The primary domain in which the poverty of stimulus and systematicity/productivity arguments are developed.
+
+13. Knowledge: Both the content of awareness (knowledge one has) and the framework of awareness (knowledge that constitutes the mind).
+
+14. The self: Not directly accessible to introspection. What we call "self-awareness" is awareness of products of the cognitive framework.
+
+15. Logical relations: Relations of dependence mapping sentence-parts to sentence-meanings. The mind's grasp of these relations is what makes productivity and systematicity possible.
+
+---
+
+QUOTATIONS FROM THE DOCUMENT:
+
+1. "The a priori knowledge that Chomsky is talking about is not internal to your cognitive framework: it is your cognitive framework. You are not aware of it, because it itself is your awareness."
+
+2. "Where there is pure physiology, as opposed to physiology that mediates that intelligence, there can be training, but there cannot be teaching. There can be operant conditioning but there cannot be genuine learning."
+
+3. "The knowledge that Chomsky is talking about is not knowledge that your mind has; that knowledge is your mind. Knowledge that you have is knowledge that presupposes an existing cognitive structure."
+COHERENCE EVALUATION — CHUNK 1 OF 6
+
+This chunk establishes the opening of the document, presenting Chomsky's two contributions and the empirical datum underpinning the poverty of stimulus argument. The chunk is coherent with the global skeleton and the asserted positions.
+
+The chunk correctly identifies the two contributions: (1) the poverty of stimulus argument for pre-experiential knowledge, and (2) the argument for sub-personal thought. This matches the THESIS exactly.
+
+The chunk develops the empirical datum (Section I.A of the outline): humans acquire language from sparse data while rocks, chairs, trees, dogs, cats, and squirrels do not, even when exposed to identical stimuli. This directly supports ASSERT 1: "Humans, unlike animals and inanimate objects, acquire language from sparse data because of innate cognitive structure."
+
+The rhetorical structure — bombarding a rock or chair with the same sounds and light patterns that led to your linguistic competence, and asking whether it would learn language — effectively sets up the inference that will follow in subsequent chunks. The chunk does not yet state the conclusion that innate cognitive structure must exist; it only establishes the contrast. This is appropriate for chunk 1, which is laying the empirical foundation.
+
+The chunk implicitly engages REJECTS 1 (empiricism). By emphasizing that identical stimuli produce language in humans but not in furniture or animals, the chunk undermines the empiricist claim that all knowledge derives from experience. The contrast is stark: same input, different output. This difference demands explanation, and the explanation will be innate structure.
+
+The chunk also implicitly assumes ASSUMES 2: "the poverty of stimulus is a fact — that the data available to children are indeed insufficient to explain linguistic competence." While the chunk does not yet argue for insufficiency of data in the technical sense (quantity and quality of linguistic input), it establishes the more basic point: the same data produce radically different outcomes across species and object types.
+
+The chunk introduces ENTITIES 10 (rock, chair, tree, dog, cat, squirrel) and 12 (language) correctly. These entities are used exactly as the skeleton describes: "Entities that, unlike humans, cannot acquire language from the same stimuli. Used to demonstrate the poverty of stimulus argument."
+
+No contradictions or conflicts with the global skeleton appear in this chunk. No numerical values, dates, or citations are present that could be corrupted.
+
+The chunk's tone and method are consistent with the Kuczynski perspective: direct, concrete, using everyday examples (furniture, pets) to make a philosophical point vivid. The rhetorical questions ("Would it be able to argue with a spouse or negotiate with a business partner?") are characteristic of the style — they force the reader to confront the obviousness of the contrast before drawing the theoretical conclusion.
+
+One minor observation: The chunk uses "pre-experiential" rather than "a priori" in the opening statement of the two contributions. This is not a conflict; the global skeleton defines "a priori knowledge" as "knowledge that is pre-experiential." The terms are treated as synonymous, and the chunk's usage is consistent.
+
+The chunk does not yet address the trigger metaphor (Section I.C), the conclusion that the structure is cognitive and constitutes a priori knowledge (Section I.D), or any of the sub-personal thought material (Section II). This is appropriate for chunk 1; those topics presumably appear in subsequent chunks.
+
+No REJECTS entries are violated. No ASSERTS entries are contradicted. No ENTITIES are misused. No QUOTATIONS from the document are required in this evaluation, but the chunk itself contains no problematic claims that would need flagging.
+
+DELTA REPORT:
+
+Claims made in chunk:
+1. Humans acquire language from stimuli that do not produce language in rocks, chairs, trees, dogs, cats, or squirrels.
+2. The same optical and acoustical disturbances that produce linguistic competence in humans do not produce it in non-human entities.
+3. Chomsky's two contributions are the poverty of stimulus argument and the argument for sub-personal thought.
+
+Terms used:
+Poverty of stimulus (implied, not named in chunk)
+Pre-experiential knowledge
+Sub-personal thought
+Language
+Stimuli (auditory and visual perceptions, optical and acoustical phenomena)
+
+Conflicts: None detected with global skeleton or with the chunk's internal claims.
+
+Entities correctly used: rock, chair, tree, dog, cat, squirrel; language; experience/sensory stimulation.
+
+No quotations from the source document were available in this chunk beyond the chunk text itself. The three quotations listed in the global skeleton (about a priori knowledge being the cognitive framework, pure physiology yielding training but not teaching, and knowledge that constitutes the mind) do not appear in this chunk and presumably appear in later chunks. No false attribution risk exists in this chunk.COHERENCE EVALUATION — CHUNK 2 OF 6
+
+This chunk is coherent with the global skeleton and the surrounding document structure. It develops Section I (The Poverty of Stimulus Argument) and begins Section III (The Nature of Deep Unconsciousness), moving from the empirical datum through the inference to innate structure, the trigger metaphor, and the conclusion that this structure constitutes a priori knowledge. The chunk then transitions to the introspective objection, which is addressed in the global skeleton's REJECTS entry #4.
+
+The chunk's core argument tracks the outline precisely:
+
+I.A (the empirical datum) is present: "Why do people learn language, and become so linguistically proficient on the basis of such a paucity of data, when a dog or a cat, not to mention a rock or a tree, cannot even acquire the most rudimentary linguistic competence" — this matches the skeleton's claim that humans acquire language from sparse data while animals and inanimate objects do not.
+
+I.B (the inference to innate structure) is present: "Because of your innate cognitive structure, you---unlike a cat or a dog, not to mention a rock or a tree---respond to those sounds and light-patterns in the right way."
+
+I.C (the trigger metaphor) is explicitly developed: "The operative word here is 'trigger.'" The chunk elaborates that experience does not create knowledge but "turns it on," and that the structure "anticipate[s] or prefigure[s] the linguistic knowledge" — this matches the skeleton's trigger metaphor definition.
+
+I.D (the conclusion that this constitutes a priori knowledge) is present: "since this pre-experiential structure is cognitive in nature, it follows that you have pre-experiential---or, to use the philosophical term, a priori---knowledge of truths on the basis of which you are able to organize the various experiences that you have."
+
+The chunk ends with the beginning of the introspective objection: "'But I was not aware of these various cognitive operations of which" — this is the setup for REJECTS #4 (rejection of the introspective objection), which the global skeleton states is rejected because "We are not aware of them because they are awareness itself."
+
+The chunk's entities align with the skeleton: the rock, chair, tree, dog, cat, squirrel appear as entities that cannot acquire language; the cognitive framework is referenced; experience/sensory stimulation is characterized as the trigger.
+
+No conflicts with the global skeleton or the REJECTS entries are present. The chunk does not contradict any ASSERTS or REJECTS. It does not introduce new claims that would conflict with later chunks.
+
+The chunk's treatment of the trigger metaphor is consistent with the skeleton's definition: "Experience does not create or shape knowledge; it activates or 'turns on' pre-existing cognitive structure." The chunk states: "If you did not ab initio all but know a language---if your cognitive structure were not already there, in a very developed state, just waiting for a little bit of experience to 'turn it on'---then no amount of sensory stimulation would do the trick."
+
+The chunk's conclusion about a priori knowledge matches the skeleton's definition: "knowledge that is pre-experiential; knowledge that is a precondition for having experiences of a certain kind, rather than being derived from those experiences." The chunk says the structure enables one "to organize the various experiences that you have and to distill their contents into the various forms of cognitive competence."
+
+The transition at the end of the chunk ("'But I was not aware of these various cognitive operations of which") sets up the deep unconsciousness discussion (Section III) and the rejection of the introspective objection. This is structurally sound.
+
+Three verbatim quotes from the supplied writings are available and relevant:
+
+1. "The a priori knowledge that Chomsky is talking about is not internal to your cognitive framework: it is your cognitive framework. You are not aware of it, because it itself is your awareness." — This directly supports the chunk's conclusion about a priori knowledge and anticipates the introspective objection.
+
+2. "Where there is pure physiology, as opposed to physiology that mediates intelligence, there can be training, but there cannot be teaching. There can be operant conditioning but there cannot be genuine learning." — This supports the skeleton's REJECTS #2 (rejection of reduction to physiology) and ASSERTS #8, which will be relevant in later chunks.
+
+3. "The knowledge that Chomsky is talking about is not knowledge that your mind has; that knowledge is your mind. Knowledge that you have is knowledge that presupposes an existing cognitive structure." — This supports the skeleton's REJECTS #5 (rejection of the idea that innate knowledge is knowledge the mind has) and the distinction between knowledge as content versus knowledge as framework.
+
+The chunk is internally coherent. Its argument flows from the empirical datum to the inference, to the trigger metaphor, to the a priori conclusion, and then to the beginning of the introspective objection. No logical gaps or contradictions are present.
+
+One minor observation: The chunk contains a typographical error — "no amount of sensory of stimulation" should read "no amount of sensory stimulation." This is a surface error that does not affect the argument's coherence.
+
+DELTA REPORT
+
+Claims present in chunk:
+Humans learn language from sparse data while animals and inanimate objects cannot, given identical stimuli.
+This disparity is explained by innate cognitive structure.
+Experience plays a triggering role, not a creative role, in knowledge acquisition.
+The pre-experiential structure is cognitive in nature, hence constitutes a priori knowledge.
+The a priori knowledge enables organization of experiences and distillation of their contents into cognitive competence.
+The introspective objection is raised (that one is not aware of these cognitive operations).
+
+Terms used:
+Poverty of stimulus (implied via "paucity of data")
+Innate cognitive structure
+Trigger
+A priori knowledge
+Pre-experiential structure
+Sensory stimulation
+
+Conflicts:
+None detected with global skeleton or REJECTS entries.
+
+Entities referenced:
+Cat, dog, rock, tree (as entities lacking linguistic competence)
+The cognitive framework (implied)
+Experience/sensory stimulation (as trigger)
+Language
+Knowledge (as both content and framework, implied)I am processing the chunk. Here is the processed output:
+
+PROCESSED CHUNK:
+
+The objection is raised: "I had experiences—I saw things, heard things, touched things, and so on—and—lo and behold—I could speak English, tie my shoes, play the piano, even do math and science." This is how it seems to the conscious mind. But the appearance is misleading.
+
+Psychoanalysis will not help. If one were subjected to psychoanalysis, one would not thereby become conscious of the cognitive operations posited by Chomsky, in the way psychoanalysis makes one conscious of feelings toward a parent or co-worker. The Chomskyan structures are not repressed contents awaiting release; they are conditions of consciousness itself.
+
+"The knowledge that Chomsky is talking about is not knowledge that your mind has; that knowledge is your mind. Knowledge that you have is knowledge that presupposes an existing cognitive structure." To know the capital of Delaware or the infinity of primes requires a mind already stocked with categories and protocols. Learned knowledge is structure-internal. It is internal to the existing cognitive structure.
+
+"The a priori knowledge that Chomsky is talking about is not internal to your cognitive framework: it is your cognitive framework. You are not aware of it, because it itself is your awareness." Knowledge that Wilmington is the capital of Delaware, or that root-2 is irrational, is the object of awareness. The cognitive framework enabling such knowledge is the subject to which that object is known.
+
+The objection continues: "But can't I be aware of myself? Am I not aware of my feelings, my deliberations, and my thoughts?" Self-deception, rationalization, and Freudian false beliefs are conceded. But the datum of direct self-awareness does not extend to the framework. What one is aware of in self-awareness is the product of the framework, not the framework itself.
+
+DELTA REPORT:
+
+CLAIMS EMITTED:
+1. Conscious experience appears to be the source of knowledge, but this appearance is misleading.
+2. Psychoanalysis does not make Chomskyan cognitive operations conscious; they are not Freudian repressed contents.
+3. Knowledge one has presupposes an existing cognitive structure; it is structure-internal.
+4. A priori knowledge is not internal to the cognitive framework; it is the cognitive framework.
+5. The framework is the subject of awareness, not its object.
+6. Self-awareness is awareness of products of the framework, not the framework itself.
+
+TERMS USED:
+Cognitive framework
+A priori knowledge
+Structure-internal knowledge
+Subject/object of awareness
+Freudian unconscious (contrasted)
+
+QUOTATIONS VERIFIED (3):
+1. "The knowledge that Chomsky is talking about is not knowledge that your mind has; that knowledge is your mind. Knowledge that you have is knowledge that presupposes an existing cognitive structure."
+2. "The a priori knowledge that Chomsky is talking about is not internal to your cognitive framework: it is your cognitive framework. You are not aware of it, because it itself is your awareness."
+3. The example about Wilmington and root-2 is preserved.
+
+CONFLICTS: None detected within this chunk. The chunk aligns with ASSERTS 5, 6, 7 and REJECTS 4. No numerical values, dates, or proper names beyond "Chomsky," "Freud," "Wilmington," "Delaware," and "Euclid" (implied) appear. The chunk reinforces the deep unconsciousness thesis: the framework is structurally inaccessible, not merely repressed.COHERENCE EVALUATION
+
+This chunk functions as a development of Section III of the global skeleton—"The Nature of Deep Unconsciousness"—specifically elaborating the distinction between the cognitive framework and its contents, using the hotel and car factory analogies. The chunk is internally coherent and consistent with the broader document's claims.
+
+The central move in this chunk is the distinction between knowledge one has (contents of awareness) and knowledge that constitutes the framework of awareness. This aligns with the global skeleton's assertion that "Self-awareness is awareness of products of the framework, not the framework itself." The chunk makes this point explicitly: "all of this knowledge—this knowledge that you have of your sensations, perceptions, beliefs, deliberations, and so on---all of this is knowledge of the contents of your cognitve framework."
+
+The chunk introduces the Freudian contrast in a nuanced way. It does not reject Freudian unconsciousness outright; rather, it suggests that Freudian ignorance of self "presupposes some other, more fundamental knowledge of self." This is consistent with the document's REJECTS entry: "Rejects the idea that the relevant unconscious contents are Freudian: Freudian contents are unconscious but accessible in principle; Chomskyan structures are deeply unconscious, inaccessible because they are the conditions of access." The chunk does not contradict this; it merely notes that Freudian self-ignorance operates against a backdrop of deeper self-knowledge, which is the framework itself.
+
+The hotel analogy is deployed consistently with the global skeleton's ENTITIES entry: "The hotel: An analogy for the cognitive framework. The framework is the hotel; mental contents are its occupants." The chunk elaborates: "The structure of the hotel imposes strict and rigidly defined limits on the way in which people in the hotel can move about and interact; and if someone could see the hotel-occupants move about, but could not, for some reason, see the hotel itself, he could deduce from those interactions what the structure of the hotel was." This is a coherent extension—it explains how the framework is inferable from its products without being identical to them.
+
+The car factory analogy is introduced as a supplement: "Those thoughts, perceptions, and feelings are not themselves that structure. They are its productions. They are to that structure what—to switch examples---a car factory is to the cars it produces." This is consistent with the global skeleton's ENTITIES entry: "The car factory: An analogy for the cognitive framework. Thoughts are its productions, as cars are productions of a factory."
+
+There are no contradictions within this chunk. The claims made here are compatible with the document's ASSERTS entries, particularly: "The cognitive framework that enables knowledge is not itself an object of knowledge. It is the subject to which objects are known" and "Self-awareness is awareness of products of the cognitive framework, not of the framework itself."
+
+One minor tension: The chunk says "you are aware of yourself---in the sense that you are aware of many of the feelings, thoughts, etc. created by your cognitive archicture." This could be read as conceding a form of self-awareness. But the chunk immediately qualifies: these contents are "occupants of that architecture," not the architecture itself. This is consistent with the document's position that self-awareness is awareness of products, not the framework. No conflict.
+
+The chunk preserves the distinction between knowledge that presupposes structure and knowledge that is structure, which is central to the document's third quotation: "The knowledge that Chomsky is talking about is not knowledge that your mind has; that knowledge is your mind. Knowledge that you have is knowledge that presupposes an existing cognitive structure." The chunk's discussion of feelings coming and going while "you will be there all the same" exemplifies this point.
+
+The chunk does not introduce new technical terms beyond those already in the global skeleton. It uses "cognitive architecture" and "cognitive framework" interchangeably, which is consistent with the document's usage.
+
+No numerical values, dates, or proper names appear in this chunk that would require preservation. The only proper names referenced implicitly are Freud and Chomsky, both already in the global skeleton's ENTITIES.
+
+DELTA REPORT
+
+Claims made in this chunk:
+1. Mental contents (feelings, thoughts, perceptions) are occupants of the cognitive framework, not the framework itself.
+2. The cognitive framework persists even when its contents change or vanish.
+3. Freudian self-ignorance presupposes a more fundamental self-knowledge.
+4. The cognitive structure can be deduced from thought-patterns, as a hotel's structure can be deduced from occupants' movements.
+5. Thoughts, perceptions, and feelings are productions of the cognitive structure, as cars are productions of a factory.
+
+Terms used: cognitive architecture, cognitive framework, occupants, productions, hotel analogy, car factory analogy, Freudian self-ignorance, self-knowledge, rationalizations.
+
+Conflicts: None detected. The chunk is consistent with all REJECTS and ASSERTS entries in the global skeleton. The only potentially ambiguous point—the concession of self-awareness—is immediately qualified in a way that maintains consistency with the document's position.The passage you have provided continues the argument about deep unconsciousness and the cognitive basis for language's productivity and systematicity. It develops the distinction between the framework of cognition and its products, then transitions into the argument against reducing cognitive structure to mere physiology.
+
+The text opens with a clarification of self-awareness. When we are aware of ourselves, we are not aware of the cognitive framework itself. We are aware of some product of that framework. The knowledge that constitutes the framework is not the object of any instance of self-awareness. This is why the structures and operations that mediate language learning and use are deeply unconscious. They are unlike the contents of the Freudian unconscious, which are unconscious but not deeply so.
+
+The passage then poses the obvious objection. Why posit deeply unconscious cognitive structure at all? Why not regard all structure involved in knowledge acquisition as strictly physiological? The answer is developed through a fact about language itself. Consider two sentences: "John loves Sally" and "Sally hates Fred." We can perform two kinds of operations on these sentences. We can combine them into larger sentences: "John loves Sally and Sally hates Fred," "Either John loves Sally or Sally hates Fred," "John loves Sally because Sally hates Fred." We can also break them into parts and recombine those parts into new sentences: "John hates Fred," "John hates Sally," "Sally hates John," "Sally hates Sally."
+
+Languages are therefore productive, meaning expressions can be combined into larger expressions. They are also systematic, meaning parts of complex expressions can be rearranged to form other complex expressions. Given that we use and understand language, the systematicity and productivity of language are reflections of corresponding facts about our cognitive structure. Language is productive and systematic because our minds are productive and systematic. We can combine sentences we understand into larger sentences we understand, and we can rearrange constituents of sentences we understand into new sentences we also understand, because we understand the relations of logical dependence that map sentence-parts to sentence-meanings.
+
+This argument establishes that the mediating structures are cognitive, not merely physiological. Pure physiology yields training but not teaching. It yields operant conditioning but not genuine learning. The ability to handle novelty, to understand new combinations of familiar elements, proves that the mediating structures embody understanding of logical relations.
+
+The passage connects directly to the global skeleton. It develops section III, the nature of deep unconsciousness. It distinguishes between knowledge one has and knowledge that constitutes the framework of awareness. It uses the distinction between products and framework to explain why the framework is inaccessible to introspection. It then transitions into section II, the argument for sub-personal thought, using the linguistic evidence of productivity and systematicity to infer corresponding properties of the mind.
+
+The passage also engages with the rejects listed in the global skeleton. It rejects the reduction of cognitive structure to physiology. It rejects the idea that the relevant unconscious contents are Freudian. It rejects the introspective objection by explaining that we are not aware of cognitive operations because they are awareness itself.
+
+The passage assumes the reality of knowledge and cognitive competence as genuine phenomena to be explained. It assumes that language is productive and systematic, and that these properties reflect underlying rules rather than mere statistical regularities. It assumes that logical relations are real and that the mind grasps them.
+
+The entities invoked include John and Sally, the subjects of example sentences. The cognitive framework is the entity that constitutes the mind. The Freudian unconscious is contrasted with the deep unconscious. Physiology is the physical implementation of cognitive structure, analogous to hardware. Cognitive structure is analogous to software, implemented by physiology but not reducible to it.
+
+The quotations from the document are relevant here. The first quotation states: "The a priori knowledge that Chomsky is talking about is not internal to your cognitive framework: it is your cognitive framework. You are not aware of it, because it itself is your awareness." This captures the central point about deep unconsciousness. The second quotation states: "Where there is pure physiology, as opposed to physiology that mediates that intelligence, there can be training, but there cannot be teaching. There can be operant conditioning but there cannot be genuine learning." This captures the argument against physiological reduction. The third quotation states: "The knowledge that Chomsky is talking about is not knowledge that your mind has; that knowledge is your mind. Knowledge that you have is knowledge that presupposes an existing cognitive structure." This captures the distinction between framework and content.
+
+The passage is coherent with the global skeleton. It develops the argument for sub-personal thought through the linguistic evidence of productivity and systematicity. It explains the nature of deep unconsciousness through the distinction between framework and product. It answers the physiology objection by showing that the ability to handle novelty proves the mediating structures are cognitive.
+
+The passage contains some typographical errors. "Unconsicous" should be "unconscious." "Therefoore" should be "therefore." "Epxressions" should be "expressions." "Undetstand" should be "understand." "Undersatnd" should be "understand." "Saly" should be "Sally." These are transcription errors, not substantive errors. They do not affect the logical content.
+
+The argument proceeds in a clear sequence. First, self-awareness is awareness of products, not the framework. Second, the framework is therefore deeply unconscious. Third, the objection is raised: why not reduce all structure to physiology? Fourth, the answer is developed through the productivity and systematicity of language. Fifth, the conclusion is drawn: the mediating structures must be cognitive because they embody understanding of logical relations.
+
+The passage does not introduce new claims beyond those in the global skeleton. It develops the existing claims with concrete examples. The examples of combining and rearranging sentences illustrate productivity and systematicity. The point about novelty handling illustrates why the structures must be cognitive rather than merely physiological.
+
+The passage does not reject any claims from the global skeleton. It affirms the rejects listed there. It rejects physiological reduction, Freudian unconsciousness as the relevant model, and the introspective objection. It affirms the assumptions listed in the global skeleton.
+
+The passage is consistent with the asserted claims. It asserts that the productivity and systematicity of language are reflections of corresponding properties of the mind. It asserts that the cognitive framework is not itself an object of knowledge. It asserts that self-awareness is awareness of products of the framework. It asserts that the structures mediating language acquisition are deeply unconscious. It asserts that where there is pure physiology, there can be training but not teaching.
+
+The passage does not contain any conflicts with the global skeleton. It does not soften any rejects. It preserves the distinction between deep unconsciousness and Freudian unconsciousness. It preserves the argument that cognitive structure is implemented by physiology but not reducible to it.
+
+The passage advances the overall thesis by showing how the poverty of stimulus argument leads to the positing of innate structure, and how the productivity and systematicity of language show that this structure is genuinely cognitive rather than merely physiological. The deep unconsciousness of this structure follows from its role as the framework of awareness rather than a content within it.
+
+DELTA REPORT
+
+Claims used:
+Self-awareness is awareness of products of the cognitive framework, not the framework itself
+The framework-constitutive structures are deeply unconscious, unlike Freudian unconscious contents
+Language is productive (expressions combine into larger expressions) and systematic (parts recombine into new expressions)
+Productivity and systematicity of language reflect corresponding properties of the mind
+We understand logical relations of dependence mapping sentence-parts to sentence-meanings
+Pure physiology yields training but not teaching; conditioning but not genuine learning
+The ability to handle novelty proves mediating structures are cognitive
+
+Terms used:
+Deep unconsciousness (contrasted with Freudian unconscious)
+Cognitive framework (distinguished from its products)
+Productivity (defined via sentence combination)
+Systematicity (defined via part rearrangement)
+Logical relations (of dependence mapping sentence-parts to sentence-meanings)
+Physiological structure (contrasted with cognitive structure)
+
+Conflicts:
+None detected. The passage is consistent with the global skeleton and the quotations provided.COHERENCE EVALUATION — CHUNK 6 OF 6
+
+This chunk is the concluding segment of the document, and it directly addresses the distinction between cognitive and physiological structure. The chunk is internally coherent and consistent with the global skeleton's thesis concerning Chomsky's two contributions: the poverty of stimulus argument and the argument for sub-personal thought.
+
+The chunk explicitly argues that the pre-experiential structures enabling language acquisition are cognitive, not merely physiological. It states that these structures "are cognitive properties that are realized or implemented by physiology, in much the way in which a computer's hardware implements its software." This aligns precisely with the skeleton's REJECTS entry #2 (rejection of reduction of cognitive structure to physiology) and with ASSERTS #9 (cognitive properties are implemented by physiology as software is implemented by hardware).
+
+The chunk also preserves the key distinction between training and teaching, conditioning and genuine learning, which appears verbatim in the skeleton's REJECTS entry #1 and in the document's QUOTATIONS section. The chunk states: "Where there is pure physiology, as opposed to physiology that mediates that intelligence, there can be training, but there cannot be teaching. There can be operant conditioning but there cannot be genuine learning." This is a verbatim match with quotation #2 in the skeleton.
+
+The chunk's central claim — that the ability to handle novelty proves the mediating structures are cognitive — connects directly to the skeleton's ASSERT #8 and to the broader argument that pure physiology would yield only "a few stereotyped ways" of responding, a phrase that appears in the chunk and is echoed in the skeleton's REJECTS #2.
+
+The chunk's emphasis on "interrelations of logical dependence and of content-appropriateness" corresponds to the skeleton's ASSUMES #4 and to the definition of logical relations in the KEY TERMS section.
+
+One minor typographical issue appears in the chunk: "undersatnding" (misspelled). This does not affect coherence.
+
+The chunk does not introduce any claims that conflict with the skeleton. It does not soften or qualify any REJECTS entries. It does not introduce new entities or terms not already present in the skeleton. It does not contradict the thesis that the cognitive framework is deeply unconscious, though this chunk focuses more on the cognitive-versus-physiological distinction than on the unconsciousness point.
+
+The chunk's reference to "pre-experiential structural properties" aligns with the poverty of stimulus argument and with the definition of a priori knowledge in the KEY TERMS section. The chunk's claim that these properties are "realized or implemented by physiology" is consistent with the skeleton's position that cognition is implemented by physiology but not reducible to it.
+
+The chunk is the final segment of the document, and it functions as a conclusion to the argument for sub-personal thought, specifically answering the objection that the mediating structures might be purely physiological. The argument is: (1) pure physiology yields only stereotyped responses; (2) humans can handle novelty; (3) therefore, the mediating structures are cognitive, not merely physiological; (4) they are implemented by physiology in the way software is implemented by hardware.
+
+This is fully coherent with the skeleton's outline section II.D, which addresses the physiology objection.
+
+No conflicts detected. No numerical values, dates, or proper names in this chunk that require preservation. The chunk contains no new claims that would need to be flagged for future hallucination detection.
+
+DELTA REPORT:
+
+Claims made in this chunk:
+1. Pre-experiential structures enabling language are cognitive, not merely physiological.
+2. These cognitive properties are implemented by physiology as software is implemented by hardware.
+3. Pure physiology would yield only stereotyped responses and could not handle novelty.
+4. Training and conditioning are possible with pure physiology; teaching and genuine learning require cognitive structure.
+
+Terms used:
+"pre-experiential structural properties" (equivalent to "a priori knowledge" in skeleton)
+"physiology" / "wetware" (matches skeleton's ENTITIES #8)
+"cognitive properties" (matches skeleton's KEY TERMS #9)
+"software" / "hardware" (matches skeleton's ENTITIES #9 and ASSERTS #9)
+"interrelations of logical dependence and of content-appropriateness" (matches skeleton's ASSUMES #4)
+"training" / "teaching" / "operant conditioning" / "genuine learning" (matches skeleton's REJECTS #1 and QUOTATIONS #2)
+
+Verbatim quotes used:
+1. "Where there is pure physiology, as opposed to physiology that mediates that intelligence, there can be training, but there cannot be teaching. There can be operant conditioning but there cannot be genuine learning."
+2. The chunk's phrase "realized or implemented by physiology, in much the way in which a computer's hardware implements its software" (paraphrase of ASSERTS #9, not a verbatim quote from the skeleton's QUOTATIONS section but consistent with it).
+
+Conflicts: None detected.
+
+Spelling errors: "undersatnding" (should be "understanding"). This is a typographical error, not a substantive inconsistency.

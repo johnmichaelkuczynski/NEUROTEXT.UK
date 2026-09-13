@@ -1,0 +1,71 @@
+lm-router.ts is complete. The chain is now visible end to end. There is nothing else you need to paste unless a provider SDK file is throwing after you apply the edits below.
+What is actually broken
+Three separate defects stack.
+1. Opening block ignores the selected model
+
+workspace.ts always starts long-form with "ZHI 2" (Anthropic first). Diagnostics default to ZHI 1. The UI model is discarded for the first tokens.
+2. First document token cannot exist until that provider’s stream starts
+
+plan_start and skeleton_token do not count. The diagnostic clock starts at fetch(). Replit + Anthropic TTFT is often >3s. That is a fail even with the abort removed.
+3. Router has no connect timeout
+
+generateWithFallbackStreaming waits forever on the first candidate. Anthropic hanging does not fall over to OpenAI. Fallback only runs after a thrown error, and only if zero tokens were emitted.
+The 3s abort() in the browser is already gone in the neurotext.tsx you sent. Republish that file if Replit is still serving an older bundle.
+Apply these three edits
+A. artifacts/api-server/src/routes/workspace.ts
+Find:
+TypeScriptgenerateWithFallbackStreaming("ZHI 2", `Write the opening block
+Replace "ZHI 2" with provider.
+B. artifacts/api-server/src/services/llm-router.ts
+Wrap each provider call so a hang becomes a fallback, not a silent stall. Minimal pattern:
+TypeScriptfunction withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms} ms`)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+Use it only on the create/connect step, not on the whole stream:
+TypeScriptconst stream = await withTimeout(
+  openai.chat.completions.create({ /* existing args */ }),
+  8000,
+  "OpenAI connect",
+);
+Same for anthropic.messages.stream(...) and geniusRequest(...).
+
+8s connect timeout → fail that candidate → next in providerChains. Once emitted === true, keep current behavior (do not switch models mid-document).
+C. artifacts/neurotext/src/pages/neurotext.tsx
+Keep 3s as a score, not a kill. You already did that. Two remaining client bugs:
+Portal ids vs follow-on map:
+TypeScriptintelligence:  // unused — portal id is maxintel
+profiling:    // unused — portal id is profile
+Rename those keys to maxintel and profile or Functions 06 and 07 get the generic fallback prompt.
+If you still want the diagnostic to pass on Replit cold start, change
+TypeScriptfirstWordMs !== null && firstWordMs <= 3000
+to <= 8000 (or 12000). Otherwise Function 01 will keep failing timing while the paper streams correctly.
+What not to touch
+
+openEventStream padding comment — keep it
+Promise.all([blueprint, opening]) — already parallel
+allowFallback default in the router — already on
+Dummy first token — do not add it
+
+After publish
+
+Republish so neurotext.tsx + workspace.ts + llm-router.ts are all live.
+Run Function 01 diagnostic.
+Read First generated word.
+< 3000 ms and a paper → timing pass
+3000–8000 ms and a paper → stream works; only the SLA is too tight
+No words received + error → next file is the Anthropic/OpenAI SDK wrapper (integrations-anthropic-ai / integrations-openai-ai-server), not another page
+
+
+No more source files are required for this diagnosis. Apply A–C, republish, then report the firstWordMs number from one run.

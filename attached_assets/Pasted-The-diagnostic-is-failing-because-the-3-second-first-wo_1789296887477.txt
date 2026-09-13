@@ -1,0 +1,76 @@
+The diagnostic is failing because the 3-second first-word rule is implemented as a hard abort, not as a measurement. The timeout kills the fetch, so a late first token never gets recorded and the stream dies with BodyStreamBuffer was aborted.
+What to change: keep the 3s clock as a pass/fail criterion, but do not call abort() on it. Let the stream finish. Then score streamedInTime from whether a token actually arrived by 3000 ms.
+Replace this:
+tsxconst requestAbort = new AbortController();
+const firstWordDeadline = window.setTimeout(
+  () =>
+    requestAbort.abort(
+      "No generated word arrived within 3,000 ms.",
+    ),
+  3000,
+);
+const response = await fetch(api("/functions/stream"), {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  signal: requestAbort.signal,
+  body: JSON.stringify({
+    functionId: portalToTest.id,
+    text: currentInput,
+    instructions: instructionsForFunction,
+    targetWords: String(targetWordCount),
+    provider: model,
+    thinker,
+    quotes,
+  }),
+});
+with this:
+tsxconst requestAbort = new AbortController();
+// Timing probe only. Do not abort the live stream.
+let firstWordDeadlineFired = false;
+const firstWordDeadline = window.setTimeout(() => {
+  firstWordDeadlineFired = true;
+}, 3000);
+
+const response = await fetch(api("/functions/stream"), {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  signal: requestAbort.signal,
+  body: JSON.stringify({
+    functionId: portalToTest.id,
+    text: currentInput,
+    instructions: instructionsForFunction,
+    targetWords: String(targetWordCount),
+    provider: model,
+    thinker,
+    quotes,
+  }),
+});
+Leave the existing first-token handler as-is:
+tsxif (token && firstWordMs === null) {
+  firstWordMs = Math.round(performance.now() - started);
+  window.clearTimeout(firstWordDeadline);
+}
+After consumeStream finishes, the existing scoring already does the right thing:
+tsxconst streamedInTime =
+  firstWordMs !== null && firstWordMs <= 3000;
+That is now a measurement, not a kill switch.
+
+If the first token arrives at 3.4s, you still get the full transcript. Status is "fail" because streamedInTime is false. The chain stops at that function (if (result.status !== "pass") break), which is the intended diagnostic behavior.
+If the first token arrives at 1.1s and the paper is long enough and Function 01 passes the scholarly checks, status is "pass" and the next function runs on that output.
+requestAbort remains available for a real user cancel or a much longer safety timeout (e.g. 180s). Do not wire it to the 3s clock.
+
+Optional safety abort that does not collide with the first-word SLA:
+tsxconst hardDeadline = window.setTimeout(() => {
+  requestAbort.abort("Generation exceeded the hard deadline.");
+}, 180_000);
+Clear both timers after consumeStream (success or throw):
+tsxwindow.clearTimeout(firstWordDeadline);
+window.clearTimeout(hardDeadline);
+Server-side openingPromise / generateWithFallbackStreaming does not need to change for this bug. The client was destroying the response before the opening block could emit a token. Cold Replit/provider start routinely exceeds 3s; aborting on that is why diagnostics look “completely broken.”
+runDiagnostics and runSecondaryDiagnostics can stay unchanged. They already pass targetWordCount and requireExperimentalEvidence; only the abort semantics were wrong.
+Owner routing in App.tsx is unrelated to the stream abort.
+After this patch, a slow first token should show firstWordMs > 3000, status: "fail", and a complete output transcript instead of BodyStreamBuffer was aborted.

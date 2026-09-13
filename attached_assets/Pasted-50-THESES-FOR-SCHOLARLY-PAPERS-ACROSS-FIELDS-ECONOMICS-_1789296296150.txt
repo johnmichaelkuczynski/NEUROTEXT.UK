@@ -1,0 +1,73 @@
+50 THESES FOR SCHOLARLY PAPERS — ACROSS FIELDS
+
+ECONOMICS AND FINANCE
+1. Volatility-decay in leveraged ETFs is not a cost of leverage but a cost of rebalancing frequency, and the two are separable by contract design.
+2. Index inclusion effects have inverted since 2010: passive flows now create predictable post-inclusion underperformance rather than the premium documented in the 1990s literature.
+3. Central bank forward guidance loses efficacy not through loss of credibility but through saturation of the information it conveys.
+4. Minimum wage employment effects are mediated almost entirely by local labor-market concentration, which reconciles the conflicting empirical literature.
+5. The equity risk premium is an artifact of survivorship in the sample of countries whose markets remained continuously tradable.
+6. Options-market implied distributions systematically misprice tail risk in sectors with high capital-expenditure cyclicality.
+
+COMPUTER SCIENCE AND AI
+7. Large language model "reasoning" gains from chain-of-thought are gains in search, not in inference, and are therefore bounded by the base model's retrieval coverage.
+8. Benchmark saturation in machine learning reflects benchmark construction bias rather than model capability, and can be detected by item-response-theory analysis of test items.
+9. Retrieval-augmented generation degrades factual accuracy when retrieval confidence is uncorrelated with generation confidence — the standard case.
+10. Model interpretability methods that rely on gradient attribution are provably uninformative for architectures with attention-based routing.
+11. Software complexity metrics predict defect rates only through their correlation with author turnover, and drop to zero predictive value when turnover is controlled.
+12. Formal verification adoption is limited by specification cost, not proof cost, and the field has systematically misallocated research effort as a result.
+
+LINGUISTICS
+13. Grammaticality judgments are graded measurements of processing cost, not binary measurements of competence, and generative syntax's data source is therefore misdescribed.
+14. Language change accelerates at the boundaries of dense social networks rather than at their centers, contrary to the standard diffusion model.
+15. Second-language attrition follows a different curve from first-language attrition, indicating distinct storage rather than distinct access.
+16. Writing systems constrain phonological awareness in ways that contaminate cross-linguistic phonology research conducted on literate populations.
+
+PSYCHOLOGY AND COGNITIVE SCIENCE
+17. The replication crisis in social psychology is a measurement crisis: the constructs, not the effects, fail to replicate.
+18. Expertise is domain-general in its acquisition mechanism and domain-specific only in its content, which predicts transfer under conditions current models rule out.
+19. Working memory capacity limits are limits on interference resolution, not on storage, and the distinction is testable via similarity-graded load.
+20. Intelligence test scores predict life outcomes largely through their correlation with credentialing thresholds rather than through cognitive performance itself.
+21. Cognitive biases documented in laboratory tasks are rational responses to the ecological statistics of the laboratory, not to those of natural environments.
+
+EDUCATION
+22. Lecture-based instruction outperforms active learning for material with high prerequisite density, reversing the standard finding.
+23. Assessment validity in higher education has collapsed not because of AI but because assessment instruments were already measuring compliance rather than competence.
+24. Spaced repetition's advantage disappears for material that is used rather than recalled, which limits its applicability far more than the literature admits.
+25. Credential inflation is driven by employer screening costs rather than by student demand, and is therefore unresponsive to tuition policy.
+
+HISTORY AND POLITICAL SCIENCE
+26. The historiography of industrialization overweights technological invention relative to changes in contract enforcement.
+27. Democratic backsliding follows a legislative rather than an executive pathway in states with strong judicial review, which inverts the standard early-warning indicators.
+28. Coalition instability in parliamentary systems is better predicted by intra-party factional count than by the effective number of parties.
+29. Archival silence is not merely an absence of evidence but a positive artifact of record-keeping incentives, and can be modeled as such.
+30. Wartime mobilization reshapes state fiscal capacity permanently only where it coincides with prior administrative penetration of the countryside.
+
+LAW
+31. Textualism and purposivism converge in outcome and diverge only in the allocation of justificatory burden, which explains their persistence as rival doctrines.
+32. Qualified immunity doctrine functions as an information-forcing rule rather than an immunity, and its critics and defenders both misdescribe it.
+33. Patent claim breadth and litigation frequency are related non-monotonically, with the peak at intermediate breadth — contrary to both the pro- and anti-patent literature.
+34. Standards of proof are not thresholds on belief but allocations of error cost, and jury instructions systematically communicate the former.
+
+BIOLOGY AND MEDICINE
+35. Antimicrobial resistance evolution in clinical settings is driven more by dosing interval than by total antibiotic volume.
+36. The microbiome literature's causal claims rest on compositional data analyzed with methods invalid for compositional data.
+37. Aging research conflates two distinct phenomena — damage accumulation and program-driven decline — that have opposite therapeutic implications.
+38. Clinical trial endpoints selected for regulatory tractability have systematically diverged from endpoints patients value, and the divergence is measurable.
+39. Convergent evolution is overreported because morphological similarity is scored by researchers already committed to a phylogenetic hypothesis.
+
+PHYSICS AND STATISTICS
+40. Statistical significance thresholds function as publication filters rather than inference rules, and the distinction explains the shape of published effect-size distributions.
+41. Causal inference from observational data is more reliable than from underpowered randomized trials across a definable and estimable range of conditions.
+42. Model selection criteria (AIC, BIC) encode incompatible assumptions about the true model's presence in the candidate set, and applied work rarely respects either.
+43. Emergence in physics is an epistemic relation between descriptions at different scales, not an ontological relation between levels of reality.
+
+MUSIC AND THE ARTS
+44. Tonal function is a statistical expectation structure, and historical changes in harmonic practice track changes in listener exposure statistics rather than in theory.
+45. Counterpoint rules are compression heuristics: they minimize the information required to track independent voices, which explains their cross-cultural analogues.
+46. Recorded-music distribution economics have made album-length coherence a cost rather than a value, with measurable effects on compositional structure since 2015.
+47. Literary canon formation is driven by pedagogical utility — teachability — rather than by evaluative consensus, and the two can be empirically separated.
+
+SOCIOLOGY AND ANTHROPOLOGY
+48. Urban density affects social trust through exposure variance rather than exposure frequency, reconciling the contradictory findings in the contact-hypothesis literature.
+49. Kinship terminology systems encode inheritance rules rather than biological relatedness, and mismatches between the two are systematic, not residual.
+50. Online platform moderation produces norm displacement rather than norm enforcement, and displaced norms return with higher intensity in lower-visibility venues.

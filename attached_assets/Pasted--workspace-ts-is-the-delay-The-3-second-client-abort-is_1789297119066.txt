@@ -1,0 +1,45 @@
+`workspace.ts` is the delay. The 3-second client abort is already gone. Diagnostics still look dead because **no `type: "token"` event is sent until ZHI 2 starts the opening block**.
+
+What happens on a 3,000-word diagnostic:
+
+1. `/functions/stream` opens the SSE.
+2. It immediately writes `plan_start` (not a document token).
+3. It kicks off two jobs in parallel:
+   - blueprint / skeleton → `skeleton_token` only
+   - opening prose, **hardcoded to `"ZHI 2"`**, not the model in the UI
+4. The diagnostic runner only treats `event.type === "token"` as a generated word.
+
+If Claude (ZHI 2) takes more than 3s to first byte — normal on a cold Replit process — the client marks **FAIL** even though the stream is still alive.
+
+```ts
+const openingPromise = resumeDocument?.trim()
+  ? Promise.resolve(null)
+  : generateWithFallbackStreaming("ZHI 2", `Write the opening block...`,
+```
+
+That string is the defect. Opening must use `provider` so the selected model and its fallback chain run. Forcing ZHI 2 also means a ZHI 1 / GPT diagnostic still waits on Anthropic.
+
+**Change that line to:**
+
+```ts
+generateWithFallbackStreaming(
+  provider,
+  `Write the opening block of this long-form NEUROTEXT document now.
+```
+
+Keep the rest of the prompt.
+
+**Also change the diagnostic SLA, or the test will keep failing on Replit TTFT.** Three seconds is a product claim, not a network fact. In `neurotext.tsx` either:
+
+- raise the first-word limit to something Replit can hit (8–12s), or
+- keep 3s as a *timing grade* (already the case) and stop treating timing-fail as “the app is broken.”
+
+A 180s hard abort is fine.
+
+Do **not** emit a dummy token to game the clock. That would make Function 01 “pass” timing while the paper has not started.
+
+**Next file only if first token is still >8s after using `provider`:**  
+`artifacts/api-server/src/services/llm-router.ts`  
+(`generateWithFallbackStreaming` — timeouts, provider order, whether it waits on a failed ZHI 2 before emitting anything).
+
+Until that file is here, the one server edit that matters is: **stop hardcoding `"ZHI 2"` on the opening block.**

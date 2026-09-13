@@ -1,0 +1,24 @@
+WHAT DID REPLIT DO?   WHAT DID IT DO TO CASUE ALL THIS DAMAGE?Replit did not delete the app. It made the first token late, and your diagnostic treated “late” as “dead.”
+What actually failed
+The diagnostics page starts a clock the instant the browser calls /functions/stream. It only counts an SSE event with type: "token" as a generated word.
+On a live Replit deploy that first token is slow because:
+
+The Replit process is often cold. Idle apps sleep. The first request pays boot + Node + provider SDK handshake. That is commonly 3–10+ seconds.
+The long-form path does extra work before any document token: open SSE, write plan_start, start a skeleton job, then start the opening block.
+The opening block was hardcoded to "ZHI 2" (Anthropic first), not the model in the UI. If Claude is slow or hanging, you wait. The router does not time out a hung connect; it only fails over after an thrown error.
+Your diagnostic used that slowness as AbortController.abort() at 3000 ms. Aborting the fetch destroys the body. The browser then reports BodyStreamBuffer was aborted. That is the “completely broken” screen: not a missing model, a killed stream.
+
+So Replit’s delay was the match. The abort() was the gasoline. A paper that would have arrived at 4.2s was torn down at 3.0s and recorded as total failure.
+What Replit specifically contributes
+Typical Replit behavior that produces this exact pattern:
+
+Idle / autoscale sleep. Published Always-On is not guaranteed on every plan. After quiet time the next diagnostic pays cold start. Three seconds is not enough.
+Publish vs running editor. The screenshot has Republish. It is easy to run new workspace.ts against an old browser bundle, or the reverse. That is how you can “fix” abort in source and still see abort in the live page.
+Proxy buffering of SSE. Replit’s edge can hold the first chunks unless you pad the stream (you already write a 2KB comment and X-Accel-Buffering: no). If a publish or reverse proxy change re-enabled buffering, the browser sees silence until a flush large enough to release — again past 3s.
+Outbound LLM latency. From Replit’s region to Anthropic/OpenAI, TTFT is variable. There is no local GPU. Every Function 01 run is a remote round trip after process wake.
+
+Replit did not invent the 3-second kill switch. That timer is in your neurotext.tsx. Someone (you, or Replit Agent if it edited the diagnostics) turned a performance score into requestAbort.abort(). That is the damage multiplier.
+What it did not do
+It did not wipe Function 01–10, the router, or the prompts. The files you pasted are intact. The portals, SSE writer, fallback chain, and long-form planner are still there. The app looks “completely” dead only because the diagnostic stops at Function 01 when the first word is late or the stream is aborted, and then never transfers 02–10.
+Cause in one line
+Replit made time-to-first-token exceed three seconds; the diagnostic aborted the stream at three seconds; the UI then showed FAIL / BodyStreamBuffer was aborted instead of a slow paper.

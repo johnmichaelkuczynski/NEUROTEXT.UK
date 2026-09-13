@@ -1,0 +1,469 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: workspace
+    description: NEUROTEXT workspace operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /auth/google:
+    get:
+      operationId: beginGoogleSignIn
+      tags: [auth]
+      summary: Begin Google OAuth sign-in
+      responses:
+        "302":
+          description: Redirect to Google
+  /auth/google/callback:
+    get:
+      operationId: completeGoogleSignIn
+      tags: [auth]
+      summary: Complete Google OAuth sign-in
+      responses:
+        "302":
+          description: Redirect to the application
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Return the signed-in user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    oneOf:
+                      - $ref: "#/components/schemas/AuthUser"
+                      - type: "null"
+                required: [user]
+  /auth/usage:
+    get:
+      operationId: getFreeUsage
+      tags: [auth]
+      summary: Return the current free usage allowance
+      responses:
+        "200":
+          description: Current allowance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FreeUsage"
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: End the current session
+      responses:
+        "204":
+          description: Signed out
+  /workspace/summary:
+    get:
+      operationId: getWorkspaceSummary
+      tags: [workspace]
+      summary: Get workspace overview
+      responses:
+        "200":
+          description: Workspace overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceSummary"
+  /documents:
+    get:
+      operationId: getDocuments
+      tags: [workspace]
+      summary: List recent documents
+      responses:
+        "200":
+          description: Documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Document"
+    post:
+      operationId: createDocument
+      tags: [workspace]
+      summary: Create a document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentInput"
+      responses:
+        "201":
+          description: Created document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+  /jobs:
+    get:
+      operationId: getJobs
+      tags: [workspace]
+      summary: List generation jobs
+      responses:
+        "200":
+          description: Generation jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GenerationJob"
+    post:
+      operationId: createGenerationJob
+      tags: [workspace]
+      summary: Start a generation job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerationJobInput"
+      responses:
+        "202":
+          description: Job started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationJob"
+  /diagnostics/run:
+    post:
+      operationId: runDiagnostics
+      tags: [workspace]
+      summary: Run live platform diagnostics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiagnosticInput"
+      responses:
+        "200":
+          description: Diagnostic report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiagnosticReport"
+  /ai-detect:
+    post:
+      operationId: detectAiAuthorship
+      tags: [workspace]
+      summary: Estimate whether entered text resembles AI-generated writing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiDetectionInput"
+      responses:
+        "200":
+          description: AI-authorship estimate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiDetectionResult"
+  /coherence/analyze:
+    post:
+      operationId: analyzeCoherence
+      tags: [workspace]
+      summary: Analyze or reconstruct a document with cross-chunk coherence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CoherenceInput"
+      responses:
+        "200":
+          description: Coherence result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoherenceResult"
+  /functions/run:
+    post:
+      operationId: runDocumentFunction
+      tags: [workspace]
+      summary: Run a document portal operation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentFunctionInput"
+      responses:
+        "200":
+          description: Function result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentFunctionResult"
+  /ocr:
+    post:
+      operationId: extractOcrText
+      tags: [workspace]
+      summary: Extract text from an uploaded screenshot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OcrInput"
+      responses:
+        "200":
+          description: Extracted text
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OcrResult"
+components:
+  schemas:
+    AuthUser:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string }
+        name: { type: string }
+        picture: { type: string }
+      required: [id, email, name]
+    FreeUsage:
+      type: object
+      properties:
+        authenticated: { type: boolean }
+        usedOperations: { type: number }
+        limitOperations: { type: number }
+        remainingOperations: { type: number }
+        unlimited: { type: boolean }
+      required: [authenticated, usedOperations, limitOperations, remainingOperations]
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    WorkspaceSummary:
+      type: object
+      properties:
+        documents:
+          type: number
+        activeJobs:
+          type: number
+        wordsProcessed:
+          type: number
+        intelligenceScore:
+          type: number
+        credits:
+          type: number
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/Activity"
+      required: [documents, activeJobs, wordsProcessed, intelligenceScore, credits, recentActivity]
+    Activity:
+      type: object
+      properties:
+        id: { type: string }
+        label: { type: string }
+        detail: { type: string }
+        timestamp: { type: string }
+        tone: { type: string }
+      required: [id, label, detail, timestamp, tone]
+    Document:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        excerpt: { type: string }
+        words: { type: number }
+        score: { type: number }
+        updatedAt: { type: string }
+        status: { type: string }
+      required: [id, title, excerpt, words, score, updatedAt, status]
+    DocumentInput:
+      type: object
+      properties:
+        title: { type: string, minLength: 1 }
+        content: { type: string, minLength: 1 }
+      required: [title, content]
+    GenerationJob:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        feature: { type: string }
+        provider: { type: string }
+        progress: { type: number }
+        status: { type: string }
+        createdAt: { type: string }
+      required: [id, title, feature, provider, progress, status, createdAt]
+    GenerationJobInput:
+      type: object
+      properties:
+        title: { type: string, minLength: 1 }
+        feature: { type: string, minLength: 1 }
+        provider: { type: string, minLength: 1 }
+      required: [title, feature, provider]
+    DiagnosticInput:
+      type: object
+      properties:
+        functionId: { type: string, minLength: 1 }
+        provider: { type: string, minLength: 1 }
+        input: { type: string, minLength: 1 }
+        thinker: { type: string }
+        quotes: { type: number, minimum: 0, maximum: 20 }
+      required: [functionId, provider, input]
+    DiagnosticCheck:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        status: { type: string }
+        input: { type: string }
+        output: { type: string }
+        providerUsed: { type: string }
+        elapsedMs: { type: number }
+      required: [id, title, status, input, output, providerUsed, elapsedMs]
+    DiagnosticReport:
+      type: object
+      properties:
+        runId: { type: string }
+        checks:
+          type: array
+          items:
+            $ref: "#/components/schemas/DiagnosticCheck"
+      required: [runId, checks]
+    AiDetectionInput:
+      type: object
+      properties:
+        text: { type: string, minLength: 1 }
+        provider: { type: string, minLength: 1 }
+      required: [text, provider]
+    AiDetectionResult:
+      type: object
+      properties:
+        aiProbability: { type: number, minimum: 0, maximum: 100 }
+        label: { type: string }
+        explanation: { type: string }
+        providerUsed: { type: string }
+      required: [aiProbability, label, explanation, providerUsed]
+    CoherenceInput:
+      type: object
+      properties:
+        title: { type: string, minLength: 1 }
+        text: { type: string, minLength: 1 }
+        instructions: { type: string }
+        targetWords: { type: string }
+        provider: { type: string, minLength: 1 }
+        mode:
+          type: string
+          enum: [autodetect, logical, mathematical, persuasive, scientific, philosophical, structural, narrative, legal, technical]
+        allowFallback:
+          type: boolean
+          default: true
+        thinker: { type: string }
+        quotes: { type: number, minimum: 0, maximum: 20 }
+      required: [title, text, provider, mode]
+    CoherenceDimension:
+      type: object
+      properties:
+        label: { type: string }
+        score: { type: number }
+        note: { type: string }
+      required: [label, score, note]
+    CoherenceScorecard:
+      type: object
+      properties:
+        mode: { type: string }
+        score: { type: [number, "null"] }
+        verdict: { type: string }
+        dimensions:
+          type: array
+          items:
+            $ref: "#/components/schemas/CoherenceDimension"
+      required: [mode, score, verdict, dimensions]
+    CoherenceProviderUsage:
+      type: object
+      properties:
+        evidence:
+          type: array
+          items: { type: string }
+        skeleton:
+          type: array
+          items: { type: string }
+        audit:
+          type: array
+          items: { type: string }
+      required: [evidence, skeleton, audit]
+    CoherenceResult:
+      type: object
+      properties:
+        jobId: { type: string }
+        status: { type: string }
+        providerUsed: { type: string }
+        skeleton: { type: string }
+        output: { type: string }
+        coherenceScore: { type: [number, "null"] }
+        scorecard:
+          $ref: "#/components/schemas/CoherenceScorecard"
+        providerUsage:
+          $ref: "#/components/schemas/CoherenceProviderUsage"
+      required: [jobId, status, providerUsed, skeleton, output, coherenceScore, scorecard, providerUsage]
+    DocumentFunctionInput:
+      type: object
+      properties:
+        functionId: { type: string, minLength: 1 }
+        text: { type: string }
+        instructions: { type: string }
+        targetWords: { type: string }
+        provider: { type: string, minLength: 1 }
+        thinker: { type: string }
+        quotes: { type: number, minimum: 0, maximum: 20 }
+        resumeDocument: { type: string }
+        resumeSkeleton: { type: string }
+      required: [functionId, text, provider]
+    DocumentFunctionResult:
+      type: object
+      properties:
+        output: { type: string }
+        providerUsed: { type: string }
+      required: [output, providerUsed]
+    OcrInput:
+      type: object
+      properties:
+        imageData: { type: string, minLength: 1 }
+      required: [imageData]
+    OcrResult:
+      type: object
+      properties:
+        text: { type: string }
+      required: [text]
+

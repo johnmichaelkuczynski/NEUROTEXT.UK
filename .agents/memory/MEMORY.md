@@ -1,0 +1,6 @@
+- [OpenAPI and Zod compatibility](openapi-zod-compatibility.md) — use numeric schemas instead of integer schemas with the current generator stack.
+- [Neon table namespacing](neon-table-namespacing.md) — prefix NEUROTEXT persistence to avoid collisions with existing customer tables.
+- [Document streaming](document-streaming.md) — forward native model tokens, not completed chunks, for responsive long-document generation.
+- [Preview stream transport](preview-stream-transport.md) — use newline-delimited JSON over plain text; SSE framing was buffered before reaching the browser.
+- [Post-merge database setup](post-merge-database-setup.md) — schema reconciliation takes longer than the platform’s former 20-second timeout.
+- [Function workspace retention](function-workspace-retention.md) — transfers copy papers between functions; they must never clear the originating function’s work.

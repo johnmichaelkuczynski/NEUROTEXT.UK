@@ -971,11 +971,37 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
       const errorMessage = error instanceof Error ? error.message : "";
       const connectionRetry = options?.connectionRetry ?? 0;
       const allowanceDenied = /allowance|payment|subscription|HTTP 402/i.test(errorMessage);
-      if (!outputRef.current.trim() && !allowanceDenied && connectionRetry < 3) {
-        setStreamProgress(`The connection ended before the first words arrived. Reconnecting automatically · attempt ${connectionRetry + 2} of 4…`);
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+      if (!allowanceDenied) {
+        const retainedOutput = outputRef.current.trim();
+        const retryDraft: SavedDraft | undefined = retainedOutput
+          ? {
+              active,
+              text: sourceText,
+              instructions: sourceInstructions,
+              targetWords: sourceTargetWords,
+              model: sourceModel,
+              thinker: sourceThinker,
+              quotes: sourceQuotes,
+              output: outputRef.current,
+              skeleton: skeletonRef.current,
+            }
+          : options?.draft;
+        if (retryDraft) {
+          localStorage.setItem(SAVED_DRAFT_KEY, JSON.stringify(retryDraft));
+          setSavedDraft(retryDraft);
+        }
+        setRunFailed(false);
+        setStreamProgress(retainedOutput
+          ? `Generation interrupted at ${countWords(outputRef.current).toLocaleString()} words. Every word is preserved · continuing automatically · recovery ${connectionRetry + 1}…`
+          : `The connection ended before the first words arrived. Reconnecting automatically · recovery ${connectionRetry + 1}…`);
+        await new Promise((resolve) => setTimeout(resolve, Math.min(15000, 1500 + connectionRetry * 1000)));
         if (!controller.signal.aborted) {
-          await run({ ...options, connectionRetry: connectionRetry + 1 });
+          await run({
+            ...options,
+            resume: Boolean(retryDraft),
+            draft: retryDraft,
+            connectionRetry: connectionRetry + 1,
+          });
         }
         return;
       }
@@ -996,9 +1022,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
       }
       const reason = errorMessage ? ` ${errorMessage}` : "";
       setRunFailed(true);
-      setStreamProgress(outputRef.current.trim()
-        ? `Interrupted at ${countWords(outputRef.current).toLocaleString()} words.${reason} Resume saved is available.`
-        : `This run could not be completed.${reason} Please try again.`);
+      setStreamProgress(`Generation paused because access is required.${reason}`);
     } finally {
       if (streamAbort.current === controller) {
         streamAbort.current = null;
@@ -1767,7 +1791,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
                <label className="block"><span className="mb-2 block text-sm font-semibold">Target word length <span className="font-normal text-[#64748b]">(optional)</span></span><input value={!targetWords.trim() && defaultTargetWords(portal.id) ? defaultTargetWords(portal.id) : targetWords} onChange={(event) => setTargetWords(event.target.value)} inputMode="numeric" className="h-11 w-full rounded-md border border-[#b9c8db] px-3 text-sm outline-none" placeholder="e.g. 3000" /></label>
                <button disabled={busy || !canRun} onClick={() => run()} className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#1e64c8] px-4 py-3 text-sm font-semibold text-white hover:bg-[#1956aa] disabled:cursor-not-allowed disabled:opacity-50"><Play className="size-4" />{busy ? "Writing live…" : portal.action}</button>
                {!busy && savedDraft?.active === active && (savedDraft.output.trim() || savedDraft.skeleton.trim()) && <button type="button" onClick={() => run({ resume: true })} className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-[#1e64c8] bg-white px-4 py-2.5 text-sm font-semibold text-[#1e64c8] hover:bg-[#eef5ff]"><Repeat2 className="size-4" />Resume saved draft · {countWords(savedDraft.output).toLocaleString()} words</button>}
-                {(busy || output || runFailed) && <div aria-live="polite" className="rounded-lg border border-[#bfd2f1] bg-[#f5f9ff] p-3"><div className="mb-2 flex items-center justify-between gap-2 text-xs font-bold uppercase tracking-[.12em] text-[#1e64c8]"><span>Live output</span><span className="font-normal normal-case tracking-normal text-[#64748b]">{busy ? streamProgress || "Receiving now" : runFailed ? output.trim() ? "Needs continuation" : "Run interrupted" : streamProgress.startsWith("Saved and stopped") ? streamProgress : "Complete"}</span></div><div className="max-h-44 overflow-auto whitespace-pre-wrap font-sans text-sm leading-6 text-[#24334a]">{cleanDocumentText(output) || streamProgress || "Waiting for the first words…"}</div></div>}
+                {(busy || output || runFailed) && <div aria-live="polite" className="rounded-lg border border-[#bfd2f1] bg-[#f5f9ff] p-3"><div className="mb-2 flex items-center justify-between gap-2 text-xs font-bold uppercase tracking-[.12em] text-[#1e64c8]"><span>Live output</span><span className="font-normal normal-case tracking-normal text-[#64748b]">{busy ? streamProgress || "Receiving now" : runFailed ? "Action required" : streamProgress.startsWith("Saved and stopped") ? streamProgress : "Complete"}</span></div><div className="max-h-44 overflow-auto whitespace-pre-wrap font-sans text-sm leading-6 text-[#24334a]">{cleanDocumentText(output) || streamProgress || "Waiting for the first words…"}</div></div>}
             </div>
           </div>
         </section>
@@ -1804,7 +1828,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
               {renderTransferControls()}
               {portal.id === "coherence" && output.trim() && !coherenceImproved && <button disabled={busy} onClick={improveCoherence} className="inline-flex items-center gap-2 rounded-md bg-[#1e64c8] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1956aa] disabled:opacity-50"><Sparkles className="size-3.5" />Improve coherence</button>}
               {output.trim() && <><button onClick={portal.id === "coherence" && !coherenceImproved ? copyCoherenceReport : copyOutput} className="inline-flex items-center gap-2 rounded-md border border-[#b9c8db] bg-white px-3 py-2 text-xs font-semibold text-[#205cae] hover:bg-[#eef5ff]"><Copy className="size-3.5" />{copiedOutput ? "Copied" : portal.id === "coherence" && !coherenceImproved ? "Copy report" : "Copy document"}</button><button onClick={portal.id === "coherence" && !coherenceImproved ? downloadCoherenceReport : downloadOutput} className="inline-flex items-center gap-2 rounded-md border border-[#b9c8db] bg-white px-3 py-2 text-xs font-semibold text-[#205cae] hover:bg-[#eef5ff]"><Download className="size-3.5" />Download .txt</button></>}
-              <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${busy ? "bg-[#eaf2ff] text-[#1e64c8]" : runFailed ? "bg-[#fff3d6] text-[#855b08]" : streamProgress.startsWith("Saved and stopped") ? "bg-[#fff3d6] text-[#855b08]" : "bg-[#e8f7ee] text-[#16703a]"}`}>{busy ? streamProgress || "Writing live…" : runFailed ? output.trim() ? "Needs continuation" : "Run interrupted" : streamProgress.startsWith("Saved and stopped") ? streamProgress : "Complete"}</span><button onClick={() => setShowStreamModal(false)} className="rounded-md p-2 text-[#56647a] hover:bg-[#f1f4f8]" aria-label="Close live document"><X className="size-5" /></button>
+              <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${busy ? "bg-[#eaf2ff] text-[#1e64c8]" : runFailed ? "bg-[#fff3d6] text-[#855b08]" : streamProgress.startsWith("Saved and stopped") ? "bg-[#fff3d6] text-[#855b08]" : "bg-[#e8f7ee] text-[#16703a]"}`}>{busy ? streamProgress || "Writing live…" : runFailed ? "Action required" : streamProgress.startsWith("Saved and stopped") ? streamProgress : "Complete"}</span><button onClick={() => setShowStreamModal(false)} className="rounded-md p-2 text-[#56647a] hover:bg-[#f1f4f8]" aria-label="Close live document"><X className="size-5" /></button>
             </div>
           </div>
           {showRedoInstructions && !busy && <div className="border-b border-[#dce1e9] bg-[#f5f9ff] px-5 py-4 sm:px-7"><label className="block"><span className="mb-2 block text-sm font-semibold text-[#223750]">Customized instructions for redo</span><textarea value={redoInstructions} onChange={(event) => setRedoInstructions(event.target.value)} className="min-h-24 w-full resize-y rounded-md border border-[#b9c8db] bg-white p-3 text-sm leading-6 outline-none focus:ring-4 focus:ring-[#dbeafe]" placeholder="Enter exactly how this version should be redone." /></label><div className="mt-3 flex justify-end gap-2"><button type="button" onClick={() => setShowRedoInstructions(false)} className="rounded-md border border-[#b9c8db] bg-white px-3 py-2 text-xs font-semibold text-[#56647a]">Cancel</button><button type="button" disabled={!redoInstructions.trim()} onClick={redoCurrentOutput} className="rounded-md bg-[#1e64c8] px-4 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">Redo with these instructions</button></div></div>}

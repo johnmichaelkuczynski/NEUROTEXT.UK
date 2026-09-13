@@ -15,6 +15,12 @@ Provider failure must never leave a usable document short. Preserve every partia
 
 **How to apply:** Carry partial text through the full provider chain. Prompt each fallback to continue from the exact final sentence, forward only its new tokens, and return partial output only after every provider has been attempted.
 
+A requested generation must not terminate in a generic failed state. Automatically recover until the requested output passes completion checks.
+
+**Why:** The user explicitly requires autonomous repeated recovery rather than making the user restart interrupted or quality-rejected work.
+
+**How to apply:** Preserve partial output, resume it after stream or quality failures, retry zero-output disconnects, rotate through provider fallback, and stop only for an explicit access requirement or user cancellation.
+
 Generation targets above 10,000 words must take controlled rests after each 5,000-word milestone, with a longer rest at each 10,000-word milestone.
 
 **Why:** The user explicitly prioritizes avoiding provider overload, crashes, and token-related interruptions during thesis, dissertation, and other very long runs over uninterrupted generation speed.

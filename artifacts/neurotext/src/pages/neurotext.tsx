@@ -446,6 +446,8 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
   const [aiDetectionError, setAiDetectionError] = useState("");
   const [freeUsage, setFreeUsage] = useState<FreeUsage | null>(null);
   const [runFailed, setRunFailed] = useState(false);
+  const [showRedoInstructions, setShowRedoInstructions] = useState(false);
+  const [redoInstructions, setRedoInstructions] = useState("");
   const [billingActive, setBillingActive] = useState(false);
 
   useEffect(() => {
@@ -726,10 +728,12 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
     reader.readAsText(file);
   };
 
-  const run = async (options?: { resume?: boolean }) => {
-    const resumable = options?.resume && savedDraft?.active === active ? savedDraft : null;
+  const run = async (options?: { resume?: boolean; draft?: SavedDraft; instructionOverride?: string }) => {
+    const resumable = options?.resume
+      ? options.draft ?? (savedDraft?.active === active ? savedDraft : null)
+      : null;
     const sourceText = resumable?.text ?? text;
-    const storedInstructions = resumable?.instructions ?? instructions;
+    const storedInstructions = options?.instructionOverride ?? resumable?.instructions ?? instructions;
     const storedTargetWords = resumable?.targetWords ?? targetWords;
     const sourceInstructions = !storedInstructions.trim() && defaultInstructions(active)
       ? defaultInstructions(active)
@@ -758,6 +762,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
     }
     setBusy(true);
     setRunFailed(false);
+    setShowRedoInstructions(false);
     setShowStreamModal(true);
     if (!resumable) {
       commitOutput("");
@@ -989,6 +994,32 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
         refreshFreeUsage();
       }
     }
+  };
+
+  const continueCurrentOutput = () => {
+    if (!outputRef.current.trim() || busy) return;
+    const draft: SavedDraft = {
+      active,
+      text,
+      instructions,
+      targetWords,
+      model,
+      thinker,
+      quotes,
+      output: outputRef.current,
+      skeleton: skeletonRef.current,
+    };
+    localStorage.setItem(SAVED_DRAFT_KEY, JSON.stringify(draft));
+    setSavedDraft(draft);
+    void run({ resume: true, draft });
+  };
+
+  const redoCurrentOutput = () => {
+    if (busy) return;
+    const customInstructions = redoInstructions.trim();
+    if (!customInstructions) return;
+    setInstructions(customInstructions);
+    void run({ instructionOverride: customInstructions });
   };
 
   const saveAndStop = () => {
@@ -1724,7 +1755,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
                <label className="block"><span className="mb-2 block text-sm font-semibold">Target word length <span className="font-normal text-[#64748b]">(optional)</span></span><input value={!targetWords.trim() && defaultTargetWords(portal.id) ? defaultTargetWords(portal.id) : targetWords} onChange={(event) => setTargetWords(event.target.value)} inputMode="numeric" className="h-11 w-full rounded-md border border-[#b9c8db] px-3 text-sm outline-none" placeholder="e.g. 3000" /></label>
                <button disabled={busy || !canRun} onClick={() => run()} className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#1e64c8] px-4 py-3 text-sm font-semibold text-white hover:bg-[#1956aa] disabled:cursor-not-allowed disabled:opacity-50"><Play className="size-4" />{busy ? "Writing live…" : portal.action}</button>
                {!busy && savedDraft?.active === active && (savedDraft.output.trim() || savedDraft.skeleton.trim()) && <button type="button" onClick={() => run({ resume: true })} className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-[#1e64c8] bg-white px-4 py-2.5 text-sm font-semibold text-[#1e64c8] hover:bg-[#eef5ff]"><Repeat2 className="size-4" />Resume saved draft · {countWords(savedDraft.output).toLocaleString()} words</button>}
-               {(busy || output || runFailed) && <div aria-live="polite" className="rounded-lg border border-[#bfd2f1] bg-[#f5f9ff] p-3"><div className="mb-2 flex items-center justify-between gap-2 text-xs font-bold uppercase tracking-[.12em] text-[#1e64c8]"><span>Live output</span><span className="font-normal normal-case tracking-normal text-[#64748b]">{busy ? streamProgress || "Receiving now" : runFailed ? "Run failed" : streamProgress.startsWith("Saved and stopped") ? streamProgress : "Complete"}</span></div><div className="max-h-44 overflow-auto whitespace-pre-wrap font-sans text-sm leading-6 text-[#24334a]">{cleanDocumentText(output) || streamProgress || "Waiting for the first words…"}</div></div>}
+                {(busy || output || runFailed) && <div aria-live="polite" className="rounded-lg border border-[#bfd2f1] bg-[#f5f9ff] p-3"><div className="mb-2 flex items-center justify-between gap-2 text-xs font-bold uppercase tracking-[.12em] text-[#1e64c8]"><span>Live output</span><span className="font-normal normal-case tracking-normal text-[#64748b]">{busy ? streamProgress || "Receiving now" : runFailed ? output.trim() ? "Needs continuation" : "Run interrupted" : streamProgress.startsWith("Saved and stopped") ? streamProgress : "Complete"}</span></div><div className="max-h-44 overflow-auto whitespace-pre-wrap font-sans text-sm leading-6 text-[#24334a]">{cleanDocumentText(output) || streamProgress || "Waiting for the first words…"}</div></div>}
             </div>
           </div>
         </section>
@@ -1733,12 +1764,15 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div><p className="text-xs font-bold uppercase tracking-[.14em] text-[#1e64c8]">Result</p><h2 className="mt-1 text-xl font-bold">{portal.title}</h2></div>
             {output.trim() && <div className="flex flex-wrap gap-2">
+               <button disabled={busy} onClick={continueCurrentOutput} className="inline-flex items-center gap-2 rounded-md bg-[#1e64c8] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1956aa] disabled:opacity-50"><Play className="size-3.5" />Continue</button>
+               <button disabled={busy} onClick={() => { setRedoInstructions(instructions); setShowRedoInstructions((current) => !current); }} className="inline-flex items-center gap-2 rounded-md border border-[#1e64c8] bg-white px-3 py-2 text-xs font-semibold text-[#1e64c8] hover:bg-[#eef5ff] disabled:opacity-50"><Repeat2 className="size-3.5" />Redo</button>
               {portal.id === "coherence" && !coherenceImproved && <button disabled={busy} onClick={improveCoherence} className="inline-flex items-center gap-2 rounded-md bg-[#1e64c8] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1956aa] disabled:opacity-50"><Sparkles className="size-3.5" />Improve coherence</button>}
               {renderTransferControls()}
               <button disabled={!output.trim()} onClick={portal.id === "coherence" ? copyCoherenceReport : copyOutput} className="inline-flex items-center gap-2 rounded-md border border-[#b9c8db] bg-white px-3 py-2 text-xs font-semibold text-[#205cae] hover:bg-[#eef5ff] disabled:cursor-not-allowed disabled:opacity-50"><Copy className="size-3.5" />{copiedOutput ? "Copied" : portal.id === "coherence" ? "Copy report" : "Copy document"}</button>
               <button disabled={!output.trim()} onClick={portal.id === "coherence" ? downloadCoherenceReport : downloadOutput} className="inline-flex items-center gap-2 rounded-md border border-[#b9c8db] bg-white px-3 py-2 text-xs font-semibold text-[#205cae] hover:bg-[#eef5ff] disabled:cursor-not-allowed disabled:opacity-50"><Download className="size-3.5" />Download .txt</button>
             </div>}
           </div>
+           {showRedoInstructions && !busy && <div className="mt-4 rounded-lg border border-[#bfd2f1] bg-[#f5f9ff] p-4"><label className="block"><span className="mb-2 block text-sm font-semibold text-[#223750]">Customized instructions for redo</span><textarea value={redoInstructions} onChange={(event) => setRedoInstructions(event.target.value)} className="min-h-28 w-full resize-y rounded-md border border-[#b9c8db] bg-white p-3 text-sm leading-6 outline-none focus:ring-4 focus:ring-[#dbeafe]" placeholder="Enter exactly how this version should be redone." /></label><div className="mt-3 flex justify-end gap-2"><button type="button" onClick={() => setShowRedoInstructions(false)} className="rounded-md border border-[#b9c8db] bg-white px-3 py-2 text-xs font-semibold text-[#56647a]">Cancel</button><button type="button" disabled={!redoInstructions.trim()} onClick={redoCurrentOutput} className="rounded-md bg-[#1e64c8] px-4 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">Redo with these instructions</button></div></div>}
           {portal.id === "coherence" && <div className="mt-5"><CoherenceScorecardPanel scorecard={visibleScorecard} requestedProvider={model} evidenceProviders={evidenceProviders} skeletonProviderUsed={skeletonProviderUsed} auditProviderUsed={coherenceProviderUsed} busy={busy} /></div>}
           {portal.id === "coherence" && evidenceProgress && busy && <p className="mt-3 text-xs font-medium text-[#56647a]">{evidenceProgress}</p>}
           {skeleton && <details className="mt-5 rounded-lg bg-[#f5f7fa] p-4"><summary className="cursor-pointer text-sm font-semibold">View extracted skeleton</summary><div className="mt-3 whitespace-pre-wrap font-sans text-xs leading-5 text-[#46566e]">{cleanDocumentText(skeleton)}</div></details>}
@@ -1752,13 +1786,16 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
             <div><p className="text-xs font-bold uppercase tracking-[.14em] text-[#1e64c8]">Live document</p><h2 className="mt-1 text-lg font-bold">{portal.title}</h2></div>
             <div className="flex flex-wrap items-center justify-end gap-2">
               {busy && (output.trim() || skeleton.trim()) && <button type="button" onClick={saveAndStop} className="inline-flex items-center gap-2 rounded-md border border-[#d49a31] bg-[#fff8e8] px-3 py-2 text-xs font-semibold text-[#855b08] hover:bg-[#fff1cc]"><Save className="size-3.5" />Save and stop</button>}
-              {!busy && savedDraft?.active === active && (savedDraft.output.trim() || savedDraft.skeleton.trim()) && <button type="button" onClick={() => run({ resume: true })} className="inline-flex items-center gap-2 rounded-md bg-[#1e64c8] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1956aa]"><Repeat2 className="size-3.5" />Resume saved</button>}
+              {!busy && output.trim() && <button type="button" onClick={continueCurrentOutput} className="inline-flex items-center gap-2 rounded-md bg-[#1e64c8] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1956aa]"><Play className="size-3.5" />Continue</button>}
+              {!busy && output.trim() && <button type="button" onClick={() => { setRedoInstructions(instructions); setShowRedoInstructions((current) => !current); }} className="inline-flex items-center gap-2 rounded-md border border-[#1e64c8] bg-white px-3 py-2 text-xs font-semibold text-[#1e64c8] hover:bg-[#eef5ff]"><Repeat2 className="size-3.5" />Redo</button>}
+              {!busy && !output.trim() && savedDraft?.active === active && (savedDraft.output.trim() || savedDraft.skeleton.trim()) && <button type="button" onClick={() => run({ resume: true })} className="inline-flex items-center gap-2 rounded-md bg-[#1e64c8] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1956aa]"><Repeat2 className="size-3.5" />Resume saved</button>}
               {renderTransferControls()}
               {portal.id === "coherence" && output.trim() && !coherenceImproved && <button disabled={busy} onClick={improveCoherence} className="inline-flex items-center gap-2 rounded-md bg-[#1e64c8] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1956aa] disabled:opacity-50"><Sparkles className="size-3.5" />Improve coherence</button>}
               {output.trim() && <><button onClick={portal.id === "coherence" && !coherenceImproved ? copyCoherenceReport : copyOutput} className="inline-flex items-center gap-2 rounded-md border border-[#b9c8db] bg-white px-3 py-2 text-xs font-semibold text-[#205cae] hover:bg-[#eef5ff]"><Copy className="size-3.5" />{copiedOutput ? "Copied" : portal.id === "coherence" && !coherenceImproved ? "Copy report" : "Copy document"}</button><button onClick={portal.id === "coherence" && !coherenceImproved ? downloadCoherenceReport : downloadOutput} className="inline-flex items-center gap-2 rounded-md border border-[#b9c8db] bg-white px-3 py-2 text-xs font-semibold text-[#205cae] hover:bg-[#eef5ff]"><Download className="size-3.5" />Download .txt</button></>}
-              <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${busy ? "bg-[#eaf2ff] text-[#1e64c8]" : runFailed ? "bg-[#fff0ed] text-[#b53c1f]" : streamProgress.startsWith("Saved and stopped") ? "bg-[#fff3d6] text-[#855b08]" : "bg-[#e8f7ee] text-[#16703a]"}`}>{busy ? streamProgress || "Writing live…" : runFailed ? "Run failed" : streamProgress.startsWith("Saved and stopped") ? streamProgress : "Complete"}</span><button onClick={() => setShowStreamModal(false)} className="rounded-md p-2 text-[#56647a] hover:bg-[#f1f4f8]" aria-label="Close live document"><X className="size-5" /></button>
+              <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${busy ? "bg-[#eaf2ff] text-[#1e64c8]" : runFailed ? "bg-[#fff3d6] text-[#855b08]" : streamProgress.startsWith("Saved and stopped") ? "bg-[#fff3d6] text-[#855b08]" : "bg-[#e8f7ee] text-[#16703a]"}`}>{busy ? streamProgress || "Writing live…" : runFailed ? output.trim() ? "Needs continuation" : "Run interrupted" : streamProgress.startsWith("Saved and stopped") ? streamProgress : "Complete"}</span><button onClick={() => setShowStreamModal(false)} className="rounded-md p-2 text-[#56647a] hover:bg-[#f1f4f8]" aria-label="Close live document"><X className="size-5" /></button>
             </div>
           </div>
+          {showRedoInstructions && !busy && <div className="border-b border-[#dce1e9] bg-[#f5f9ff] px-5 py-4 sm:px-7"><label className="block"><span className="mb-2 block text-sm font-semibold text-[#223750]">Customized instructions for redo</span><textarea value={redoInstructions} onChange={(event) => setRedoInstructions(event.target.value)} className="min-h-24 w-full resize-y rounded-md border border-[#b9c8db] bg-white p-3 text-sm leading-6 outline-none focus:ring-4 focus:ring-[#dbeafe]" placeholder="Enter exactly how this version should be redone." /></label><div className="mt-3 flex justify-end gap-2"><button type="button" onClick={() => setShowRedoInstructions(false)} className="rounded-md border border-[#b9c8db] bg-white px-3 py-2 text-xs font-semibold text-[#56647a]">Cancel</button><button type="button" disabled={!redoInstructions.trim()} onClick={redoCurrentOutput} className="rounded-md bg-[#1e64c8] px-4 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">Redo with these instructions</button></div></div>}
           <div className="flex-1 overflow-auto bg-[#fbfdff] px-5 py-6 sm:px-10 sm:py-8">
             {portal.id === "coherence" && <div className="mb-7"><CoherenceScorecardPanel scorecard={visibleScorecard} requestedProvider={model} evidenceProviders={evidenceProviders} skeletonProviderUsed={skeletonProviderUsed} auditProviderUsed={coherenceProviderUsed} busy={busy} /></div>}
             {portal.id === "coherence" && evidenceProgress && busy && <p className="mb-5 text-xs font-medium text-[#56647a]">{evidenceProgress}</p>}

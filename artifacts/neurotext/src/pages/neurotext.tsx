@@ -377,7 +377,8 @@ async function consumeStream(
   response: Response,
   onEvent: (event: Record<string, unknown>) => void,
 ) {
-  if (!response.ok || !response.body) throw new Error();
+  if (!response.ok) throw new Error(`The server returned HTTP ${response.status}.`);
+  if (!response.body) throw new Error("The server returned no document stream.");
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
@@ -728,7 +729,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
     reader.readAsText(file);
   };
 
-  const run = async (options?: { resume?: boolean; draft?: SavedDraft; instructionOverride?: string }) => {
+  const run = async (options?: { resume?: boolean; draft?: SavedDraft; instructionOverride?: string; connectionRetry?: number }) => {
     const resumable = options?.resume
       ? options.draft ?? (savedDraft?.active === active ? savedDraft : null)
       : null;
@@ -848,7 +849,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
               });
             }
           }
-          if (event.type === "error") throw new Error();
+          if (event.type === "error") throw new Error(typeof event.message === "string" ? event.message : "The coherence stream was interrupted.");
         });
       } else {
         let documentStreamCompleted = false;
@@ -959,7 +960,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
             const failures = Array.isArray(event.failures) ? event.failures.filter((item): item is string => typeof item === "string") : [];
             throw new Error(failures.join(" "));
           }
-          if (event.type === "error") throw new Error();
+          if (event.type === "error") throw new Error(typeof event.message === "string" ? event.message : "The document stream was interrupted.");
         });
         if (!documentStreamCompleted) {
           throw new Error("The document stream ended before the requested paper completed.");
@@ -967,6 +968,17 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
       }
     } catch (error) {
       if (controller.signal.aborted) return;
+      const errorMessage = error instanceof Error ? error.message : "";
+      const connectionRetry = options?.connectionRetry ?? 0;
+      const allowanceDenied = /allowance|payment|subscription|HTTP 402/i.test(errorMessage);
+      if (!outputRef.current.trim() && !allowanceDenied && connectionRetry < 3) {
+        setStreamProgress(`The connection ended before the first words arrived. Reconnecting automatically · attempt ${connectionRetry + 2} of 4…`);
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        if (!controller.signal.aborted) {
+          await run({ ...options, connectionRetry: connectionRetry + 1 });
+        }
+        return;
+      }
       if (outputRef.current.trim()) {
         const interruptedDraft: SavedDraft = {
           active,
@@ -982,7 +994,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
         localStorage.setItem(SAVED_DRAFT_KEY, JSON.stringify(interruptedDraft));
         setSavedDraft(interruptedDraft);
       }
-      const reason = error instanceof Error && error.message ? ` ${error.message}` : "";
+      const reason = errorMessage ? ` ${errorMessage}` : "";
       setRunFailed(true);
       setStreamProgress(outputRef.current.trim()
         ? `Interrupted at ${countWords(outputRef.current).toLocaleString()} words.${reason} Resume saved is available.`

@@ -15,6 +15,12 @@ Provider failure must never leave a usable document short. Preserve every partia
 
 **How to apply:** Carry partial text through the full provider chain. Prompt each fallback to continue from the exact final sentence, forward only its new tokens, and return partial output only after every provider has been attempted.
 
+Generation targets above 10,000 words must take controlled rests after each 5,000-word milestone, with a longer rest at each 10,000-word milestone.
+
+**Why:** The user explicitly prioritizes avoiding provider overload, crashes, and token-related interruptions during thesis, dissertation, and other very long runs over uninterrupted generation speed.
+
+**How to apply:** Preserve the accumulated document, announce and flush each rest to the browser, send heartbeats throughout the pause, then continue with the next block immediately.
+
 Never restart either the frontend or API workflow while a document stream is active. A frontend restart reloads the browser and aborts its fetch even when the API process remains healthy.
 
 **Why:** Restarting the web workflow aborted two active `/api/functions/stream` requests simultaneously and destroyed the user-visible generation.

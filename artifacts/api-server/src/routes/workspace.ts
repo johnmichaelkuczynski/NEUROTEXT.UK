@@ -432,8 +432,21 @@ function inferLongFormTarget(explicitTarget: string | undefined, instructions: s
 function scheduledRest(previousWords: number, currentWords: number) {
   if (Math.floor(currentWords / 10000) > Math.floor(previousWords / 10000)) return { milestoneWords: Math.floor(currentWords / 10000) * 10000, durationMs: 15000 };
   if (Math.floor(currentWords / 5000) > Math.floor(previousWords / 5000)) return { milestoneWords: Math.floor(currentWords / 5000) * 5000, durationMs: 8000 };
-  if (Math.floor(currentWords / 1000) > Math.floor(previousWords / 1000)) return { milestoneWords: Math.floor(currentWords / 1000) * 1000, durationMs: 3000 };
   return null;
+}
+
+async function restLongFormStream(
+  res: import("express").Response,
+  durationMs: number,
+) {
+  const startedAt = Date.now();
+  while (!res.destroyed && !res.writableEnded && Date.now() - startedAt < durationMs) {
+    await new Promise((resolve) => setTimeout(resolve, Math.min(2000, durationMs - (Date.now() - startedAt))));
+    if (!res.destroyed && !res.writableEnded) {
+      writeStreamEvent(res, { type: "heartbeat" });
+      (res as import("express").Response & { flush?: () => void }).flush?.();
+    }
+  }
 }
 
 workspaceRouter.post("/functions/stream", async (req, res) => {
@@ -638,6 +651,23 @@ Continue directly from its final sentence. Add warranted analysis, implications,
         });
         (res as import("express").Response & { flush?: () => void }).flush?.();
         blockIndex += 1;
+        const rest = requestedTargetWords > 10000 ? scheduledRest(previousWords, generatedWords) : null;
+        if (rest && !res.destroyed && !res.writableEnded) {
+          writeStreamEvent(res, {
+            type: "rest_start",
+            milestoneWords: rest.milestoneWords,
+            durationMs: rest.durationMs,
+          });
+          (res as import("express").Response & { flush?: () => void }).flush?.();
+          await restLongFormStream(res, rest.durationMs);
+          if (!res.destroyed && !res.writableEnded) {
+            writeStreamEvent(res, {
+              type: "rest_done",
+              milestoneWords: rest.milestoneWords,
+            });
+            (res as import("express").Response & { flush?: () => void }).flush?.();
+          }
+        }
       }
       if (res.destroyed) return;
       writeStreamEvent(res, { type: "validation_start", generatedWords, targetWords: requestedTargetWords });

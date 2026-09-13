@@ -110,14 +110,23 @@ type FunctionWorkspace = {
 const SAVED_DRAFT_KEY = "neurotext-saved-generation";
 const FUNCTION_WORKSPACES_KEY = "neurotext-function-workspaces";
 const DEFAULT_FUNCTION_ONE_INSTRUCTIONS = "Turn the source material into a rigorous 5,000-word scholarly essay, replete with relevant legitimate scholarly studies and evidence. Include supported APA-style in-text citations and a complete APA 7 References bibliography. Do not invent sources, quotations, findings, authors, titles, dates, or publication details.";
+const DEFAULT_FUNCTION_TWO_INSTRUCTIONS = "Find strongest objections. Generate strongest counterobjections. Generate new version that is invulnerable to objections.";
 const DEFAULT_FUNCTION_ONE_TARGET_WORDS = "5000";
+const DEFAULT_FUNCTION_TWO_TARGET_WORDS = "8000";
 const DEFAULT_THESIS_TARGET_WORDS = "25000";
 const DEFAULT_DISSERTATION_TARGET_WORDS = "50000";
 
 function defaultTargetWords(functionId: string) {
   if (functionId === "manipulator") return DEFAULT_FUNCTION_ONE_TARGET_WORDS;
+  if (functionId === "objections") return DEFAULT_FUNCTION_TWO_TARGET_WORDS;
   if (functionId === "thesis") return DEFAULT_THESIS_TARGET_WORDS;
   if (functionId === "dissertation") return DEFAULT_DISSERTATION_TARGET_WORDS;
+  return "";
+}
+
+function defaultInstructions(functionId: string) {
+  if (functionId === "manipulator") return DEFAULT_FUNCTION_ONE_INSTRUCTIONS;
+  if (functionId === "objections") return DEFAULT_FUNCTION_TWO_INSTRUCTIONS;
   return "";
 }
 const DIAGNOSTIC_SOURCE = `Most people, including most psychologists, operate on the assumption that group psychology is to be understood in terms of individual psychology; that individuals have various self-directed drives and that, in group-contexts, these drives are somehow diverted away from their normal paths and pressed into aims that, not being self-directed, are alien to their own.
@@ -414,7 +423,8 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
   const [billingActive, setBillingActive] = useState(false);
 
   useEffect(() => {
-    if (active === "manipulator" && !instructions.trim()) setInstructions(DEFAULT_FUNCTION_ONE_INSTRUCTIONS);
+    const automaticInstructions = defaultInstructions(active);
+    if (automaticInstructions && !instructions.trim()) setInstructions(automaticInstructions);
     const automaticTarget = defaultTargetWords(active);
     if (automaticTarget && !targetWords.trim()) setTargetWords(automaticTarget);
   }, [active]);
@@ -588,7 +598,11 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
     persistWorkspace(active, currentWorkspace());
     const destination = destinationId === "manipulator"
       ? functionOneWorkspace(functionWorkspaces.current[destinationId])
-      : functionWorkspaces.current[destinationId] ?? emptyFunctionWorkspace();
+      : {
+          ...(functionWorkspaces.current[destinationId] ?? emptyFunctionWorkspace()),
+          instructions: functionWorkspaces.current[destinationId]?.instructions.trim()
+            || defaultInstructions(destinationId),
+        };
     const nextWorkspace = incomingDocument === undefined
       ? destination
       : { ...destination, text: incomingDocument, output: "", skeleton: "", score: null, coherenceScorecard: null, streamProgress: "" };
@@ -691,8 +705,8 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
     const sourceText = resumable?.text ?? text;
     const storedInstructions = resumable?.instructions ?? instructions;
     const storedTargetWords = resumable?.targetWords ?? targetWords;
-    const sourceInstructions = active === "manipulator" && !storedInstructions.trim()
-      ? DEFAULT_FUNCTION_ONE_INSTRUCTIONS
+    const sourceInstructions = !storedInstructions.trim() && defaultInstructions(active)
+      ? defaultInstructions(active)
       : storedInstructions;
     const sourceTargetWords = !storedTargetWords.trim() && defaultTargetWords(active)
       ? defaultTargetWords(active)

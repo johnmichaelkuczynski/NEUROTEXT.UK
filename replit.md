@@ -40,6 +40,7 @@ NEUROTEXT is a persistent, streaming document-intelligence platform with ten spe
 
 - Do not lower the function-specific minimum word targets.
 - Function 01 defaults to the supplied scholarly 5,000-word instruction.
+- Function 01 instructions and its uploaded or pasted source document are separate inputs and must never be merged into one editable field.
 - A transfer must not clear the source workspace or discard unrelated destination work.
 - Never expose provider keys in browser code, responses, logs, or chat.
 - Do not silently substitute one provider when the selected provider fails; return explicit evidence.

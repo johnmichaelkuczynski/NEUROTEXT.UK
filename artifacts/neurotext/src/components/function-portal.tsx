@@ -294,15 +294,15 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
             <h4 className="text-[11px] font-bold text-primary tracking-widest uppercase mb-4">
               Two ways to use function 1
             </h4>
-            <h5 className="font-bold text-foreground mb-4">Create something new or work from existing material</h5>
+            <h5 className="font-bold text-foreground mb-4">Keep your instructions and source document completely separate</h5>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="bg-white p-4 rounded-lg border border-border">
-                <h6 className="font-semibold text-sm mb-2">1. Start completely from scratch</h6>
-                <p className="text-xs text-muted-foreground">Enter what you want in the Instructions box. Leave the Source document box empty. NEUROTEXT will create the document entirely from your instructions.</p>
+                <h6 className="font-semibold text-sm mb-2">1. Prompt and instructions only</h6>
+                <p className="text-xs text-muted-foreground">Use the Instructions box only to tell NEUROTEXT what to do. Do not place the uploaded or pasted source document in this box.</p>
               </div>
               <div className="bg-white p-4 rounded-lg border border-border">
-                <h6 className="font-semibold text-sm mb-2">2. Modify or build from a source</h6>
-                <p className="text-xs text-muted-foreground">Enter what you want in the Instructions box, then paste or upload an existing paper, notes, outline, or other source material below.</p>
+                <h6 className="font-semibold text-sm mb-2">2. Source document only</h6>
+                <p className="text-xs text-muted-foreground">Paste or upload the paper, notes, outline, or other source material in the separate Source Document area below. It remains separate from your prompt.</p>
               </div>
             </div>
           </div>
@@ -345,9 +345,9 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                   <div className="text-[11px] font-bold text-primary tracking-widest uppercase mb-1">
                     Step 2 • Source Document • Optional
                   </div>
-                  <h4 className="font-bold text-foreground text-sm">
-                    Leave empty when starting from scratch, or add existing material
-                  </h4>
+                   <h4 className="font-bold text-foreground text-sm">
+                     Separate from the prompt — paste or upload source material only
+                   </h4>
                 </div>
               </div>
               

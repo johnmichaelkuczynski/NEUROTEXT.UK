@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "NEUROTEXT"
+description = "A document-intelligence platform with ten dedicated workspaces for creating, transforming, analyzing, profiling, translating, and transferring substantial documents with visible live generation."
+version = "1.0.0"
+id = "artifacts/neurotext"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22426
+
+[services.development]
+run = "pnpm --filter @workspace/neurotext run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/neurotext", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/neurotext/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22426"
+BASE_PATH = "/"

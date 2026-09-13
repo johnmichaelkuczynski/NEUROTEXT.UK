@@ -1,22 +1,24 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: NEUROTEXT document intelligence API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: workspaces
+  - name: usage
+  - name: visitors
+  - name: generation
+  - name: diagnostics
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +26,268 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /functions/workspaces:
+    get:
+      operationId: listWorkspaces
+      tags: [workspaces]
+      summary: List all function workspaces
+      responses:
+        "200":
+          description: Workspace list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FunctionWorkspace"
+  /functions/workspaces/{functionId}:
+    get:
+      operationId: getWorkspace
+      tags: [workspaces]
+      parameters:
+        - $ref: "#/components/parameters/FunctionId"
+      responses:
+        "200":
+          description: Workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FunctionWorkspace"
+    put:
+      operationId: saveWorkspace
+      tags: [workspaces]
+      parameters:
+        - $ref: "#/components/parameters/FunctionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkspaceInput"
+      responses:
+        "200":
+          description: Saved workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FunctionWorkspace"
+  /functions/transfer:
+    post:
+      operationId: transferDocument
+      tags: [workspaces]
+      summary: Copy output to another function workspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransferInput"
+      responses:
+        "200":
+          description: Transfer result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransferResult"
+  /usage:
+    get:
+      operationId: getUsage
+      tags: [usage]
+      responses:
+        "200":
+          description: Usage and access state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageState"
+  /visitors/register:
+    post:
+      operationId: registerVisitor
+      tags: [visitors]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VisitorInput"
+      responses:
+        "200":
+          description: Visitor count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VisitorState"
+  /functions/stream:
+    post:
+      operationId: streamFunction
+      tags: [generation]
+      summary: Stream generated document prose over SSE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StreamInput"
+      responses:
+        "200":
+          description: Server-sent document events
+          content:
+            text/event-stream:
+              schema:
+                type: string
+  /coherence/stream:
+    post:
+      operationId: streamCoherence
+      tags: [generation]
+      summary: Stream a coherence report over SSE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StreamInput"
+      responses:
+        "200":
+          description: Server-sent coherence events
+          content:
+            text/event-stream:
+              schema:
+                type: string
+  /diagnostics:
+    get:
+      operationId: getDiagnostics
+      tags: [diagnostics]
+      responses:
+        "200":
+          description: Owner diagnostic history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DiagnosticResult"
 components:
+  parameters:
+    FunctionId:
+      name: functionId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 10
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
+    FunctionWorkspace:
+      type: object
       required:
-        - status
-
+        [functionId, instructions, sourceDocument, targetWords, selectedModel,
+         thinker, quotationCount, output, skeleton, progress, status, provider,
+         updatedAt]
+      properties:
+        functionId: { type: integer, minimum: 1, maximum: 10 }
+        instructions: { type: string }
+        sourceDocument: { type: string }
+        targetWords: { type: integer, minimum: 100, maximum: 100000 }
+        selectedModel: { type: string }
+        thinker: { type: string }
+        quotationCount: { type: integer, minimum: 0, maximum: 20 }
+        output: { type: string }
+        skeleton: { type: string }
+        progress: { type: integer, minimum: 0, maximum: 100 }
+        status:
+          type: string
+          enum: [idle, preparing, writing, interrupted, failed, complete]
+        provider: { type: string }
+        updatedAt: { type: string }
+    WorkspaceInput:
+      type: object
+      required:
+        [instructions, sourceDocument, targetWords, selectedModel, thinker,
+         quotationCount, output, skeleton, progress, status, provider]
+      properties:
+        instructions: { type: string }
+        sourceDocument: { type: string }
+        targetWords: { type: integer, minimum: 100, maximum: 100000 }
+        selectedModel: { type: string }
+        thinker: { type: string }
+        quotationCount: { type: integer, minimum: 0, maximum: 20 }
+        output: { type: string }
+        skeleton: { type: string }
+        progress: { type: integer, minimum: 0, maximum: 100 }
+        status:
+          type: string
+          enum: [idle, preparing, writing, interrupted, failed, complete]
+        provider: { type: string }
+    TransferInput:
+      type: object
+      required: [sourceFunctionId, destinationFunctionId, document]
+      properties:
+        sourceFunctionId: { type: integer, minimum: 1, maximum: 10 }
+        destinationFunctionId: { type: integer, minimum: 1, maximum: 10 }
+        document: { type: string, minLength: 1 }
+    TransferResult:
+      type: object
+      required: [sourceFunctionId, destinationFunctionId, destination]
+      properties:
+        sourceFunctionId: { type: integer }
+        destinationFunctionId: { type: integer }
+        destination:
+          $ref: "#/components/schemas/FunctionWorkspace"
+    UsageState:
+      type: object
+      required: [accessState, operationsUsed, operationsRemaining, visitorCount]
+      properties:
+        accessState:
+          type: string
+          enum: [anonymous, signed-in, paid, owner, development-owner]
+        operationsUsed: { type: integer }
+        operationsRemaining: { type: integer }
+        visitorCount: { type: integer }
+        subscriptionStatus:
+          type: string
+        signedIn:
+          type: boolean
+    VisitorInput:
+      type: object
+      properties:
+        visitorId: { type: string }
+    VisitorState:
+      type: object
+      required: [visitorCount, registered]
+      properties:
+        visitorCount: { type: integer }
+        registered: { type: boolean }
+    StreamInput:
+      type: object
+      required: [functionId, instructions, sourceDocument, targetWords, selectedModel]
+      properties:
+        functionId: { type: integer, minimum: 1, maximum: 10 }
+        instructions: { type: string, minLength: 1 }
+        sourceDocument: { type: string }
+        targetWords: { type: integer, minimum: 100, maximum: 100000 }
+        selectedModel: { type: string }
+        thinker: { type: string }
+        quotationCount: { type: integer, minimum: 0, maximum: 20 }
+        resumeFrom: { type: string }
+        diagnostic: { type: boolean }
+    DiagnosticResult:
+      type: object
+      required: [id, functionId, functionName, status, elapsedMs, firstWordMs, wordCount, createdAt]
+      properties:
+        id: { type: string }
+        functionId: { type: integer }
+        functionName: { type: string }
+        status: { type: string, enum: [pass, fail, running] }
+        elapsedMs: { type: integer }
+        firstWordMs: { type: integer }
+        wordCount: { type: integer }
+        selectedModel: { type: string }
+        provider: { type: string }
+        cause: { type: string }
+        createdAt: { type: string }

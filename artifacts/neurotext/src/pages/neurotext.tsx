@@ -109,16 +109,34 @@ type FunctionWorkspace = {
 
 const SAVED_DRAFT_KEY = "neurotext-saved-generation";
 const FUNCTION_WORKSPACES_KEY = "neurotext-function-workspaces";
-const DEFAULT_FUNCTION_ONE_INSTRUCTIONS = "Turn the source material into a rigorous 5,000-word scholarly essay, replete with relevant legitimate scholarly studies and evidence. Include supported APA-style in-text citations and a complete APA 7 References bibliography. Do not invent sources, quotations, findings, authors, titles, dates, or publication details.";
+const DEFAULT_FUNCTION_ONE_INSTRUCTIONS = "GENERATE MAXIMALLY RIGOROUS, MAXIMALLY ACCURATE, MAXIMALLY SCHOLARLY OUTPUT. INCLUDE INTEXT CITATIONS AND BIBLIOGRAPHY.";
 const DEFAULT_FUNCTION_TWO_INSTRUCTIONS = "Find strongest objections. Generate strongest counterobjections. Generate new version that is invulnerable to objections.";
+const DEFAULT_FUNCTION_THREE_INSTRUCTIONS = "GENERATE FRESH SCREEN PLAY THAT DELINEATES CONTENT OF INPUT IN MANNER THAT IS BOTH ILLUMINATING AND ENTERTAINING.";
+const DEFAULT_FUNCTION_FOUR_INSTRUCTIONS = "GENERATE FRESH DIALOGUE SCREEN PLAY THAT DELINEATES CONTENT OF INPUT IN MANNER THAT IS BOTH ILLUMINATING AND ENTERTAINING.";
+const DEFAULT_FUNCTION_FIVE_INSTRUCTIONS = "GENERATE THOROUGH ANALYSIS OF COHERENCE";
+const DEFAULT_FUNCTION_SIX_INSTRUCTIONS = "GENERATE MAXIMALLY INTELLIGENT VERSION; KICK IT UP A NOTCH IN TERMS OF EMPRICAL RESEARCH, LOGICAL RIGOR, ACUITY, ETC.";
+const DEFAULT_FUNCTION_SEVEN_INSTRUCTIONS = "GENERATE BRISK INCISIVE DISCLAIMER-FREE (AND, IF NECESSSARY, SOMEWHAT CONJECTURAL) COGNTIVE PROFILE OF AUTHOR";
+const DEFAULT_FUNCTION_EIGHT_INSTRUCTIONS = "GENERATE HIGH-LEVEL MASTER'S THESIS. MAKE SURE IT SATISFIES ALL THE SUBSTANTIVE AND PROCEDURAL CRITERA.";
+const DEFAULT_FUNCTION_NINE_INSTRUCTIONS = "GENERATE HIGH-LEVEL DISSERTATION. MAKE SURE IT SATISFIES ALL THE SUBSTANTIVE AND PROCEDURAL CRITERA.";
+const DEFAULT_FUNCTION_TEN_INSTRUCTIONS = "GENERATE TRANSLATION";
 const DEFAULT_FUNCTION_ONE_TARGET_WORDS = "5000";
 const DEFAULT_FUNCTION_TWO_TARGET_WORDS = "8000";
-const DEFAULT_THESIS_TARGET_WORDS = "25000";
+const DEFAULT_FUNCTION_THREE_TARGET_WORDS = "5000";
+const DEFAULT_FUNCTION_FOUR_TARGET_WORDS = "5000";
+const DEFAULT_FUNCTION_FIVE_TARGET_WORDS = "6000";
+const DEFAULT_FUNCTION_SIX_TARGET_WORDS = "8000";
+const DEFAULT_FUNCTION_SEVEN_TARGET_WORDS = "5000";
+const DEFAULT_THESIS_TARGET_WORDS = "20000";
 const DEFAULT_DISSERTATION_TARGET_WORDS = "50000";
 
 function defaultTargetWords(functionId: string) {
   if (functionId === "manipulator") return DEFAULT_FUNCTION_ONE_TARGET_WORDS;
   if (functionId === "objections") return DEFAULT_FUNCTION_TWO_TARGET_WORDS;
+  if (functionId === "screenplay") return DEFAULT_FUNCTION_THREE_TARGET_WORDS;
+  if (functionId === "dialogue") return DEFAULT_FUNCTION_FOUR_TARGET_WORDS;
+  if (functionId === "coherence") return DEFAULT_FUNCTION_FIVE_TARGET_WORDS;
+  if (functionId === "maxintel") return DEFAULT_FUNCTION_SIX_TARGET_WORDS;
+  if (functionId === "profile") return DEFAULT_FUNCTION_SEVEN_TARGET_WORDS;
   if (functionId === "thesis") return DEFAULT_THESIS_TARGET_WORDS;
   if (functionId === "dissertation") return DEFAULT_DISSERTATION_TARGET_WORDS;
   return "";
@@ -127,6 +145,14 @@ function defaultTargetWords(functionId: string) {
 function defaultInstructions(functionId: string) {
   if (functionId === "manipulator") return DEFAULT_FUNCTION_ONE_INSTRUCTIONS;
   if (functionId === "objections") return DEFAULT_FUNCTION_TWO_INSTRUCTIONS;
+  if (functionId === "screenplay") return DEFAULT_FUNCTION_THREE_INSTRUCTIONS;
+  if (functionId === "dialogue") return DEFAULT_FUNCTION_FOUR_INSTRUCTIONS;
+  if (functionId === "coherence") return DEFAULT_FUNCTION_FIVE_INSTRUCTIONS;
+  if (functionId === "maxintel") return DEFAULT_FUNCTION_SIX_INSTRUCTIONS;
+  if (functionId === "profile") return DEFAULT_FUNCTION_SEVEN_INSTRUCTIONS;
+  if (functionId === "thesis") return DEFAULT_FUNCTION_EIGHT_INSTRUCTIONS;
+  if (functionId === "dissertation") return DEFAULT_FUNCTION_NINE_INSTRUCTIONS;
+  if (functionId === "translation") return DEFAULT_FUNCTION_TEN_INSTRUCTIONS;
   return "";
 }
 const DIAGNOSTIC_SOURCE = `Most people, including most psychologists, operate on the assumption that group psychology is to be understood in terms of individual psychology; that individuals have various self-directed drives and that, in group-contexts, these drives are somehow diverted away from their normal paths and pressed into aims that, not being self-directed, are alien to their own.
@@ -1662,7 +1688,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
               <span className="block text-xs font-bold uppercase tracking-[.14em] text-[#1e64c8]">Step 1 · Instructions</span>
               <span className="mt-1 block text-lg font-bold text-[#152238]">What should NEUROTEXT do?</span>
               <span className="mt-1 block text-sm text-[#56647a]">{portal.id === "manipulator" ? "Describe the new document you want created from scratch, or explain how NEUROTEXT should modify or use the optional source material below." : "Give the complete command for how the separate source document should be transformed, analyzed, refuted, translated, or used."}</span>
-              <textarea id="function-instructions" value={portal.id === "manipulator" && !instructions.trim() ? DEFAULT_FUNCTION_ONE_INSTRUCTIONS : instructions} onChange={(event) => setInstructions(event.target.value)} className="mt-4 min-h-36 w-full resize-y rounded-lg border-2 border-[#1e64c8] bg-white p-4 text-base leading-7 outline-none placeholder:text-[#8391a5] focus:ring-4 focus:ring-[#dbeafe]" placeholder="Example: Rewrite this paper as a rigorous 3,000-word scholarly argument. Preserve its central thesis, address the strongest objection, and do not invent citations." />
+              <textarea id="function-instructions" value={!instructions.trim() && defaultInstructions(portal.id) ? defaultInstructions(portal.id) : instructions} onChange={(event) => setInstructions(event.target.value)} className="mt-4 min-h-36 w-full resize-y rounded-lg border-2 border-[#1e64c8] bg-white p-4 text-base leading-7 outline-none placeholder:text-[#8391a5] focus:ring-4 focus:ring-[#dbeafe]" placeholder="Example: Rewrite this paper as a rigorous 3,000-word scholarly argument. Preserve its central thesis, address the strongest objection, and do not invent citations." />
             </label>
             {portal.id === "manipulator" && <div className="mt-4"><p className="mb-2 text-xs font-semibold text-[#56647a]">Optional instruction shortcuts — these fill the instruction box above:</p><div className="flex flex-wrap gap-2">{presets.map((preset) => <button type="button" key={preset} onClick={() => setInstructions(preset)} className="rounded border border-[#8eb0df] bg-white px-3 py-2 text-xs font-medium text-[#205cae] hover:bg-[#eef5ff]">{preset}</button>)}</div></div>}
           </div>

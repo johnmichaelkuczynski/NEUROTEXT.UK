@@ -885,6 +885,10 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
             const target = typeof event.targetWords === "number" ? event.targetWords.toLocaleString() : "";
             setStreamProgress(index < total ? `Block ${index} complete · ${generatedWords}${target ? ` of ${target}` : ""} words · preparing block ${index + 1}` : `Final block complete · ${generatedWords}${target ? ` of ${target}` : ""} words`);
           }
+          if (event.type === "provider_retry") {
+            const retry = typeof event.retry === "number" ? event.retry : 1;
+            setStreamProgress(`Providers unavailable · retry ${retry} · completed text preserved`);
+          }
           if (event.type === "rest_start") {
             const seconds = typeof event.durationMs === "number" ? Math.round(event.durationMs / 1000) : 3;
             const milestone = typeof event.milestoneWords === "number" ? event.milestoneWords.toLocaleString() : "";

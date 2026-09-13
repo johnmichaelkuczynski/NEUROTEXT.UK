@@ -455,6 +455,28 @@ workspaceRouter.post("/functions/stream", async (req, res) => {
       const blockPlan = planLongFormBlocks(requestedTargetWords);
       const estimatedBlocks = blockPlan.blocks.length;
       const nonNegotiableThesis = extractNonNegotiableThesis(instructions);
+      const streamUntilProgress = async (
+        prompt: string,
+        onToken: (token: string, providerUsed: string) => Promise<void> | void,
+        options: Parameters<typeof generateWithFallbackStreaming>[3],
+      ) => {
+        let retry = 0;
+        while (!res.destroyed && !res.writableEnded) {
+          try {
+            return await generateWithFallbackStreaming(provider, prompt, onToken, options);
+          } catch (error) {
+            retry += 1;
+            req.log.warn({ error, retry }, "All providers failed; retrying the unfinished stream");
+            writeStreamEvent(res, {
+              type: "provider_retry",
+              retry,
+              message: "All available providers were temporarily unavailable. Retrying without discarding the document.",
+            });
+            await new Promise((resolve) => setTimeout(resolve, Math.min(5000, retry * 1000)));
+          }
+        }
+        throw new Error("The browser disconnected before generation completed.");
+      };
       writeStreamEvent(res, createPlanStartEvent(requestedTargetWords, estimatedBlocks));
       (res as import("express").Response & { flush?: () => void }).flush?.();
       const blueprintPrompt = `Extract a rigorous global skeleton for a ${requestedTargetWords}-word NEUROTEXT document. This skeleton will constrain every generated block.
@@ -485,7 +507,7 @@ Do not dilute, reverse, or replace the source's thesis. Do not invent studies, q
       const openingBlockWords = Math.min(STREAM_BLOCK_WORDS, requestedTargetWords);
       const openingResult = resumeDocument?.trim()
         ? null
-        : await generateWithFallbackStreaming(provider, `Write the opening block of this long-form NEUROTEXT document now.
+        : await streamUntilProgress(`Write the opening block of this long-form NEUROTEXT document now.
 FUNCTION: ${functionId}
 TASK: ${operation}
 TARGET LENGTH FOR THE COMPLETE DOCUMENT: ${requestedTargetWords} words
@@ -504,7 +526,7 @@ Begin with the finished document's title and substantive opening prose. State an
         }, { quotes, maxWords: openingBlockWords + 30 });
       const blueprintResult = resumeSkeleton?.trim()
         ? { text: resumeSkeleton.trim(), providerUsed: "Saved outline" }
-        : await generateWithFallbackStreaming(provider, blueprintPrompt, (token, providerUsed) => {
+        : await streamUntilProgress(blueprintPrompt, (token, providerUsed) => {
           writeStreamEvent(res, { type: "skeleton_token", text: token, providerUsed });
         }, { quotes, maxWords: Math.min(800, Math.max(200, Math.ceil(requestedTargetWords * 0.12))) });
       writeStreamEvent(res, {
@@ -559,7 +581,7 @@ Begin with the finished document's title and substantive opening prose. State an
           });
           (res as import("express").Response & { flush?: () => void }).flush?.();
         };
-        const blockResult = await generateWithFallbackStreaming(provider, `Write the next block of a long-form NEUROTEXT document.
+        const blockResult = await streamUntilProgress(`Write the next block of a long-form NEUROTEXT document.
 FUNCTION: ${functionId}
 TASK: ${operation}
 LENGTH MODE: ${expansionMode}
@@ -595,7 +617,7 @@ Write only the next continuous portion of the finished document. Follow the skel
             text: " ",
             providerUsed: blockResult.providerUsed,
           });
-          const supplement = await generateWithFallbackStreaming(provider, `Continue this exact document block with approximately ${missingWords} additional substantive words.
+          const supplement = await streamUntilProgress(`Continue this exact document block with approximately ${missingWords} additional substantive words.
 ${FINISHED_DOCUMENT_RULES}
 BLOCK WRITTEN SO FAR:
 ${blockText}
@@ -616,13 +638,6 @@ Continue directly from its final sentence. Add warranted analysis, implications,
         });
         (res as import("express").Response & { flush?: () => void }).flush?.();
         blockIndex += 1;
-        const rest = scheduledRest(previousWords, generatedWords);
-        if (rest && !res.destroyed && generatedWords < minimumWords) {
-          writeStreamEvent(res, { type: "rest_start", ...rest, generatedWords });
-          (res as import("express").Response & { flush?: () => void }).flush?.();
-          await new Promise((resolve) => setTimeout(resolve, rest.durationMs));
-          writeStreamEvent(res, { type: "rest_done", milestoneWords: rest.milestoneWords, generatedWords });
-        }
       }
       if (res.destroyed) return;
       writeStreamEvent(res, { type: "validation_start", generatedWords, targetWords: requestedTargetWords });

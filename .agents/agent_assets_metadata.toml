@@ -14,3 +14,17 @@ mtime_ms = 1789376394126
 storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:6783c699-c6fc-4d2b-8171-1c5755990192/c9640b9e-b5a4-4696-b2fd-28e985bd6405/5c47176a-a9be-46f9-b027-d48b75d7fe3d"
 storage_version_token = "1789376412121800"
 content_type = "video/mp4"
+
+[[outputs]]
+id = "70IrLHn_1z0CiKO22Likz"
+uri = "file://outputs/Neurotext_Customizable_Research_American_No_Music.mp4"
+type = "video"
+title = "NEUROTEXT for Serious Researchers — American Narration"
+description = "Reused NEUROTEXT dissertation visuals with a friendly, authoritative American male narration focused on customization without micromanagement. No music."
+logical_id = "62d01525-b205-42c9-9161-ebffaaaa83f8"
+content_hash = "sha256:76c78f8db9c919437145910a1e7cb4e1151dd0078fa717808add9203951a8378"
+size = 13210328
+mtime_ms = 1789376743813
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:6783c699-c6fc-4d2b-8171-1c5755990192/62d01525-b205-42c9-9161-ebffaaaa83f8/b9754c40-3ca3-4ee0-a55a-260d4fe64da0"
+storage_version_token = "1789376761871858"
+content_type = "video/mp4"

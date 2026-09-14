@@ -430,9 +430,10 @@ function inferLongFormTarget(explicitTarget: string | undefined, instructions: s
 }
 
 function scheduledRest(previousWords: number, currentWords: number) {
-  if (Math.floor(currentWords / 10000) > Math.floor(previousWords / 10000)) return { milestoneWords: Math.floor(currentWords / 10000) * 10000, durationMs: 15000 };
-  if (Math.floor(currentWords / 5000) > Math.floor(previousWords / 5000)) return { milestoneWords: Math.floor(currentWords / 5000) * 5000, durationMs: 8000 };
-  if (Math.floor(currentWords / 1000) > Math.floor(previousWords / 1000)) return { milestoneWords: Math.floor(currentWords / 1000) * 1000, durationMs: 3000 };
+  if (Math.floor(currentWords / 10000) > Math.floor(previousWords / 10000)) return { milestoneWords: Math.floor(currentWords / 10000) * 10000, durationMs: 20000 };
+  if (Math.floor(currentWords / 5000) > Math.floor(previousWords / 5000)) return { milestoneWords: Math.floor(currentWords / 5000) * 5000, durationMs: 15000 };
+  if (Math.floor(currentWords / 2000) > Math.floor(previousWords / 2000)) return { milestoneWords: Math.floor(currentWords / 2000) * 2000, durationMs: 10000 };
+  if (Math.floor(currentWords / 1000) > Math.floor(previousWords / 1000)) return { milestoneWords: Math.floor(currentWords / 1000) * 1000, durationMs: 5000 };
   return null;
 }
 

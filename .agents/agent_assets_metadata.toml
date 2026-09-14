@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "ibYUSqSa0jRPVaQmUtGbR"
+uri = "file://outputs/Neurotext_Dissertation_Function_British_No_Music.mp4"
+type = "video"
+title = "NEUROTEXT Dissertation Function — British Narration"
+description = "1920×1080 video with a relaxed British male voiceover. The original audio was fully replaced; no music is included."
+logical_id = "c9640b9e-b5a4-4696-b2fd-28e985bd6405"
+content_hash = "sha256:d74a557654513540071f41574d2bea60ee3336596e39e8977148d9fcb3980086"
+size = 13067964
+mtime_ms = 1789376394126
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:6783c699-c6fc-4d2b-8171-1c5755990192/c9640b9e-b5a4-4696-b2fd-28e985bd6405/5c47176a-a9be-46f9-b027-d48b75d7fe3d"
+storage_version_token = "1789376412121800"
+content_type = "video/mp4"

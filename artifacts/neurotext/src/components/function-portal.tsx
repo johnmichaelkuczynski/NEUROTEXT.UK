@@ -107,6 +107,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
 
   useEffect(() => {
     if (initializedForId.current !== functionId) return;
+    if (targetWords < FUNCTION_MIN_WORDS[functionId]) return;
     
     const currentData = { instructions, sourceDocument, targetWords, selectedModel, thinker };
     const changed = 
@@ -131,6 +132,8 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
   }, [instructions, sourceDocument, targetWords, selectedModel, thinker, functionId, serverWorkspace, debouncedSave]);
 
   const handleRun = async () => {
+    const validatedTargetWords = Math.max(targetWords, FUNCTION_MIN_WORDS[functionId]);
+    if (validatedTargetWords !== targetWords) setTargetWords(validatedTargetWords);
     try {
       if (functionId === 5) {
          // Coherence evaluator
@@ -138,7 +141,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
             functionId,
             instructions,
             sourceDocument,
-            targetWords,
+             targetWords: validatedTargetWords,
             selectedModel,
             thinker
           }, undefined, '/api/coherence/stream');
@@ -147,7 +150,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
             data: {
               instructions,
               sourceDocument,
-              targetWords,
+              targetWords: validatedTargetWords,
               selectedModel,
               thinker,
               quotationCount: 0,
@@ -163,7 +166,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
           functionId,
           instructions,
           sourceDocument,
-          targetWords,
+          targetWords: validatedTargetWords,
           selectedModel,
           thinker
         });
@@ -172,7 +175,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
           data: {
             instructions,
             sourceDocument,
-            targetWords,
+            targetWords: validatedTargetWords,
             selectedModel,
             thinker,
             quotationCount: 0,
@@ -418,9 +421,15 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
               </Label>
               <Input 
                 type="number" 
-                value={targetWords}
-                onChange={(e) => setTargetWords(Math.max(parseInt(e.target.value) || 0, FUNCTION_MIN_WORDS[functionId]))}
+                value={targetWords || ''}
+                onChange={(e) => setTargetWords(Number(e.target.value))}
+                onBlur={() => {
+                  if (targetWords < FUNCTION_MIN_WORDS[functionId]) {
+                    setTargetWords(FUNCTION_MIN_WORDS[functionId]);
+                  }
+                }}
                 min={FUNCTION_MIN_WORDS[functionId]}
+                step={1000}
                 className="w-full text-sm"
               />
             </section>

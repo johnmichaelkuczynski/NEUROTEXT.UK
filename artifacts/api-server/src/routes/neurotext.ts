@@ -115,8 +115,16 @@ function normalizeWorkspace(functionId: number, payload: unknown, updatedAt = ne
 function promptFor(data: typeof StreamFunctionBody._output, current: string, remaining: number) {
   const functionName = FUNCTION_NAMES[data.functionId - 1];
   const continuity = current ? current.slice(-9000) : "";
+  const finalBlock = remaining <= 1700;
   const scholarly = [1, 2, 5, 6, 8, 9].includes(data.functionId)
-    ? "Use only well-established scholarly sources you can identify accurately. Include supported author-date in-text citations and end the final document with a matching References section. Never invent bibliographic details."
+    ? finalBlock
+      ? "Use only well-established scholarly sources you can identify accurately. Include supported author-date in-text citations. This is the final generation block: finish all remaining substantive sections first, then add exactly one matching References or Bibliography section as the final section of the entire document. Nothing may appear after that section. Never invent bibliographic details."
+      : "Use only well-established scholarly sources you can identify accurately and include supported author-date in-text citations. Do not write a References, Bibliography, Works Cited, sources list, acknowledgments, appendix, concluding back matter, or any other end matter in this block. Those belong only in the final generation block. Never invent bibliographic details."
+    : "";
+  const dissertationSequence = data.functionId === 9
+    ? finalBlock
+      ? "Complete the dissertation's remaining chapter content and final conclusion before writing the bibliography. The bibliography must be the last section of the dissertation."
+      : "Continue the dissertation's ordered chapters only. Do not insert a bibliography or references list between chapters, and do not prematurely conclude the dissertation."
     : "";
   return `You are NEUROTEXT Function ${String(data.functionId).padStart(2, "0")}: ${functionName}.
 Produce finished document prose only: no planning notes, generation commentary, markdown fences, quality reports, or internal labels.
@@ -125,6 +133,7 @@ Source material: ${data.sourceDocument || "(none; create from instructions)"}
 Target total: ${data.targetWords} words. This block should add approximately ${Math.min(1500, remaining)} substantive words.
 ${data.thinker && data.thinker !== "Standard NEUROTEXT style" ? `Use the intellectual perspective of ${data.thinker}, without fabricated quotations.` : ""}
 ${scholarly}
+${dissertationSequence}
 ${continuity ? `Continue the existing document without repeating its title, opening, completed sections, or claims. Recent context:\n${continuity}` : "Begin immediately with the title and opening prose."}
 Keep paragraphs to eight sentences or fewer. Preserve the central thesis, terminology, and continuity. Do not conclude until the whole requested document is complete.`;
 }

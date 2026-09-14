@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
@@ -13,13 +13,36 @@ import {
   Router as WouterRouter,
   Link
 } from 'wouter';
-import { useGetUsage } from '@workspace/api-client-react';
+import { useGetUsage, useRegisterVisitor } from '@workspace/api-client-react';
 
 const queryClient = new QueryClient();
 
 function SharedShell({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const { data: usage } = useGetUsage();
+  const [visitorCount, setVisitorCount] = useState<number | null>(null);
+  const registrationStarted = useRef(false);
+  const registerVisitor = useRegisterVisitor({
+    mutation: {
+      onSuccess: (result) => setVisitorCount(result.visitorCount),
+    },
+  });
+
+  useEffect(() => {
+    if (registrationStarted.current) return;
+    registrationStarted.current = true;
+    const storageKey = 'neurotext_visitor_id';
+    let visitorId = window.localStorage.getItem(storageKey);
+    if (!visitorId) {
+      visitorId = window.crypto.randomUUID();
+      window.localStorage.setItem(storageKey, visitorId);
+    }
+    registerVisitor.mutate({ data: { visitorId } });
+  }, [registerVisitor.mutate]);
+
+  useEffect(() => {
+    if (visitorCount === null && usage) setVisitorCount(usage.visitorCount);
+  }, [usage, visitorCount]);
   
   return (
     <div className="min-h-screen flex flex-col bg-background font-sans text-foreground">
@@ -31,6 +54,13 @@ function SharedShell({ children }: { children: ReactNode }) {
           </Link>
           
           <nav className="flex items-center gap-6 text-sm font-semibold">
+            <div
+              className="text-xs font-semibold tabular-nums text-muted-foreground"
+              aria-label={`${visitorCount ?? usage?.visitorCount ?? 0} total visitors`}
+              data-testid="visitor-counter"
+            >
+              Visitors {(visitorCount ?? usage?.visitorCount ?? 0).toLocaleString()}
+            </div>
             <Link href="/">
               <span className={`cursor-pointer transition-colors hover:text-foreground ${location === '/' ? 'text-foreground' : 'text-muted-foreground'}`}>
                 Workspace

@@ -1700,7 +1700,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
         <section className="mb-8 max-w-3xl">
           <p className="mb-3 text-xs font-bold uppercase tracking-[.16em] text-[#1e64c8]">Document intelligence platform</p>
           <h1 className="text-3xl font-bold tracking-tight text-[#12223a] sm:text-5xl">Work with a document. Get a coherent result.</h1>
-          <p className="mt-4 text-base leading-7 text-[#56647a]">Every function has its own dedicated document portal. Choose a function, provide its document, choose an LLM, then run it.</p>
+          <p className="mt-4 text-base leading-7 text-[#56647a]">Create, transform, evaluate, and refine long-form documents with NEUROTEXT, an AI document intelligence platform with ten dedicated writing and analysis tools. Every function has its own document portal: choose a function, provide its document, choose an LLM, then run it.</p>
         </section>
 
         <section className="mb-8 grid gap-2 sm:grid-cols-2 lg:grid-cols-5" aria-label="Functions">

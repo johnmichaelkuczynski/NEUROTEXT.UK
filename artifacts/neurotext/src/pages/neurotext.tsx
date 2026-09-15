@@ -461,6 +461,9 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
   const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionPlan | null>(null);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  const streamDialog = useRef<HTMLDivElement>(null);
+  const streamDialogClose = useRef<HTMLButtonElement>(null);
+  const streamDialogInvoker = useRef<HTMLElement | null>(null);
   const aiDetectionAbort = useRef<AbortController | null>(null);
   const streamAbort = useRef<AbortController | null>(null);
   const diagnosticLock = useRef(false);
@@ -483,6 +486,50 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
   }, [active]);
   const sourceRequired = ["objections", "coherence", "maxintel", "profile", "translation"].includes(active);
   const canRun = sourceRequired ? Boolean(text.trim()) : Boolean(text.trim() || instructions.trim());
+
+  useEffect(() => {
+    if (!showStreamModal) return;
+
+    streamDialogInvoker.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    streamDialogClose.current?.focus();
+
+    const handleDialogKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setShowStreamModal(false);
+        return;
+      }
+      if (event.key !== "Tab" || !streamDialog.current) return;
+
+      const focusable = Array.from(
+        streamDialog.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), details > summary, [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => !element.hasAttribute("hidden") && element.getClientRects().length > 0);
+      if (focusable.length === 0) {
+        event.preventDefault();
+        streamDialog.current.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleDialogKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleDialogKeyDown);
+      streamDialogInvoker.current?.focus();
+      streamDialogInvoker.current = null;
+    };
+  }, [showStreamModal]);
 
   useEffect(() => {
     outputRef.current = output;
@@ -1703,9 +1750,9 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
           <p className="mt-4 text-base leading-7 text-[#56647a]">Create, transform, evaluate, and refine long-form documents with NEUROTEXT, an AI document intelligence platform with ten dedicated writing and analysis tools. Every function has its own document portal: choose a function, provide its document, choose an LLM, then run it.</p>
         </section>
 
-        <section className="mb-8 grid gap-2 sm:grid-cols-2 lg:grid-cols-5" aria-label="Functions">
+        <section className="mb-8 grid gap-2 sm:grid-cols-2 lg:grid-cols-5" role="group" aria-label="Document functions">
           {portals.map((item) => (
-            <button key={item.id} disabled={busy && active !== item.id} onClick={() => switchFunction(item.id)} className={`rounded-lg border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-55 ${active === item.id ? "border-[#1e64c8] bg-[#eaf2ff] shadow-sm" : "border-[#dce1e9] bg-white hover:border-[#94b8ef]"}`}>
+            <button key={item.id} type="button" aria-pressed={active === item.id} disabled={busy && active !== item.id} onClick={() => switchFunction(item.id)} className={`rounded-lg border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-55 ${active === item.id ? "border-[#1e64c8] bg-[#eaf2ff] shadow-sm" : "border-[#dce1e9] bg-white hover:border-[#94b8ef]"}`}>
               <span className="text-xs font-bold text-[#1e64c8]">{item.number}</span>
               <span className="mt-2 block text-sm font-semibold leading-5">{item.title}</span>
               {((item.id === active ? output : functionWorkspaces.current[item.id]?.output) ?? "").trim() && <span className="mt-2 block text-xs font-medium text-[#16703a]">Paper retained</span>}
@@ -1762,14 +1809,14 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
           <div className="grid gap-7 p-5 lg:grid-cols-[1.15fr_.85fr] lg:p-7">
             <div>
               <p className="text-xs font-bold uppercase tracking-[.14em] text-[#1e64c8]">{portal.id === "manipulator" ? "Step 2 · Source document · Optional" : "Step 2 · Source document"}</p>
-              <label className="mb-2 mt-1 block text-lg font-bold">{portal.id === "manipulator" ? "Leave empty when starting from scratch, or add existing material" : "Material to transform, analyze, refute, or draw from"}</label>
+              <label htmlFor="source-document" className="mb-2 mt-1 block text-lg font-bold">{portal.id === "manipulator" ? "Leave empty when starting from scratch, or add existing material" : "Material to transform, analyze, refute, or draw from"}</label>
               <p className="mb-3 text-sm text-[#56647a]">{sourceRequired ? "This function requires source material. Paste or upload it here. Instructions belong only in the instruction box above." : "Optional: paste or upload source material here, or leave this empty to create entirely from the instruction box above."}</p>
                 <div onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); loadFile(event.dataTransfer.files[0]); }} className="rounded-lg border-2 border-dashed border-[#b9c8db] bg-[#fbfdff] p-4">
-                <textarea value={text} onChange={(event) => setText(event.target.value)} className="min-h-[230px] w-full resize-y bg-transparent text-sm leading-6 outline-none placeholder:text-[#8391a5]" placeholder={portal.placeholder} />
+                <textarea id="source-document" value={text} onChange={(event) => setText(event.target.value)} className="min-h-[230px] w-full resize-y bg-transparent text-sm leading-6 outline-none placeholder:text-[#8391a5]" placeholder={portal.placeholder} />
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[#e5e9ef] pt-3">
                   <span className="text-xs text-[#64748b]">Paste text, drag a file here, or upload a document/screenshot for OCR.</span>
                   <button onClick={() => fileInput.current?.click()} type="button" className="inline-flex items-center gap-2 rounded-md border border-[#b9c8db] bg-white px-3 py-2 text-xs font-semibold text-[#205cae]"><Upload className="size-4" />Upload document</button>
-                  <input ref={fileInput} className="hidden" type="file" accept=".txt,.md,.doc,.docx,.pdf,image/*" onChange={(event) => loadFile(event.target.files?.[0])} />
+                  <input ref={fileInput} aria-label="Upload source document" className="hidden" type="file" accept=".txt,.md,.doc,.docx,.pdf,image/*" onChange={(event) => loadFile(event.target.files?.[0])} />
                 </div>
                   <div className="mt-3 grid gap-2 border-t border-[#e5e9ef] pt-3 sm:grid-cols-[.7fr_1.3fr]">
                     <div className="rounded-md bg-[#f1f6fd] px-3 py-2.5 text-sm text-[#24334a]"><span className="font-semibold">{wordCount.toLocaleString()}</span> {wordCount === 1 ? "word" : "words"}</div>
@@ -1816,10 +1863,10 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
         </section>}
         </div>
       </main>
-      {showStreamModal && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0d1b2acc] p-3 sm:p-8" role="dialog" aria-modal="true" aria-label={`${portal.title} live output`}>
+      {showStreamModal && <div ref={streamDialog} tabIndex={-1} className="fixed inset-0 z-50 flex items-center justify-center bg-[#0d1b2acc] p-3 sm:p-8" role="dialog" aria-modal="true" aria-labelledby="live-document-title">
         <div className="flex h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
           <div className="flex items-center justify-between gap-4 border-b border-[#dce1e9] px-5 py-4 sm:px-7">
-            <div><p className="text-xs font-bold uppercase tracking-[.14em] text-[#1e64c8]">Live document</p><h2 className="mt-1 text-lg font-bold">{portal.title}</h2></div>
+            <div><p className="text-xs font-bold uppercase tracking-[.14em] text-[#1e64c8]">Live document</p><h2 id="live-document-title" className="mt-1 text-lg font-bold">{portal.title}</h2></div>
             <div className="flex flex-wrap items-center justify-end gap-2">
               {busy && (output.trim() || skeleton.trim()) && <button type="button" onClick={saveAndStop} className="inline-flex items-center gap-2 rounded-md border border-[#d49a31] bg-[#fff8e8] px-3 py-2 text-xs font-semibold text-[#855b08] hover:bg-[#fff1cc]"><Save className="size-3.5" />Save and stop</button>}
               {!busy && output.trim() && <button type="button" onClick={continueCurrentOutput} className="inline-flex items-center gap-2 rounded-md bg-[#1e64c8] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1956aa]"><Play className="size-3.5" />Continue</button>}
@@ -1828,7 +1875,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
               {renderTransferControls()}
               {portal.id === "coherence" && output.trim() && !coherenceImproved && <button disabled={busy} onClick={improveCoherence} className="inline-flex items-center gap-2 rounded-md bg-[#1e64c8] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1956aa] disabled:opacity-50"><Sparkles className="size-3.5" />Improve coherence</button>}
               {output.trim() && <><button onClick={portal.id === "coherence" && !coherenceImproved ? copyCoherenceReport : copyOutput} className="inline-flex items-center gap-2 rounded-md border border-[#b9c8db] bg-white px-3 py-2 text-xs font-semibold text-[#205cae] hover:bg-[#eef5ff]"><Copy className="size-3.5" />{copiedOutput ? "Copied" : portal.id === "coherence" && !coherenceImproved ? "Copy report" : "Copy document"}</button><button onClick={portal.id === "coherence" && !coherenceImproved ? downloadCoherenceReport : downloadOutput} className="inline-flex items-center gap-2 rounded-md border border-[#b9c8db] bg-white px-3 py-2 text-xs font-semibold text-[#205cae] hover:bg-[#eef5ff]"><Download className="size-3.5" />Download .txt</button></>}
-              <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${busy ? "bg-[#eaf2ff] text-[#1e64c8]" : runFailed ? "bg-[#fff3d6] text-[#855b08]" : streamProgress.startsWith("Saved and stopped") ? "bg-[#fff3d6] text-[#855b08]" : "bg-[#e8f7ee] text-[#16703a]"}`}>{busy ? streamProgress || "Writing live…" : runFailed ? "Action required" : streamProgress.startsWith("Saved and stopped") ? streamProgress : "Complete"}</span><button onClick={() => setShowStreamModal(false)} className="rounded-md p-2 text-[#56647a] hover:bg-[#f1f4f8]" aria-label="Close live document"><X className="size-5" /></button>
+              <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${busy ? "bg-[#eaf2ff] text-[#1e64c8]" : runFailed ? "bg-[#fff3d6] text-[#855b08]" : streamProgress.startsWith("Saved and stopped") ? "bg-[#fff3d6] text-[#855b08]" : "bg-[#e8f7ee] text-[#16703a]"}`}>{busy ? streamProgress || "Writing live…" : runFailed ? "Action required" : streamProgress.startsWith("Saved and stopped") ? streamProgress : "Complete"}</span><button ref={streamDialogClose} type="button" onClick={() => setShowStreamModal(false)} className="rounded-md p-2 text-[#56647a] hover:bg-[#f1f4f8]" aria-label="Close live document"><X className="size-5" /></button>
             </div>
           </div>
           {showRedoInstructions && !busy && <div className="border-b border-[#dce1e9] bg-[#f5f9ff] px-5 py-4 sm:px-7"><label className="block"><span className="mb-2 block text-sm font-semibold text-[#223750]">Customized instructions for redo</span><textarea value={redoInstructions} onChange={(event) => setRedoInstructions(event.target.value)} className="min-h-24 w-full resize-y rounded-md border border-[#b9c8db] bg-white p-3 text-sm leading-6 outline-none focus:ring-4 focus:ring-[#dbeafe]" placeholder="Enter exactly how this version should be redone." /></label><div className="mt-3 flex justify-end gap-2"><button type="button" onClick={() => setShowRedoInstructions(false)} className="rounded-md border border-[#b9c8db] bg-white px-3 py-2 text-xs font-semibold text-[#56647a]">Cancel</button><button type="button" disabled={!redoInstructions.trim()} onClick={redoCurrentOutput} className="rounded-md bg-[#1e64c8] px-4 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">Redo with these instructions</button></div></div>}

@@ -43,7 +43,19 @@ const FUNCTION_MIN_WORDS: Record<number, number> = {
 };
 
 const DEFAULT_INSTRUCTION = "Turn the source material into a rigorous 5,000-word scholarly essay, replete with relevant legitimate scholarly studies and evidence. Include supported APA-style in-text citations and a complete APA 7 References bibliography. Do not invent sources, quotations, findings, authors, titles, dates, or publication details.";
-const DEFAULT_MODEL = 'ZHI 1 · OpenAI GPT-5.6 Terra';
+const DEFAULT_MODEL = 'ZHI 6 · Perplexity Sonar Pro';
+const LEGACY_DEFAULT_MODEL = 'ZHI 1 · OpenAI GPT-5.6 Terra';
+
+function workspaceModel(workspace: FunctionWorkspace) {
+  const isUntouchedLegacyDefault =
+    workspace.selectedModel === LEGACY_DEFAULT_MODEL &&
+    workspace.status === 'idle' &&
+    !workspace.output &&
+    !workspace.provider;
+  return !workspace.selectedModel || isUntouchedLegacyDefault
+    ? DEFAULT_MODEL
+    : workspace.selectedModel;
+}
 
 interface FunctionPortalProps {
   functionId: number;
@@ -78,7 +90,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
       setInstructions(serverWorkspace.instructions || (functionId === 1 ? DEFAULT_INSTRUCTION : ''));
       setSourceDocument(serverWorkspace.sourceDocument || '');
       setTargetWords(Math.max(serverWorkspace.targetWords || 0, FUNCTION_MIN_WORDS[functionId]));
-      setSelectedModel(serverWorkspace.selectedModel || DEFAULT_MODEL);
+      setSelectedModel(workspaceModel(serverWorkspace));
       setThinker(serverWorkspace.thinker || '');
       
       lastSaved.current = {
@@ -391,6 +403,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                   <SelectValue placeholder="Select LLM" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="ZHI 6 · Perplexity Sonar Pro">ZHI 6 · Perplexity Sonar Pro</SelectItem>
                   <SelectItem value="ZHI 1 · OpenAI GPT-5.6 Terra">ZHI 1 · OpenAI GPT-5.6 Terra</SelectItem>
                   <SelectItem value="ZHI 2 · Anthropic Claude Sonnet 5">ZHI 2 · Anthropic Claude Sonnet 5</SelectItem>
                   <SelectItem value="ZHI 3 · xAI Grok 4.6">ZHI 3 · xAI Grok 4.6</SelectItem>

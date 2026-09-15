@@ -27,7 +27,7 @@ NEUROTEXT is a persistent, streaming document-intelligence platform with ten spe
 - All provider streams are normalized through the same NEUROTEXT SSE event protocol.
 - Each of the ten functions has an independently persisted workspace.
 - ZHI model labels are stable product-facing aliases; provider model identifiers remain server-side.
-- Grok and DeepSeek use Replit-managed OpenRouter access. OpenAI and Anthropic use their Replit-managed integrations. Venice AI uses `VENICE_API_KEY`.
+- Perplexity Sonar Pro, Grok, and DeepSeek use Replit-managed OpenRouter access. OpenAI and Anthropic use their Replit-managed integrations. Venice AI uses `VENICE_API_KEY`.
 
 ## Product
 
@@ -39,6 +39,7 @@ NEUROTEXT is a persistent, streaming document-intelligence platform with ten spe
 ## Important behavior
 
 - Do not lower the function-specific minimum word targets.
+- Perplexity Sonar Pro is the default LLM for new and untouched workspaces, including long-document generation.
 - Function 01 defaults to the supplied scholarly 5,000-word instruction.
 - Function 01 instructions and its uploaded or pasted source document are separate inputs and must never be merged into one editable field.
 - A transfer must not clear the source workspace or discard unrelated destination work.

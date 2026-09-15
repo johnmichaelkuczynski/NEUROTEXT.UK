@@ -47,8 +47,13 @@ const FUNCTION_NAMES = [
 const MINIMUMS = [4000, 6500, 4000, 4000, 4000, 8000, 4000, 20000, 45000, 4000];
 const DEFAULT_INSTRUCTION =
   "Turn the source material into a rigorous 5,000-word scholarly essay, replete with relevant legitimate scholarly studies and evidence. Include supported APA-style in-text citations and a complete APA 7 References bibliography. Do not invent sources, quotations, findings, authors, titles, dates, or publication details.";
+const DEFAULT_MODEL = "ZHI 6 · Perplexity Sonar Pro";
+const LEGACY_DEFAULT_MODEL = "ZHI 1 · OpenAI GPT-5.6 Terra";
 
 function selectedProvider(label: string) {
+  if (label.startsWith("ZHI 6")) {
+    return { kind: "openrouter" as const, model: "perplexity/sonar-pro", name: "Perplexity Sonar Pro via OpenRouter" };
+  }
   if (label.startsWith("ZHI 2")) {
     return { kind: "anthropic" as const, model: "claude-sonnet-5", name: "Anthropic Claude Sonnet 5" };
   }
@@ -61,7 +66,10 @@ function selectedProvider(label: string) {
   if (label.startsWith("ZHI 5")) {
     return { kind: "venice" as const, model: "zai-org-glm-5-1", name: "Venice AI" };
   }
-  return { kind: "openai" as const, model: "gpt-5.6-terra", name: "OpenAI GPT-5.6 Terra" };
+  if (label.startsWith("ZHI 1")) {
+    return { kind: "openai" as const, model: "gpt-5.6-terra", name: "OpenAI GPT-5.6 Terra" };
+  }
+  return { kind: "openrouter" as const, model: "perplexity/sonar-pro", name: "Perplexity Sonar Pro via OpenRouter" };
 }
 
 type WorkspacePayload = {
@@ -83,7 +91,7 @@ function defaultWorkspace(functionId: number): WorkspacePayload {
     instructions: functionId === 1 ? DEFAULT_INSTRUCTION : "",
     sourceDocument: "",
     targetWords: functionId === 1 ? 5000 : MINIMUMS[functionId - 1] ?? 4000,
-    selectedModel: "ZHI 1 · OpenAI GPT-5.6 Terra",
+    selectedModel: DEFAULT_MODEL,
     thinker: "Standard NEUROTEXT style",
     quotationCount: 0,
     output: "",
@@ -105,6 +113,14 @@ function wordCount(text: string) {
 
 function normalizeWorkspace(functionId: number, payload: unknown, updatedAt = new Date()) {
   const merged = { ...defaultWorkspace(functionId), ...(payload as object) } as WorkspacePayload;
+  if (
+    merged.selectedModel === LEGACY_DEFAULT_MODEL &&
+    merged.status === "idle" &&
+    !merged.output &&
+    !merged.provider
+  ) {
+    merged.selectedModel = DEFAULT_MODEL;
+  }
   return {
     functionId,
     ...merged,

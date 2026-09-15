@@ -20,7 +20,7 @@ serve = "static"
 publicDir = "artifacts/neurotext/dist/public"
 
 [[services.production.rewrites]]
-from = "/*"
+from = "/diagnostics"
 to = "/index.html"
 
 [services.env]

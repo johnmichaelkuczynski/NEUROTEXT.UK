@@ -1,7 +1,30 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
+
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/space-grotesk-latin.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'DM Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/dm-mono-400-latin.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'DM Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/dm-mono-500-latin.woff2') format('woff2');
+}
 
 @custom-variant dark (&:is(.dark *));
 
@@ -73,8 +96,8 @@
   --destructive-foreground: 42 33% 97%;
   --input: 38 18% 77%;
   --ring: 183 43% 62%;
-  --app-font-sans: 'Space Grotesk', ui-sans-serif, sans-serif;
-  --app-font-mono: 'DM Mono', ui-monospace, monospace;
+  --app-font-sans: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --app-font-mono: 'DM Mono', ui-monospace, SFMono-Regular, Consolas, monospace;
   --radius: 0.75rem;
   --elevate-1: rgba(18, 35, 47, .04);
   --elevate-2: rgba(18, 35, 47, .08);

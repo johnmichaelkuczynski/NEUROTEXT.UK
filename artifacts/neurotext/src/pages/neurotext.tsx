@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, Copy, Download, FileText, Loader2, Mail, Play, Repeat2, Save, ShieldCheck, Sparkles, Upload, X } from "lucide-react";
 import type { AuthUser } from "@/App";
 import { diagnosticTheses } from "@/data/diagnostic-theses";
+import { trackEvent } from "@/lib/analytics";
 
 type Portal = {
   id: string;
@@ -563,6 +564,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
 
   const startSubscription = async () => {
     setCheckoutBusy(true);
+    trackEvent("checkout_started", { location: "usage_banner" });
     try {
       const response = await fetch(api("/stripe/checkout"), { method: "POST", credentials: "include" });
       const data = await response.json() as { url?: string; error?: string };
@@ -577,6 +579,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
   };
 
   const openBillingPortal = async () => {
+    trackEvent("billing_portal_opened", { location: "subscription_status" });
     try {
       const response = await fetch(api("/stripe/portal"), { method: "POST", credentials: "include" });
       const data = await response.json() as { url?: string; error?: string };
@@ -683,6 +686,10 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
       ? destination
       : { ...destination, text: incomingDocument, output: "", skeleton: "", score: null, coherenceScorecard: null, streamProgress: "" };
     persistWorkspace(destinationId, nextWorkspace);
+    trackEvent("function_selected", {
+      function_id: destinationId,
+      transferred_output: incomingDocument !== undefined,
+    });
     setActive(destinationId);
     restoreWorkspace(nextWorkspace);
   };
@@ -749,6 +756,10 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
 
   const loadFile = async (file?: File) => {
     if (!file) return;
+    trackEvent("source_uploaded", {
+      function_id: active,
+      file_type: file.type.startsWith("image/") ? "image" : "document",
+    });
     if (file.type.startsWith("image/")) {
       setText("Extracting text from image…");
       try {
@@ -793,6 +804,15 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
     const sourceThinker = resumable?.thinker ?? thinker;
     const sourceQuotes = resumable?.quotes ?? quotes;
     if (sourceRequired ? !sourceText.trim() : !sourceText.trim() && !sourceInstructions.trim()) return;
+    if ((options?.connectionRetry ?? 0) === 0) {
+      trackEvent("generation_started", {
+        function_id: active,
+        provider: sourceModel,
+        target_words: Number(sourceTargetWords) || 0,
+        resumed: Boolean(resumable),
+        authenticated: Boolean(user),
+      });
+    }
     const controller = new AbortController();
     streamAbort.current = controller;
     streamedBlocks.current.clear();
@@ -867,6 +887,12 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
             if (index && total) setEvidenceProgress(`Indexing long document: section ${index} of ${total}`);
           }
           if (event.type === "done") {
+            trackEvent("generation_completed", {
+              function_id: active,
+              provider: typeof event.providerUsed === "string" ? event.providerUsed : sourceModel,
+              generated_words: typeof event.generatedWords === "number" ? event.generatedWords : countWords(outputRef.current),
+              resumed: Boolean(resumable),
+            });
             setScore(typeof event.coherenceScore === "number" ? event.coherenceScore : null);
             if (typeof event.providerUsed === "string") setCoherenceProviderUsed(event.providerUsed);
             const usage = event.providerUsage;
@@ -990,6 +1016,12 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
           if (event.type === "rest_done") setStreamProgress("Rest complete · preparing the next block");
           if (event.type === "done") {
             documentStreamCompleted = true;
+            trackEvent("generation_completed", {
+              function_id: active,
+              provider: typeof event.providerUsed === "string" ? event.providerUsed : sourceModel,
+              generated_words: typeof event.generatedWords === "number" ? event.generatedWords : countWords(outputRef.current),
+              resumed: Boolean(resumable),
+            });
             const generatedWords = typeof event.generatedWords === "number" ? event.generatedWords.toLocaleString() : "";
             setStreamProgress(generatedWords ? `Complete · ${generatedWords} words` : "All blocks complete");
           }
@@ -1038,6 +1070,11 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
           setSavedDraft(retryDraft);
         }
         setRunFailed(false);
+        trackEvent("generation_recovery_started", {
+          function_id: active,
+          recovery_number: connectionRetry + 1,
+          retained_words: countWords(outputRef.current),
+        });
         setStreamProgress(retainedOutput
           ? `Generation interrupted at ${countWords(outputRef.current).toLocaleString()} words. Every word is preserved · continuing automatically · recovery ${connectionRetry + 1}…`
           : `The connection ended before the first words arrived. Reconnecting automatically · recovery ${connectionRetry + 1}…`);
@@ -1069,6 +1106,11 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
       }
       const reason = errorMessage ? ` ${errorMessage}` : "";
       setRunFailed(true);
+      trackEvent("generation_access_required", {
+        function_id: active,
+        retained_words: countWords(outputRef.current),
+        authenticated: Boolean(user),
+      });
       setStreamProgress(`Generation paused because access is required.${reason}`);
     } finally {
       if (streamAbort.current === controller) {
@@ -1231,6 +1273,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
   const copyCoherenceReport = async () => {
     if (!output.trim() || !navigator.clipboard) return;
     await navigator.clipboard.writeText(coherenceReportText());
+    trackEvent("output_copied", { function_id: active, format: "coherence_report" });
     setCopiedOutput(true);
     window.setTimeout(() => setCopiedOutput(false), 1800);
   };
@@ -1243,12 +1286,14 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
     link.href = url;
     link.download = "neurotext-coherence-evaluation.txt";
     link.click();
+    trackEvent("output_downloaded", { function_id: active, format: "coherence_report" });
     URL.revokeObjectURL(url);
   };
 
   const copyOutput = async () => {
     if (!output.trim() || !navigator.clipboard) return;
     await navigator.clipboard.writeText(cleanDocumentText(output));
+    trackEvent("output_copied", { function_id: active, format: "document" });
     setCopiedOutput(true);
     window.setTimeout(() => setCopiedOutput(false), 1800);
   };
@@ -1262,6 +1307,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
     link.href = url;
     link.download = filename;
     link.click();
+    trackEvent("output_downloaded", { function_id: active, format: "document" });
     URL.revokeObjectURL(url);
   };
 

@@ -59,6 +59,8 @@ function Router() {
         <Route path="/page-3">{() => <DocumentTransformer />}</Route>
         <Route path="/page-4">{() => <ScreenplayGenerator key="scratch" />}</Route>
         <Route path="/page-5">{() => <ScreenplayGenerator key="adaptation" mode="adaptation" />}</Route>
+        <Route path="/page-6">{() => <ScreenplayGenerator key="dialogue" mode="dialogue" />}</Route>
+        <Route path="/page-7">{() => <ScreenplayGenerator key="dialogue-adaptation" mode="dialogue-adaptation" />}</Route>
         <Route path="/page-1">{() => <Neurotext user={user ?? null} onLogout={logout} loginUrl={api('/auth/google')} />}</Route>
         <Route path="/">{() => <Redirect to="/page-2" />}</Route>
         <Route>{() => <NotFound />}</Route>

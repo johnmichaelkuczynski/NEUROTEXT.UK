@@ -3,6 +3,7 @@ import { ArrowRight, Copy, Download, FileText, Loader2, Mail, Play, Repeat2, Sav
 import type { AuthUser } from "@/App";
 import { diagnosticTheses } from "@/data/diagnostic-theses";
 import { trackEvent } from "@/lib/analytics";
+import RewriteOutput from "@/components/rewrite-output";
 
 type Portal = {
   id: string;
@@ -1915,6 +1916,14 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
           {skeleton && <details className="mt-5 rounded-lg bg-[#f5f7fa] p-4"><summary className="cursor-pointer text-sm font-semibold">View extracted skeleton</summary><div className="mt-3 whitespace-pre-wrap font-sans text-xs leading-5 text-[#46566e]">{cleanDocumentText(skeleton)}</div></details>}
           <div className="mt-5 max-h-[640px] overflow-auto whitespace-pre-wrap rounded-lg border border-[#e5e9ef] bg-[#fbfdff] p-4 font-sans text-[15px] leading-7 text-[#24334a]">{(portal.id === "coherence" ? cleanCoherenceText(output) : cleanDocumentText(output)) || (busy ? "Writing the first section…" : "")}</div>
         </section>}
+        <div className="mt-7 rounded-xl border border-[#dce1e9] bg-white p-5 lg:p-7">
+          <RewriteOutput key={portal.id} output={output} onOutputChange={(revised) => {
+            commitOutput(revised);
+            if (portal.id === "coherence") { setScore(null); setCoherenceScorecard(null); }
+          }} busy={busy} onBusyChange={(value) => { setBusy(value); if (value) setShowStreamModal(false); }}
+            onStatusChange={setStreamProgress} onErrorChange={(message) => { if (message) setStreamProgress(message); }}
+            storageKey={`neurotext-original-${portal.id}`} documentKind={portal.id === "coherence" ? "coherence analysis report" : portal.title} />
+        </div>
     </>
   );
 

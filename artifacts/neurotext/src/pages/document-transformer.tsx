@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import WritingNavigation from "@/components/writing-navigation";
+import RewriteOutput from "@/components/rewrite-output";
 
 const DRAFT_KEY = "neurotext-document-transformer-draft";
 
@@ -301,6 +302,8 @@ export default function DocumentTransformer() {
             {outputActions}
           </section>
         )}
+        <RewriteOutput output={output} onOutputChange={setOutput} busy={busy} onBusyChange={setBusy}
+          onStatusChange={setStatus} onErrorChange={setError} storageKey={DRAFT_KEY} />
       </div>
     </main>
   );

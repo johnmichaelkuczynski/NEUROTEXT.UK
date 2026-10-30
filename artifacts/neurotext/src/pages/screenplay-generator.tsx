@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import WritingNavigation from "@/components/writing-navigation";
 import LiveGenerationPopup from "@/components/live-generation-popup";
+import RewriteOutput from "@/components/rewrite-output";
 
 const DRAFT_KEY = "neurotext-screenplay-draft";
 const ADAPTATION_DRAFT_KEY = "neurotext-screenplay-adaptation-draft";
@@ -145,6 +146,7 @@ export default function ScreenplayGenerator({ mode = "scratch" }: { mode?: Mode 
   const [contentSource, setContentSource] = useState(initial.contentSource);
   const [output, setOutput] = useState(initial.output);
   const [busy, setBusy] = useState(false);
+  const [rewritingOutput, setRewritingOutput] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [popupOpen, setPopupOpen] = useState(false);
@@ -334,7 +336,7 @@ export default function ScreenplayGenerator({ mode = "scratch" }: { mode?: Mode 
           >
             {busy ? (adaptation ? `Turning into ${documentKind}…` : `Generating ${documentKind}…`) : actionLabel}
           </button>
-          {busy && !popupOpen && (
+          {busy && !rewritingOutput && !popupOpen && (
             <button type="button" onClick={() => setPopupOpen(true)} className={btn}>Show live output</button>
           )}
         </div>
@@ -355,6 +357,9 @@ export default function ScreenplayGenerator({ mode = "scratch" }: { mode?: Mode 
             className="block min-h-64 w-full resize-y rounded-md border border-slate-300 bg-white p-3 font-mono text-base outline-none focus:ring-2 focus:ring-blue-600"
           />
         </div>
+        <RewriteOutput key={storageKey} output={output} onOutputChange={setOutput} busy={busy}
+          onBusyChange={(value) => { setBusy(value); setRewritingOutput(value); if (value) setPopupOpen(false); }}
+          onStatusChange={setStatus} onErrorChange={setError} storageKey={storageKey} documentKind={documentKind} />
       </div>
       <LiveGenerationPopup
         open={popupOpen}

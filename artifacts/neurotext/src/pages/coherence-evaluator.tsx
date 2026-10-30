@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import WritingNavigation from "@/components/writing-navigation";
 import LiveGenerationPopup from "@/components/live-generation-popup";
+import RewriteOutput from "@/components/rewrite-output";
 
 const DRAFT_KEY = "neurotext-coherence-evaluator-draft";
 const PAGE_TITLE = "Coherence evaluator";
@@ -113,6 +114,7 @@ export default function CoherenceEvaluator() {
   const [instructions, setInstructions] = useState(initial.instructions);
   const [output, setOutput] = useState(initial.output);
   const [busy, setBusy] = useState(false);
+  const [rewritingOutput, setRewritingOutput] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [popupOpen, setPopupOpen] = useState(false);
@@ -278,7 +280,7 @@ export default function CoherenceEvaluator() {
           >
             {busy ? "Evaluating coherence…" : "Evaluate coherence"}
           </button>
-          {busy && !popupOpen && (
+          {busy && !rewritingOutput && !popupOpen && (
             <button type="button" onClick={() => setPopupOpen(true)} className={btn}>Show live output</button>
           )}
         </div>
@@ -299,6 +301,9 @@ export default function CoherenceEvaluator() {
             className="block min-h-64 w-full resize-y rounded-md border border-slate-300 bg-white p-3 font-mono text-base outline-none focus:ring-2 focus:ring-blue-600"
           />
         </div>
+        <RewriteOutput output={output} onOutputChange={setOutput} busy={busy}
+          onBusyChange={(value) => { setBusy(value); setRewritingOutput(value); if (value) setPopupOpen(false); }}
+          onStatusChange={setStatus} onErrorChange={setError} storageKey={DRAFT_KEY} documentKind="coherence analysis report" />
       </div>
       <LiveGenerationPopup
         open={popupOpen}

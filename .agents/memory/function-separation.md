@@ -5,7 +5,9 @@ description: User requires distinct functions for writing from scratch and manip
 
 “Create from scratch” is one function. “Manipulate (rewrite?) text” is a separate function. Do not combine them.
 
-Keep everything on one page. “Create from Scratch” must be the first function, numbered 01, not 11; document manipulation is separate.
+The writing layout must show every function's actual form on one continuous page, not a selector that reveals one console at a time. Use ordinary numbers 1, 2, 3, not 01. “Document Creation” is first; “Document Manipulation” is second.
+
+The user then explicitly stopped layout work: create a new separate BLANK page. Put no layout, text, forms, or controls on it until the user supplies step-by-step instructions. Do not improve or fix the original page.
 
 **Why:** The user explicitly rejected the combined creator/manipulator as confusing.
 

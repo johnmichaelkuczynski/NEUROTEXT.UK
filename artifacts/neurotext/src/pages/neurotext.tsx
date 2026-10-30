@@ -405,7 +405,7 @@ async function consumeStream(
   }
 }
 
-export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = false }: { user: AuthUser | null; onLogout: () => void | Promise<void>; loginUrl: string; diagnosticsOnly?: boolean }) {
+export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = false, layout = "classic" }: { user: AuthUser | null; onLogout: () => void | Promise<void>; loginUrl: string; diagnosticsOnly?: boolean; layout?: "classic" | "continuous" }) {
   const isDevelopmentOwner = user?.id === "development-owner";
   const isPermanentOwner = isDevelopmentOwner || user?.email.trim().toLowerCase() === "johnmichaelkuczynski@gmail.com";
   const functionWorkspaces = useRef<Record<string, FunctionWorkspace>>(loadFunctionWorkspaces());
@@ -454,6 +454,8 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
   const [showRedoInstructions, setShowRedoInstructions] = useState(false);
   const [redoInstructions, setRedoInstructions] = useState("");
   const [billingActive, setBillingActive] = useState(false);
+  const [pendingRun, setPendingRun] = useState<string | null>(null);
+  const [, setStoredVersion] = useState(0);
 
   useEffect(() => {
     const automaticInstructions = defaultInstructions(active);
@@ -1739,81 +1741,97 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#f7f8fa] text-[#152238]">
-      <header className="border-b border-[#dce1e9] bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-5 px-5 py-4 lg:px-8">
-          <a href="/" className="text-xl font-bold tracking-tight text-[#12223a]">NEUROTEXT</a>
-          <div className="flex items-center gap-5 text-sm">
-            {!showStreamModal && <button type="button" onClick={startAgain} className="rounded border border-[#d9a79b] bg-white px-2 py-1 text-xs font-semibold text-[#a4432d] hover:bg-[#fff7f5]">ERASE EVERYTHING</button>}
-            {isPermanentOwner && (diagnosticsOnly ? <a className="font-semibold text-[#1e64c8] hover:underline" href={import.meta.env.BASE_URL}>Return to NEUROTEXT</a> : <a className="font-semibold text-[#1e64c8] hover:underline" href={`${import.meta.env.BASE_URL.replace(/\/$/, "")}/diagnostics`}>Diagnostics</a>)}
-            <a className="font-medium text-[#1e64c8] hover:underline" href="mailto:zhi@zhisystems.org"><Mail className="mr-1 inline size-4" />Contact us</a>
-            {user ? <><span className="hidden text-[#64748b] lg:inline">{isDevelopmentOwner ? "Development owner · Always signed in" : user.name}</span>{user.picture && <img src={user.picture} alt="" referrerPolicy="no-referrer" className="size-7 rounded-full" />}{!isDevelopmentOwner && <button type="button" onClick={onLogout} className="font-semibold text-[#1e64c8] hover:underline">Sign out</button>}</> : <a href={loginUrl} className="rounded-md bg-[#1e64c8] px-3 py-2 font-semibold text-white hover:bg-[#1956aa]">Sign in with Google</a>}
-            <span className="hidden text-[#64748b] sm:inline">Visitors: {visitorCount === null ? "—" : visitorCount.toLocaleString()}</span>
-          </div>
-        </div>
-      </header>
+  useEffect(() => {
+    if (!pendingRun || pendingRun !== active || busy) return;
+    setPendingRun(null);
+    void run();
+  }, [pendingRun, active, busy]);
 
-      <main className="mx-auto max-w-7xl px-5 py-8 lg:px-8 lg:py-12">
-        <section className={`${diagnosticsOnly ? "mb-7" : "hidden"} rounded-xl border border-[#dce1e9] bg-white p-5 shadow-sm lg:p-7`}>
-          <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-[#1e64c8]">Live diagnostics</p><h2 className="mt-1 text-xl font-bold">Functions 01–10 sequential diagnostic</h2><p className="mt-2 text-sm text-[#56647a]">Runs the fixed 3,000-word Function 01 research-paper test, then transfers each passing result through Functions 02–10. Every generated word is displayed exactly as received.</p></div><div className="flex flex-wrap items-end gap-3"><label className="text-xs font-semibold text-[#56647a]">Diagnostic model<select aria-label="First diagnostic model" value={diagnosticModel} disabled={anyDiagnosticRunning} onChange={(event) => setDiagnosticModel(event.target.value)} className="mt-1 block h-10 rounded-md border border-[#b9c8db] bg-white px-3 text-sm text-[#152238] outline-none disabled:opacity-50"><option value="GENIUS · Kuczynski">GENIUS 101 · Kuczynski</option>{models.map((item) => <option key={item} value={item}>{item}</option>)}</select></label><button disabled={anyDiagnosticRunning} onClick={runDiagnostics} className="inline-flex h-10 items-center gap-2 rounded-md border border-[#1e64c8] px-4 text-sm font-semibold text-[#1e64c8] hover:bg-[#eef5ff] disabled:opacity-50"><ShieldCheck className="size-4" />{diagnosing ? "Running sequential diagnostic…" : "Run Functions 01–10 diagnostic"}</button></div></div>
-          <div className="mt-5">{diagnostics.length === 0 ? <div className="rounded-lg bg-[#f5f7fa] p-5 text-sm text-[#64748b]">Ready. The fixed Function 01 source, exact research-paper prompt, 3,000-word target, eight-second first-word limit, and sequential transfers are built in.</div> : diagnostics.map((check) => <article key={check.id} className="rounded-lg border border-[#dce1e9] p-4"><div className="flex items-center justify-between gap-2"><h3 className="text-sm font-semibold">{check.title}</h3><span className={`rounded px-2 py-1 text-xs font-bold ${check.status === "pass" ? "bg-[#e8f7ee] text-[#16703a]" : check.status === "running" ? "bg-[#eaf2ff] text-[#1e64c8]" : "bg-[#fff0ed] text-[#b53c1f]"}`}>{check.status.toUpperCase()}</span></div><dl className="mt-4 grid gap-3 text-xs sm:grid-cols-4"><div><dt className="font-semibold text-[#56647a]">Model used</dt><dd>{check.providerUsed}</dd></div><div><dt className="font-semibold text-[#56647a]">First generated word</dt><dd>{check.firstWordMs === null ? "No words received" : `${check.firstWordMs} ms`}</dd></div><div><dt className="font-semibold text-[#56647a]">Elapsed time</dt><dd>{check.elapsedMs} ms</dd></div><div><dt className="font-semibold text-[#56647a]">Generated words</dt><dd>{check.wordCount}</dd></div></dl><div className="mt-4"><p className="text-xs font-semibold text-[#56647a]">Complete verbatim generated transcript</p><div className="mt-2 max-h-[36rem] overflow-auto whitespace-pre-wrap rounded bg-[#f7f8fa] p-4 font-sans text-sm leading-6 text-[#24334a]">{check.output || "[No generated words received]"}</div></div></article>)}</div>
-          {diagnostics.some((check) => check.status === "fail") && !anyDiagnosticRunning && <button type="button" onClick={runDiagnostics} className="mt-4 rounded-md bg-[#1e64c8] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1956aa]">Automatically recover and rerun the same diagnostic</button>}
-        </section>
+  const storedWorkspace = (functionId: string): FunctionWorkspace => {
+    const stored = functionWorkspaces.current[functionId] ?? emptyFunctionWorkspace();
+    return functionId === "manipulator" ? functionOneWorkspace(stored) : { ...stored, instructions: stored.instructions.trim() || defaultInstructions(functionId) };
+  };
 
-        <section className={`${diagnosticsOnly ? "mb-7" : "hidden"} rounded-xl border border-[#dce1e9] bg-white p-5 shadow-sm lg:p-7`}>
-          <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-[#1e64c8]">Random-thesis diagnostics</p><h2 className="mt-1 text-xl font-bold">Second Functions 01–10 sequential diagnostic</h2><p className="mt-2 text-sm text-[#56647a]">Randomly selects one of 100 supplied theses, places it in Step 2, runs “TURN INTO SCHOLARLY 2000 WORD PAPER,” and transfers each passing result through Functions 02–10.</p></div><div className="flex flex-wrap items-end gap-3"><label className="text-xs font-semibold text-[#56647a]">Diagnostic model<select aria-label="Second diagnostic model" value={secondaryDiagnosticModel} disabled={anyDiagnosticRunning} onChange={(event) => setSecondaryDiagnosticModel(event.target.value)} className="mt-1 block h-10 rounded-md border border-[#b9c8db] bg-white px-3 text-sm text-[#152238] outline-none disabled:opacity-50"><option value="GENIUS · Kuczynski">GENIUS 101 · Kuczynski</option>{models.map((item) => <option key={item} value={item}>{item}</option>)}</select></label><button disabled={anyDiagnosticRunning} onClick={() => runSecondaryDiagnostics()} className="inline-flex h-10 items-center gap-2 rounded-md border border-[#1e64c8] px-4 text-sm font-semibold text-[#1e64c8] hover:bg-[#eef5ff] disabled:opacity-50"><ShieldCheck className="size-4" />{diagnosingSecondary ? "Running random-thesis diagnostic…" : "Run random-thesis Functions 01–10 diagnostic"}</button></div></div>
-          <div className="mt-5 rounded-lg bg-[#f5f7fa] p-5 text-sm text-[#56647a]"><span className="font-semibold text-[#223750]">Selected Step 2 thesis:</span> {selectedDiagnosticThesis || "A thesis will be randomly selected from the 100 supplied statements when the diagnostic starts."}</div>
-          <div className="mt-5">{secondaryDiagnostics.length === 0 ? <div className="rounded-lg border border-[#dce1e9] p-5 text-sm text-[#64748b]">Ready. The exact command, 2,000-word target, scholarly citation requirement, APA bibliography requirement, eight-second first-word limit, and sequential transfers are built in.</div> : secondaryDiagnostics.map((check) => <article key={check.id} className="rounded-lg border border-[#dce1e9] p-4"><div className="flex items-center justify-between gap-2"><h3 className="text-sm font-semibold">{check.title}</h3><span className={`rounded px-2 py-1 text-xs font-bold ${check.status === "pass" ? "bg-[#e8f7ee] text-[#16703a]" : check.status === "running" ? "bg-[#eaf2ff] text-[#1e64c8]" : "bg-[#fff0ed] text-[#b53c1f]"}`}>{check.status.toUpperCase()}</span></div><dl className="mt-4 grid gap-3 text-xs sm:grid-cols-4"><div><dt className="font-semibold text-[#56647a]">Model used</dt><dd>{check.providerUsed}</dd></div><div><dt className="font-semibold text-[#56647a]">First generated word</dt><dd>{check.firstWordMs === null ? "No words received" : `${check.firstWordMs} ms`}</dd></div><div><dt className="font-semibold text-[#56647a]">Elapsed time</dt><dd>{check.elapsedMs} ms</dd></div><div><dt className="font-semibold text-[#56647a]">Generated words</dt><dd>{check.wordCount}</dd></div></dl><div className="mt-4"><p className="text-xs font-semibold text-[#56647a]">Complete verbatim generated transcript</p><div className="mt-2 max-h-[36rem] overflow-auto whitespace-pre-wrap rounded bg-[#f7f8fa] p-4 font-sans text-sm leading-6 text-[#24334a]">{check.output || "[No generated words received]"}</div></div></article>)}</div>
-          {secondaryDiagnostics.some((check) => check.status === "fail") && !anyDiagnosticRunning && <button type="button" onClick={() => runSecondaryDiagnostics(true)} className="mt-4 rounded-md bg-[#1e64c8] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1956aa]">Automatically recover and rerun this same thesis</button>}
-        </section>
+  const updateStoredWorkspace = (functionId: string, changes: Partial<FunctionWorkspace>) => {
+    if (functionId === active) return;
+    persistWorkspace(functionId, { ...storedWorkspace(functionId), ...changes });
+    setStoredVersion((current) => current + 1);
+  };
 
-        <section className={`${diagnosticsOnly ? "mb-7" : "hidden"} rounded-xl border border-[#dce1e9] bg-white p-5 shadow-sm lg:p-7`}>
-          <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-[#1e64c8]">Extreme-length diagnostic</p><h2 className="mt-1 text-xl font-bold">50,000-word Function 01 diagnostic</h2><p className="mt-2 text-sm text-[#56647a]">Randomly selects one of the same 100 supplied theses and attempts one complete 50,000-word scholarly document in Function 01. It records every generated word and stops with an explicit failure if length or scholarly validation fails.</p></div><div className="flex flex-wrap items-end gap-3"><label className="text-xs font-semibold text-[#56647a]">Diagnostic model<select aria-label="50,000-word diagnostic model" value={fiftyKDiagnosticModel} disabled={anyDiagnosticRunning} onChange={(event) => setFiftyKDiagnosticModel(event.target.value)} className="mt-1 block h-10 rounded-md border border-[#b9c8db] bg-white px-3 text-sm text-[#152238] outline-none disabled:opacity-50"><option value="GENIUS · Kuczynski">GENIUS 101 · Kuczynski</option>{models.map((item) => <option key={item} value={item}>{item}</option>)}</select></label><button disabled={anyDiagnosticRunning} onClick={() => runFiftyKDiagnostics()} className="inline-flex h-10 items-center gap-2 rounded-md border border-[#1e64c8] px-4 text-sm font-semibold text-[#1e64c8] hover:bg-[#eef5ff] disabled:opacity-50"><ShieldCheck className="size-4" />{diagnosingFiftyK ? "Running 50,000-word diagnostic…" : "Run 50,000-word diagnostic"}</button></div></div>
-          <div className="mt-5 rounded-lg bg-[#f5f7fa] p-5 text-sm text-[#56647a]"><span className="font-semibold text-[#223750]">Selected thesis:</span> {selectedFiftyKThesis || "A thesis will be randomly selected from the same 100 supplied statements when the diagnostic starts."}</div>
-          <div className="mt-5">{fiftyKDiagnostics.length === 0 ? <div className="rounded-lg border border-[#dce1e9] p-5 text-sm text-[#64748b]">Ready. This test targets exactly 50,000 words, uses an eight-second first-word grade, permits a length-aware hard deadline, displays the complete transcript, and tests Function 01 only.</div> : fiftyKDiagnostics.map((check) => <article key={check.id} className="rounded-lg border border-[#dce1e9] p-4"><div className="flex items-center justify-between gap-2"><h3 className="text-sm font-semibold">{check.title}</h3><span className={`rounded px-2 py-1 text-xs font-bold ${check.status === "pass" ? "bg-[#e8f7ee] text-[#16703a]" : check.status === "running" ? "bg-[#eaf2ff] text-[#1e64c8]" : "bg-[#fff0ed] text-[#b53c1f]"}`}>{check.status.toUpperCase()}</span></div><dl className="mt-4 grid gap-3 text-xs sm:grid-cols-4"><div><dt className="font-semibold text-[#56647a]">Model used</dt><dd>{check.providerUsed}</dd></div><div><dt className="font-semibold text-[#56647a]">First generated word</dt><dd>{check.firstWordMs === null ? "No words received" : `${check.firstWordMs} ms`}</dd></div><div><dt className="font-semibold text-[#56647a]">Elapsed time</dt><dd>{check.elapsedMs} ms</dd></div><div><dt className="font-semibold text-[#56647a]">Generated words</dt><dd>{check.wordCount}</dd></div></dl><div className="mt-4"><p className="text-xs font-semibold text-[#56647a]">Complete verbatim generated transcript</p><div className="mt-2 max-h-[36rem] overflow-auto whitespace-pre-wrap rounded bg-[#f7f8fa] p-4 font-sans text-sm leading-6 text-[#24334a]">{check.output || "[No generated words received]"}</div></div></article>)}</div>
-          {fiftyKDiagnostics.some((check) => check.status === "fail") && !anyDiagnosticRunning && <button type="button" onClick={() => runFiftyKDiagnostics(true)} className="mt-4 rounded-md bg-[#1e64c8] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1956aa]">Automatically recover and rerun this same 50,000-word thesis</button>}
-        </section>
+  const runFromSection = (functionId: string) => {
+    if (busy) return;
+    if (functionId === active) {
+      void run();
+      return;
+    }
+    switchFunction(functionId);
+    setPendingRun(functionId);
+  };
 
-        <div className={diagnosticsOnly ? "hidden" : undefined}>
-        <section className={`mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3 text-sm ${!freeUsage?.unlimited && freeUsage?.remainingOperations === 0 ? "border-[#e7c98d] bg-[#fff8e8]" : "border-[#bfd2f1] bg-[#f5f9ff]"}`}>
-          <div>
-            <span className="font-semibold text-[#223750]">{freeUsage?.ownerAccess ? "Permanent owner access" : freeUsage?.unlimited ? "Development access" : billingActive ? "Paid NEUROTEXT access" : user ? "Google account free allowance" : "Anonymous trial"}</span>
-            <span className="ml-2 text-[#56647a]">{freeUsage?.ownerAccess ? "Highest tier · Unlimited operations · Never expires" : freeUsage?.unlimited ? "Unlimited — development is never subject to customer limits" : billingActive ? "Active — unlimited operations" : freeUsage ? `${freeUsage.remainingOperations} of ${freeUsage.limitOperations} substantial operations remaining` : "Checking free usage…"}</span>
-          </div>
-          {!freeUsage?.unlimited && !user ? <a href={loginUrl} className="rounded-md bg-[#1e64c8] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1956aa]">Sign in with Google for 20 more operations</a> : !freeUsage?.ownerAccess && !billingActive && user && freeUsage?.remainingOperations === 0 ? <button type="button" disabled={checkoutBusy || !subscriptionPlan?.active} onClick={startSubscription} className="rounded-md bg-[#1e64c8] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1956aa] disabled:opacity-60">{checkoutBusy ? "Opening Stripe checkout…" : "Subscribe"}</button> : null}
-        </section>
-        {billingActive && <section className="mb-8 rounded-xl border-4 border-[#168348] bg-[#eafaf1] p-6 shadow-md" role="status" aria-live="polite">
-          <p className="text-sm font-black uppercase tracking-[.18em] text-[#126638]">✓ {freeUsage?.ownerAccess ? "Permanent owner access" : "Subscription active"}</p>
-          <h2 className="mt-2 text-3xl font-black text-[#0b4d2a]">{freeUsage?.ownerAccess ? "Highest-tier unlimited access is permanently active" : subscriptionPlan?.name ?? "Paid subscription access is active"}</h2>
-          <p className="mt-3 text-base font-semibold text-[#245d3e]">{freeUsage?.ownerAccess ? "Stripe, subscriptions, paywalls, expiration, credit balances, and generation quotas are bypassed for this authenticated owner account." : subscriptionPlan?.description ?? "Your subscription is confirmed."}</p>
-          {!freeUsage?.ownerAccess && <button type="button" onClick={openBillingPortal} className="mt-5 rounded-md bg-[#126638] px-5 py-3 text-sm font-bold text-white hover:bg-[#0b4d2a]">Manage subscription and billing</button>}
-        </section>}
-        {!billingActive && latestPayment && <section className="mb-8 rounded-xl border-4 border-[#168348] bg-[#eafaf1] p-6 shadow-md" role="status" aria-live="polite">
-          <p className="text-sm font-black uppercase tracking-[.18em] text-[#126638]">✓ Payment received</p>
-          <h2 className="mt-2 text-3xl font-black text-[#0b4d2a]">{latestPayment.amount !== null && latestPayment.currency ? new Intl.NumberFormat("en-US", { style: "currency", currency: latestPayment.currency }).format(latestPayment.amount / 100) : "Your payment"} was successfully paid</h2>
-          <p className="mt-3 text-base font-semibold text-[#245d3e]">{latestPayment.mode === "subscription" ? "Your subscription payment was received. Subscription activation is being confirmed." : "Your one-time Stripe payment is confirmed."}</p>
-        </section>}
-        <section className="mb-8 max-w-3xl">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[.16em] text-[#1e64c8]">Document intelligence platform</p>
-          <h1 className="text-3xl font-bold tracking-tight text-[#12223a] sm:text-5xl">Work with a document. Get a coherent result.</h1>
-          <p className="mt-4 text-base leading-7 text-[#56647a]">Choose a function below. Create a new document, rewrite existing text, or use one of the other writing and analysis tools.</p>
-        </section>
+  const continuousOrder = [...portals.filter((item) => item.id === "creator"), ...portals.filter((item) => item.id !== "creator")];
+  const continuousTitle = (item: Portal) => item.id === "creator" ? "Document Creation" : item.title;
+  const continuousAction = (item: Portal) => item.id === "creator" ? "Create" : item.id === "manipulator" ? "Rewrite" : item.action;
+  const sourceRequiredFor = (functionId: string) => ["manipulator", "objections", "coherence", "maxintel", "profile", "translation"].includes(functionId);
 
-        <section className="mb-8 grid gap-2 sm:grid-cols-2 lg:grid-cols-5" role="group" aria-label="Document functions">
-          {[...portals.filter((item) => item.id === "creator"), ...portals.filter((item) => item.id !== "creator")].map((item) => (
-            <button key={item.id} type="button" aria-pressed={active === item.id} disabled={busy && active !== item.id} onClick={() => switchFunction(item.id)} className={`rounded-lg border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-55 ${active === item.id ? "border-[#1e64c8] bg-[#eaf2ff] shadow-sm" : "border-[#dce1e9] bg-white hover:border-[#94b8ef]"}`}>
-              <span className="text-xs font-bold text-[#1e64c8]">{item.number}</span>
-              <span className="mt-2 block text-sm font-semibold leading-5">{item.title}</span>
-              {((item.id === active ? output : functionWorkspaces.current[item.id]?.output) ?? "").trim() && <span className="mt-2 block text-xs font-medium text-[#16703a]">Paper retained</span>}
-            </button>
-          ))}
-        </section>
+  const renderContinuousFunctions = () => (
+    <div className="space-y-10">
+      {continuousOrder.map((item, index) => {
+        const heading = `${index + 1}. ${continuousTitle(item)}`;
+        if (item.id === active) {
+          return (
+            <section key={item.id} aria-labelledby={`heading-${item.id}`} data-testid={`section-function-${item.id}`}>
+              <h2 id={`heading-${item.id}`} className="mb-4 text-2xl font-bold tracking-tight text-[#12223a]">{heading}</h2>
+              {renderActiveWorkspace()}
+            </section>
+          );
+        }
+        const stored = storedWorkspace(item.id);
+        const isCreator = item.id === "creator";
+        const isManipulator = item.id === "manipulator";
+        const ready = isCreator ? Boolean(stored.instructions.trim()) : sourceRequiredFor(item.id) ? Boolean(stored.text.trim()) : Boolean(stored.text.trim() || stored.instructions.trim());
+        const storedOutput = cleanDocumentText(stored.output ?? "");
+        const sourceBox = !isCreator && (
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold text-[#223750]">{isManipulator ? "Document to change" : sourceRequiredFor(item.id) ? "Your text" : "Your text (optional)"}</span>
+            <textarea data-testid={`input-text-${item.id}`} value={stored.text} disabled={busy} onChange={(event) => updateStoredWorkspace(item.id, { text: event.target.value })} placeholder={item.placeholder} className="min-h-40 w-full resize-y rounded-lg border border-[#b9c8db] bg-[#fbfdff] p-3 text-sm leading-6 outline-none placeholder:text-[#8391a5] focus:border-[#1e64c8] focus:ring-4 focus:ring-[#dbeafe] disabled:opacity-60" />
+          </label>
+        );
+        const instructionBox = (
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold text-[#223750]">{isCreator ? "What do you want to create?" : isManipulator ? "Requested changes" : "Instructions"}</span>
+            <textarea data-testid={`input-instructions-${item.id}`} value={stored.instructions} disabled={busy} onChange={(event) => updateStoredWorkspace(item.id, { instructions: event.target.value })} placeholder={isCreator ? "Describe the document you want written." : isManipulator ? "Describe how the document should be changed." : ""} className={`${isCreator ? "min-h-36 border-2 border-[#1e64c8]" : isManipulator ? "min-h-24 border border-[#b9c8db]" : "min-h-20 border border-[#b9c8db]"} w-full resize-y rounded-lg bg-white p-3 text-sm leading-6 outline-none placeholder:text-[#8391a5] focus:ring-4 focus:ring-[#dbeafe] disabled:opacity-60`} />
+          </label>
+        );
+        return (
+          <section key={item.id} aria-labelledby={`heading-${item.id}`} data-testid={`section-function-${item.id}`} className="rounded-xl border border-[#dce1e9] bg-white p-5 shadow-sm sm:p-7">
+            <h2 id={`heading-${item.id}`} className="text-2xl font-bold tracking-tight text-[#12223a]">{heading}</h2>
+            <p className="mt-1 text-sm text-[#56647a]">{item.description}</p>
+            <div className="mt-5 space-y-4">
+              {isManipulator ? <>{sourceBox}{instructionBox}</> : <>{instructionBox}{sourceBox}</>}
+              <div className="flex flex-wrap items-center gap-3">
+                <button type="button" data-testid={`button-run-${item.id}`} disabled={busy || !ready} onClick={() => runFromSection(item.id)} className="inline-flex items-center gap-2 rounded-md bg-[#1e64c8] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#1956aa] disabled:cursor-not-allowed disabled:opacity-50"><Play className="size-4" />{continuousAction(item)}</button>
+                <button type="button" data-testid={`button-settings-${item.id}`} disabled={busy} onClick={() => switchFunction(item.id)} className="text-xs font-semibold text-[#1e64c8] hover:underline disabled:opacity-50">Model, length, and other settings</button>
+                {busy && <span className="text-xs text-[#64748b]">Another function is running. Wait for it to finish.</span>}
+              </div>
+              {storedOutput && (
+                <div className="rounded-lg border border-[#bfd2f1] bg-[#f5f9ff] p-3" data-testid={`text-saved-output-${item.id}`}>
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs font-bold uppercase tracking-[.12em] text-[#1e64c8]"><span>Saved result · {countWords(storedOutput).toLocaleString()} words</span><button type="button" disabled={busy} onClick={() => switchFunction(item.id)} className="font-semibold normal-case tracking-normal hover:underline disabled:opacity-50">Open result to copy, download, continue, or redo</button></div>
+                  <div className="max-h-40 overflow-auto whitespace-pre-wrap text-sm leading-6 text-[#24334a]">{storedOutput}</div>
+                </div>
+              )}
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
 
+  const renderActiveWorkspace = () => (
+    <>
         <section id="function-workspace" className="scroll-mt-4 rounded-xl border border-[#dce1e9] bg-white shadow-sm">
           <div className="border-b border-[#dce1e9] px-5 py-5 sm:px-7">
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <div><p className="text-xs font-bold uppercase tracking-[.14em] text-[#1e64c8]">Function {portal.number}</p><h2 className="mt-1 text-2xl font-bold">{portal.title}</h2><p className="mt-2 text-sm text-[#56647a]">{portal.description}</p></div>
+              <div>{layout === "classic" && <p className="text-xs font-bold uppercase tracking-[.14em] text-[#1e64c8]">Function {portal.number}</p>}<h2 className="mt-1 text-2xl font-bold">{layout === "continuous" ? continuousTitle(portal) : portal.title}</h2><p className="mt-2 text-sm text-[#56647a]">{portal.description}</p></div>
             </div>
           </div>
           <div className="border-b border-[#dce1e9] bg-[#f5f9ff] p-5 sm:p-7">
@@ -1836,7 +1854,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
             )}
             <label htmlFor="function-instructions" className="block">
               <span className="block text-xs font-bold uppercase tracking-[.14em] text-[#1e64c8]">Step 1 · Instructions</span>
-              <span className="mt-1 block text-lg font-bold text-[#152238]">{portal.id === "creator" ? "What do you want written?" : portal.id === "manipulator" ? "How should the text be changed?" : "What should NEUROTEXT do?"}</span>
+              <span className="mt-1 block text-lg font-bold text-[#152238]">{portal.id === "creator" ? (layout === "continuous" ? "What do you want to create?" : "What do you want written?") : portal.id === "manipulator" ? "How should the text be changed?" : "What should NEUROTEXT do?"}</span>
               {portal.id !== "creator" && portal.id !== "manipulator" && <span className="mt-1 block text-sm text-[#56647a]">Describe what you want done with the text below.</span>}
               <textarea id="function-instructions" value={!instructions.trim() && defaultInstructions(portal.id) ? defaultInstructions(portal.id) : instructions} onChange={(event) => setInstructions(event.target.value)} className="mt-4 min-h-36 w-full resize-y rounded-lg border-2 border-[#1e64c8] bg-white p-4 text-base leading-7 outline-none placeholder:text-[#8391a5] focus:ring-4 focus:ring-[#dbeafe]" placeholder="Example: Rewrite this paper as a rigorous 3,000-word scholarly argument. Preserve its central thesis, address the strongest objection, and do not invent citations." />
             </label>
@@ -1897,6 +1915,82 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
           {skeleton && <details className="mt-5 rounded-lg bg-[#f5f7fa] p-4"><summary className="cursor-pointer text-sm font-semibold">View extracted skeleton</summary><div className="mt-3 whitespace-pre-wrap font-sans text-xs leading-5 text-[#46566e]">{cleanDocumentText(skeleton)}</div></details>}
           <div className="mt-5 max-h-[640px] overflow-auto whitespace-pre-wrap rounded-lg border border-[#e5e9ef] bg-[#fbfdff] p-4 font-sans text-[15px] leading-7 text-[#24334a]">{(portal.id === "coherence" ? cleanCoherenceText(output) : cleanDocumentText(output)) || (busy ? "Writing the first section…" : "")}</div>
         </section>}
+    </>
+  );
+
+  return (
+    <div className="min-h-screen bg-[#f7f8fa] text-[#152238]">
+      <header className="border-b border-[#dce1e9] bg-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-5 px-5 py-4 lg:px-8">
+          <a href="/" className="text-xl font-bold tracking-tight text-[#12223a]">NEUROTEXT</a>
+          <div className="flex items-center gap-5 text-sm">
+            {!showStreamModal && <button type="button" onClick={startAgain} className="rounded border border-[#d9a79b] bg-white px-2 py-1 text-xs font-semibold text-[#a4432d] hover:bg-[#fff7f5]">ERASE EVERYTHING</button>}
+            {isPermanentOwner && (diagnosticsOnly ? <a className="font-semibold text-[#1e64c8] hover:underline" href={import.meta.env.BASE_URL}>Return to NEUROTEXT</a> : <a className="font-semibold text-[#1e64c8] hover:underline" href={`${import.meta.env.BASE_URL.replace(/\/$/, "")}/diagnostics`}>Diagnostics</a>)}
+            <a className="font-medium text-[#1e64c8] hover:underline" href="mailto:zhi@zhisystems.org"><Mail className="mr-1 inline size-4" />Contact us</a>
+            {user ? <><span className="hidden text-[#64748b] lg:inline">{isDevelopmentOwner ? "Development owner · Always signed in" : user.name}</span>{user.picture && <img src={user.picture} alt="" referrerPolicy="no-referrer" className="size-7 rounded-full" />}{!isDevelopmentOwner && <button type="button" onClick={onLogout} className="font-semibold text-[#1e64c8] hover:underline">Sign out</button>}</> : <a href={loginUrl} className="rounded-md bg-[#1e64c8] px-3 py-2 font-semibold text-white hover:bg-[#1956aa]">Sign in with Google</a>}
+            <span className="hidden text-[#64748b] sm:inline">Visitors: {visitorCount === null ? "—" : visitorCount.toLocaleString()}</span>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-7xl px-5 py-8 lg:px-8 lg:py-12">
+        <section className={`${diagnosticsOnly ? "mb-7" : "hidden"} rounded-xl border border-[#dce1e9] bg-white p-5 shadow-sm lg:p-7`}>
+          <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-[#1e64c8]">Live diagnostics</p><h2 className="mt-1 text-xl font-bold">Functions 01–10 sequential diagnostic</h2><p className="mt-2 text-sm text-[#56647a]">Runs the fixed 3,000-word Function 01 research-paper test, then transfers each passing result through Functions 02–10. Every generated word is displayed exactly as received.</p></div><div className="flex flex-wrap items-end gap-3"><label className="text-xs font-semibold text-[#56647a]">Diagnostic model<select aria-label="First diagnostic model" value={diagnosticModel} disabled={anyDiagnosticRunning} onChange={(event) => setDiagnosticModel(event.target.value)} className="mt-1 block h-10 rounded-md border border-[#b9c8db] bg-white px-3 text-sm text-[#152238] outline-none disabled:opacity-50"><option value="GENIUS · Kuczynski">GENIUS 101 · Kuczynski</option>{models.map((item) => <option key={item} value={item}>{item}</option>)}</select></label><button disabled={anyDiagnosticRunning} onClick={runDiagnostics} className="inline-flex h-10 items-center gap-2 rounded-md border border-[#1e64c8] px-4 text-sm font-semibold text-[#1e64c8] hover:bg-[#eef5ff] disabled:opacity-50"><ShieldCheck className="size-4" />{diagnosing ? "Running sequential diagnostic…" : "Run Functions 01–10 diagnostic"}</button></div></div>
+          <div className="mt-5">{diagnostics.length === 0 ? <div className="rounded-lg bg-[#f5f7fa] p-5 text-sm text-[#64748b]">Ready. The fixed Function 01 source, exact research-paper prompt, 3,000-word target, eight-second first-word limit, and sequential transfers are built in.</div> : diagnostics.map((check) => <article key={check.id} className="rounded-lg border border-[#dce1e9] p-4"><div className="flex items-center justify-between gap-2"><h3 className="text-sm font-semibold">{check.title}</h3><span className={`rounded px-2 py-1 text-xs font-bold ${check.status === "pass" ? "bg-[#e8f7ee] text-[#16703a]" : check.status === "running" ? "bg-[#eaf2ff] text-[#1e64c8]" : "bg-[#fff0ed] text-[#b53c1f]"}`}>{check.status.toUpperCase()}</span></div><dl className="mt-4 grid gap-3 text-xs sm:grid-cols-4"><div><dt className="font-semibold text-[#56647a]">Model used</dt><dd>{check.providerUsed}</dd></div><div><dt className="font-semibold text-[#56647a]">First generated word</dt><dd>{check.firstWordMs === null ? "No words received" : `${check.firstWordMs} ms`}</dd></div><div><dt className="font-semibold text-[#56647a]">Elapsed time</dt><dd>{check.elapsedMs} ms</dd></div><div><dt className="font-semibold text-[#56647a]">Generated words</dt><dd>{check.wordCount}</dd></div></dl><div className="mt-4"><p className="text-xs font-semibold text-[#56647a]">Complete verbatim generated transcript</p><div className="mt-2 max-h-[36rem] overflow-auto whitespace-pre-wrap rounded bg-[#f7f8fa] p-4 font-sans text-sm leading-6 text-[#24334a]">{check.output || "[No generated words received]"}</div></div></article>)}</div>
+          {diagnostics.some((check) => check.status === "fail") && !anyDiagnosticRunning && <button type="button" onClick={runDiagnostics} className="mt-4 rounded-md bg-[#1e64c8] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1956aa]">Automatically recover and rerun the same diagnostic</button>}
+        </section>
+
+        <section className={`${diagnosticsOnly ? "mb-7" : "hidden"} rounded-xl border border-[#dce1e9] bg-white p-5 shadow-sm lg:p-7`}>
+          <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-[#1e64c8]">Random-thesis diagnostics</p><h2 className="mt-1 text-xl font-bold">Second Functions 01–10 sequential diagnostic</h2><p className="mt-2 text-sm text-[#56647a]">Randomly selects one of 100 supplied theses, places it in Step 2, runs “TURN INTO SCHOLARLY 2000 WORD PAPER,” and transfers each passing result through Functions 02–10.</p></div><div className="flex flex-wrap items-end gap-3"><label className="text-xs font-semibold text-[#56647a]">Diagnostic model<select aria-label="Second diagnostic model" value={secondaryDiagnosticModel} disabled={anyDiagnosticRunning} onChange={(event) => setSecondaryDiagnosticModel(event.target.value)} className="mt-1 block h-10 rounded-md border border-[#b9c8db] bg-white px-3 text-sm text-[#152238] outline-none disabled:opacity-50"><option value="GENIUS · Kuczynski">GENIUS 101 · Kuczynski</option>{models.map((item) => <option key={item} value={item}>{item}</option>)}</select></label><button disabled={anyDiagnosticRunning} onClick={() => runSecondaryDiagnostics()} className="inline-flex h-10 items-center gap-2 rounded-md border border-[#1e64c8] px-4 text-sm font-semibold text-[#1e64c8] hover:bg-[#eef5ff] disabled:opacity-50"><ShieldCheck className="size-4" />{diagnosingSecondary ? "Running random-thesis diagnostic…" : "Run random-thesis Functions 01–10 diagnostic"}</button></div></div>
+          <div className="mt-5 rounded-lg bg-[#f5f7fa] p-5 text-sm text-[#56647a]"><span className="font-semibold text-[#223750]">Selected Step 2 thesis:</span> {selectedDiagnosticThesis || "A thesis will be randomly selected from the 100 supplied statements when the diagnostic starts."}</div>
+          <div className="mt-5">{secondaryDiagnostics.length === 0 ? <div className="rounded-lg border border-[#dce1e9] p-5 text-sm text-[#64748b]">Ready. The exact command, 2,000-word target, scholarly citation requirement, APA bibliography requirement, eight-second first-word limit, and sequential transfers are built in.</div> : secondaryDiagnostics.map((check) => <article key={check.id} className="rounded-lg border border-[#dce1e9] p-4"><div className="flex items-center justify-between gap-2"><h3 className="text-sm font-semibold">{check.title}</h3><span className={`rounded px-2 py-1 text-xs font-bold ${check.status === "pass" ? "bg-[#e8f7ee] text-[#16703a]" : check.status === "running" ? "bg-[#eaf2ff] text-[#1e64c8]" : "bg-[#fff0ed] text-[#b53c1f]"}`}>{check.status.toUpperCase()}</span></div><dl className="mt-4 grid gap-3 text-xs sm:grid-cols-4"><div><dt className="font-semibold text-[#56647a]">Model used</dt><dd>{check.providerUsed}</dd></div><div><dt className="font-semibold text-[#56647a]">First generated word</dt><dd>{check.firstWordMs === null ? "No words received" : `${check.firstWordMs} ms`}</dd></div><div><dt className="font-semibold text-[#56647a]">Elapsed time</dt><dd>{check.elapsedMs} ms</dd></div><div><dt className="font-semibold text-[#56647a]">Generated words</dt><dd>{check.wordCount}</dd></div></dl><div className="mt-4"><p className="text-xs font-semibold text-[#56647a]">Complete verbatim generated transcript</p><div className="mt-2 max-h-[36rem] overflow-auto whitespace-pre-wrap rounded bg-[#f7f8fa] p-4 font-sans text-sm leading-6 text-[#24334a]">{check.output || "[No generated words received]"}</div></div></article>)}</div>
+          {secondaryDiagnostics.some((check) => check.status === "fail") && !anyDiagnosticRunning && <button type="button" onClick={() => runSecondaryDiagnostics(true)} className="mt-4 rounded-md bg-[#1e64c8] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1956aa]">Automatically recover and rerun this same thesis</button>}
+        </section>
+
+        <section className={`${diagnosticsOnly ? "mb-7" : "hidden"} rounded-xl border border-[#dce1e9] bg-white p-5 shadow-sm lg:p-7`}>
+          <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-[#1e64c8]">Extreme-length diagnostic</p><h2 className="mt-1 text-xl font-bold">50,000-word Function 01 diagnostic</h2><p className="mt-2 text-sm text-[#56647a]">Randomly selects one of the same 100 supplied theses and attempts one complete 50,000-word scholarly document in Function 01. It records every generated word and stops with an explicit failure if length or scholarly validation fails.</p></div><div className="flex flex-wrap items-end gap-3"><label className="text-xs font-semibold text-[#56647a]">Diagnostic model<select aria-label="50,000-word diagnostic model" value={fiftyKDiagnosticModel} disabled={anyDiagnosticRunning} onChange={(event) => setFiftyKDiagnosticModel(event.target.value)} className="mt-1 block h-10 rounded-md border border-[#b9c8db] bg-white px-3 text-sm text-[#152238] outline-none disabled:opacity-50"><option value="GENIUS · Kuczynski">GENIUS 101 · Kuczynski</option>{models.map((item) => <option key={item} value={item}>{item}</option>)}</select></label><button disabled={anyDiagnosticRunning} onClick={() => runFiftyKDiagnostics()} className="inline-flex h-10 items-center gap-2 rounded-md border border-[#1e64c8] px-4 text-sm font-semibold text-[#1e64c8] hover:bg-[#eef5ff] disabled:opacity-50"><ShieldCheck className="size-4" />{diagnosingFiftyK ? "Running 50,000-word diagnostic…" : "Run 50,000-word diagnostic"}</button></div></div>
+          <div className="mt-5 rounded-lg bg-[#f5f7fa] p-5 text-sm text-[#56647a]"><span className="font-semibold text-[#223750]">Selected thesis:</span> {selectedFiftyKThesis || "A thesis will be randomly selected from the same 100 supplied statements when the diagnostic starts."}</div>
+          <div className="mt-5">{fiftyKDiagnostics.length === 0 ? <div className="rounded-lg border border-[#dce1e9] p-5 text-sm text-[#64748b]">Ready. This test targets exactly 50,000 words, uses an eight-second first-word grade, permits a length-aware hard deadline, displays the complete transcript, and tests Function 01 only.</div> : fiftyKDiagnostics.map((check) => <article key={check.id} className="rounded-lg border border-[#dce1e9] p-4"><div className="flex items-center justify-between gap-2"><h3 className="text-sm font-semibold">{check.title}</h3><span className={`rounded px-2 py-1 text-xs font-bold ${check.status === "pass" ? "bg-[#e8f7ee] text-[#16703a]" : check.status === "running" ? "bg-[#eaf2ff] text-[#1e64c8]" : "bg-[#fff0ed] text-[#b53c1f]"}`}>{check.status.toUpperCase()}</span></div><dl className="mt-4 grid gap-3 text-xs sm:grid-cols-4"><div><dt className="font-semibold text-[#56647a]">Model used</dt><dd>{check.providerUsed}</dd></div><div><dt className="font-semibold text-[#56647a]">First generated word</dt><dd>{check.firstWordMs === null ? "No words received" : `${check.firstWordMs} ms`}</dd></div><div><dt className="font-semibold text-[#56647a]">Elapsed time</dt><dd>{check.elapsedMs} ms</dd></div><div><dt className="font-semibold text-[#56647a]">Generated words</dt><dd>{check.wordCount}</dd></div></dl><div className="mt-4"><p className="text-xs font-semibold text-[#56647a]">Complete verbatim generated transcript</p><div className="mt-2 max-h-[36rem] overflow-auto whitespace-pre-wrap rounded bg-[#f7f8fa] p-4 font-sans text-sm leading-6 text-[#24334a]">{check.output || "[No generated words received]"}</div></div></article>)}</div>
+          {fiftyKDiagnostics.some((check) => check.status === "fail") && !anyDiagnosticRunning && <button type="button" onClick={() => runFiftyKDiagnostics(true)} className="mt-4 rounded-md bg-[#1e64c8] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1956aa]">Automatically recover and rerun this same 50,000-word thesis</button>}
+        </section>
+
+        <div className={diagnosticsOnly ? "hidden" : undefined}>
+        <section className={`mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3 text-sm ${!freeUsage?.unlimited && freeUsage?.remainingOperations === 0 ? "border-[#e7c98d] bg-[#fff8e8]" : "border-[#bfd2f1] bg-[#f5f9ff]"}`}>
+          <div>
+            <span className="font-semibold text-[#223750]">{freeUsage?.ownerAccess ? "Permanent owner access" : freeUsage?.unlimited ? "Development access" : billingActive ? "Paid NEUROTEXT access" : user ? "Google account free allowance" : "Anonymous trial"}</span>
+            <span className="ml-2 text-[#56647a]">{freeUsage?.ownerAccess ? "Highest tier · Unlimited operations · Never expires" : freeUsage?.unlimited ? "Unlimited — development is never subject to customer limits" : billingActive ? "Active — unlimited operations" : freeUsage ? `${freeUsage.remainingOperations} of ${freeUsage.limitOperations} substantial operations remaining` : "Checking free usage…"}</span>
+          </div>
+          {!freeUsage?.unlimited && !user ? <a href={loginUrl} className="rounded-md bg-[#1e64c8] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1956aa]">Sign in with Google for 20 more operations</a> : !freeUsage?.ownerAccess && !billingActive && user && freeUsage?.remainingOperations === 0 ? <button type="button" disabled={checkoutBusy || !subscriptionPlan?.active} onClick={startSubscription} className="rounded-md bg-[#1e64c8] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1956aa] disabled:opacity-60">{checkoutBusy ? "Opening Stripe checkout…" : "Subscribe"}</button> : null}
+        </section>
+        {billingActive && <section className="mb-8 rounded-xl border-4 border-[#168348] bg-[#eafaf1] p-6 shadow-md" role="status" aria-live="polite">
+          <p className="text-sm font-black uppercase tracking-[.18em] text-[#126638]">✓ {freeUsage?.ownerAccess ? "Permanent owner access" : "Subscription active"}</p>
+          <h2 className="mt-2 text-3xl font-black text-[#0b4d2a]">{freeUsage?.ownerAccess ? "Highest-tier unlimited access is permanently active" : subscriptionPlan?.name ?? "Paid subscription access is active"}</h2>
+          <p className="mt-3 text-base font-semibold text-[#245d3e]">{freeUsage?.ownerAccess ? "Stripe, subscriptions, paywalls, expiration, credit balances, and generation quotas are bypassed for this authenticated owner account." : subscriptionPlan?.description ?? "Your subscription is confirmed."}</p>
+          {!freeUsage?.ownerAccess && <button type="button" onClick={openBillingPortal} className="mt-5 rounded-md bg-[#126638] px-5 py-3 text-sm font-bold text-white hover:bg-[#0b4d2a]">Manage subscription and billing</button>}
+        </section>}
+        {!billingActive && latestPayment && <section className="mb-8 rounded-xl border-4 border-[#168348] bg-[#eafaf1] p-6 shadow-md" role="status" aria-live="polite">
+          <p className="text-sm font-black uppercase tracking-[.18em] text-[#126638]">✓ Payment received</p>
+          <h2 className="mt-2 text-3xl font-black text-[#0b4d2a]">{latestPayment.amount !== null && latestPayment.currency ? new Intl.NumberFormat("en-US", { style: "currency", currency: latestPayment.currency }).format(latestPayment.amount / 100) : "Your payment"} was successfully paid</h2>
+          <p className="mt-3 text-base font-semibold text-[#245d3e]">{latestPayment.mode === "subscription" ? "Your subscription payment was received. Subscription activation is being confirmed." : "Your one-time Stripe payment is confirmed."}</p>
+        </section>}
+        {layout === "continuous" ? <section className="mb-8 max-w-3xl"><h1 className="text-3xl font-bold tracking-tight text-[#12223a] sm:text-4xl">NEUROTEXT writing page</h1><p className="mt-3 text-base leading-7 text-[#56647a]">Every function is below. Fill in a box and press its button.</p></section> : <section className="mb-8 max-w-3xl">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[.16em] text-[#1e64c8]">Document intelligence platform</p>
+          <h1 className="text-3xl font-bold tracking-tight text-[#12223a] sm:text-5xl">Work with a document. Get a coherent result.</h1>
+          <p className="mt-4 text-base leading-7 text-[#56647a]">Choose a function below. Create a new document, rewrite existing text, or use one of the other writing and analysis tools.</p>
+        </section>}
+
+        {layout === "classic" && <>
+        <section className="mb-8 grid gap-2 sm:grid-cols-2 lg:grid-cols-5" role="group" aria-label="Document functions">
+          {[...portals.filter((item) => item.id === "creator"), ...portals.filter((item) => item.id !== "creator")].map((item) => (
+            <button key={item.id} type="button" aria-pressed={active === item.id} disabled={busy && active !== item.id} onClick={() => switchFunction(item.id)} className={`rounded-lg border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-55 ${active === item.id ? "border-[#1e64c8] bg-[#eaf2ff] shadow-sm" : "border-[#dce1e9] bg-white hover:border-[#94b8ef]"}`}>
+              <span className="text-xs font-bold text-[#1e64c8]">{item.number}</span>
+              <span className="mt-2 block text-sm font-semibold leading-5">{item.title}</span>
+              {((item.id === active ? output : functionWorkspaces.current[item.id]?.output) ?? "").trim() && <span className="mt-2 block text-xs font-medium text-[#16703a]">Paper retained</span>}
+            </button>
+          ))}
+        </section>
+        </>}
+        {layout === "classic" ? renderActiveWorkspace() : renderContinuousFunctions()}
         </div>
       </main>
       {showStreamModal && <div ref={streamDialog} tabIndex={-1} className="fixed inset-0 z-50 flex items-center justify-center bg-[#0d1b2acc] p-3 sm:p-8" role="dialog" aria-modal="true" aria-labelledby="live-document-title">

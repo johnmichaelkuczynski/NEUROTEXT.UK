@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import Neurotext from '@/pages/neurotext';
 import DocumentCreator from '@/pages/document-creator';
+import DocumentTransformer from '@/pages/document-transformer';
 import NotFound from '@/pages/not-found';
 import {
   Route,
@@ -54,6 +55,7 @@ function Router() {
             ? <Neurotext user={user} onLogout={logout} loginUrl={api('/auth/google')} diagnosticsOnly />
             : <div className="flex min-h-screen items-center justify-center bg-[#f7f8fa] p-8 text-[#152238]"><div className="rounded-xl border border-[#dce1e9] bg-white p-8 text-center shadow-sm"><h1 className="text-2xl font-bold">Access denied</h1><p className="mt-3 text-[#56647a]">This diagnostic page is restricted to the permanent owner.</p><a href={import.meta.env.BASE_URL} className="mt-5 inline-block font-semibold text-[#1e64c8] hover:underline">Return to NEUROTEXT</a></div></div>}</Route>
         <Route path="/page-2">{() => <DocumentCreator />}</Route>
+        <Route path="/page-3">{() => <DocumentTransformer />}</Route>
         <Route path="/page-1">{() => <Neurotext user={user ?? null} onLogout={logout} loginUrl={api('/auth/google')} />}</Route>
         <Route path="/">{() => <Redirect to="/page-2" />}</Route>
         <Route>{() => <NotFound />}</Route>

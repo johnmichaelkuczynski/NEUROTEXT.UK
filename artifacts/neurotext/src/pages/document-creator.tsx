@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import WritingNavigation from "@/components/writing-navigation";
 
 function OptionalMaterial({ label, id, text, onChange, disabled }: { label: string; id: string; text: string; onChange: (text: string) => void; disabled: boolean }) {
   const [file, setFile] = useState<File | null>(null);
@@ -232,6 +233,7 @@ export default function DocumentCreator() {
   return (
     <main className="min-h-screen bg-white px-5 py-8 text-slate-900">
       <div className="mx-auto max-w-3xl space-y-6">
+        <WritingNavigation current="creator" busy={busy} />
         <h1 className="text-2xl font-semibold">Write from scratch</h1>
         <textarea
           aria-label="What do you want created?"

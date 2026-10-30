@@ -15,8 +15,8 @@ The first specified section is “Write from scratch” (the user explicitly rep
 
 **How to apply:** Preserve this separation when naming, listing, or implementing NEUROTEXT functions. Use plain descriptions of the text the user supplies rather than unexplained “source text” terminology.
 
-Every function page, existing and future, must end with a “Rewrite output” box for the user's desired changes and a “Rewrite output” button. This revises the current output rather than starting over from the original input.
+Every function page, existing and future, must end with a revision box for the user's desired changes and a matching action button. The user first called this “Rewrite output” and subsequently requested “Critique and regenerate” on newer pages. Follow the requested label; these are the same final revision step, not two separate boxes. This revises the current output rather than starting over from the original input.
 
-**Why:** The user explicitly requires this for “each function, past and future” so someone who is partly satisfied can request changes without redoing the result from scratch.
+**Why:** The user explicitly requires this for “each function, past and future” so someone who is partly satisfied can request changes without redoing the result from scratch, and explicitly names the last box “Critique and regenerate” on the profiling and thesis pages.
 
 **How to apply:** Include this final revision step whenever adding or updating a function. Preserve original inputs and unrelated output content; stream the requested revision in the live pop-up.

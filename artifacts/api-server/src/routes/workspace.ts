@@ -7,6 +7,9 @@ import { randomUUID } from "node:crypto";
 import { pool } from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { runCoherenceJob } from "../services/coherence";
+import { isMastersThesisPage, mastersThesisRequestError, MASTER_THESIS_MAX_WORDS } from "../services/masters-thesis-limits";
+import { isDissertationPage, dissertationRequestError, DISSERTATION_MAX_WORDS } from "../services/dissertation-limits";
+import { isTranslationFunction, translationRequestError, translationPartPrompt, translationSeparator, splitTranslationText, translationWordTarget } from "../services/translation";
 import { generateWithFallback, generateWithFallbackStreaming } from "../services/llm-router";
 import {
   openLiveDocumentStream as openEventStream,
@@ -39,6 +42,12 @@ const functionOperations: Record<string, string> = {
   maxintel: "Rewrite the source to maximize clarity, argument quality, evidence, precision, and intellectual rigor without generic filler.",
   profile: "Produce a careful cognitive profile based only on the author's writing. Analyze reasoning style, conceptual habits, use of evidence, abstraction, distinctions, assumptions, strengths, and limits. Do not infer sensitive personal traits or diagnose the author.",
   thesis: "Create a rigorous scholarly master's thesis from the user's instructions, incorporating any supplied research material and preserving supplied citations.",
+  "thesis-creator": "Create an original scholarly master's thesis from scratch, guided by the user's instructions, requested length, and optional reference materials. Develop the research problem, argument, appropriate methodology, analysis, limitations, and conclusions. Do not invent executed experiments, data, or citations.",
+  "thesis-transformer": "Transform the supplied primary text into a coherent scholarly master's thesis, following the user's instructions, requested length, and style. Preserve the source's substantive claims, facts, qualifications, terminology, and genuine citations while developing its research problem, argument, methodology, analysis, limitations, and conclusions. Optional content is supplementary; do not replace the primary text with an unrelated thesis. Do not invent executed experiments, data, or citations.",
+  "thesis-revision": "Revise the supplied CURRENT master's thesis according to the user's critique. Retain sound material and all unaffected sections, facts, citations, and style. Do not start an unrelated thesis or invent data, experiments, or citations.",
+  "dissertation-creator": "Create an original doctoral dissertation from scratch, guided by the user's research questions, requested length, discipline, style, and optional reference materials. Establish the research gap and original scholarly contribution; develop a sustained argument, defensible methodology, critical engagement with authentic literature, substantive analysis, limitations, and conclusions. Do not invent conducted research, data, results, experiments, citations, or DOIs; distinguish proposed and conceptual research from executed empirical studies.",
+  "dissertation-transformer": "Transform the supplied primary text into a coherent doctoral dissertation according to the user's instructions, requested length, discipline, and style. Preserve its substantive claims, facts, qualifications, terminology, and genuine citations. Develop a research gap, original scholarly contribution, sustained argument, defensible methodology, critical literature engagement, substantive analysis, limitations, and conclusions. Optional content is supplementary; do not substitute an unrelated dissertation for the primary text. Do not invent conducted research, data, results, experiments, citations, or DOIs; distinguish conceptual and proposed research from executed empirical studies.",
+  "dissertation-revision": "Revise the supplied CURRENT doctoral dissertation according to the user's critique. Preserve all sound unaffected sections, facts, arguments, authentic citations, methodology, and style. Strengthen its original scholarly contribution and doctoral-level analysis where requested. Do not start a different dissertation or invent conducted research, data, results, citations, or DOIs.",
   dissertation: "Create a rigorous scholarly dissertation from the user's instructions, incorporating any supplied research material and preserving supplied citations.",
   translation: "Translate the source as instructed, preserving structure, terminology, quotations, and factual claims.",
 };
@@ -328,6 +337,10 @@ workspaceRouter.post("/functions/run", async (req, res) => {
     return;
   }
   const { functionId, text, instructions, targetWords, provider, thinker, quotes } = parsed.data;
+  if (isMastersThesisPage(functionId) || isDissertationPage(functionId) || isTranslationFunction(functionId)) {
+    res.status(400).json({ error: "Use the live-streaming function to create or revise this academic document." });
+    return;
+  }
   if (functionId === "manipulator" && !text.trim()) {
     res.status(400).json({ error: "Paste the text you want rewritten or changed." });
     return;
@@ -467,6 +480,11 @@ workspaceRouter.post("/functions/stream", async (req, res) => {
     return;
   }
   const { functionId, text, instructions, targetWords, provider, thinker, quotes, resumeDocument, resumeSkeleton } = parsed.data;
+  const thesisError = mastersThesisRequestError(parsed.data) ?? dissertationRequestError(parsed.data) ?? translationRequestError(parsed.data);
+  if (thesisError) {
+    res.status(400).json({ error: thesisError });
+    return;
+  }
   if (functionId === "manipulator" && !text.trim()) {
     res.status(400).json({ error: "Paste the text you want rewritten or changed." });
     return;
@@ -475,11 +493,47 @@ workspaceRouter.post("/functions/stream", async (req, res) => {
     res.status(400).json({ error: "Describe the document you want written." });
     return;
   }
-  const cleanSource = functionId === "creator" ? "" : stripControlLanguage(text);
+  const cleanSource = functionId === "creator" || functionId === "thesis-creator" || functionId === "dissertation-creator" ? "" : stripControlLanguage(text);
   const operation = `${functionOperations[functionId] ?? functionOperations.manipulator} Preserve all facts, terminology, quotations, and negative results. ${instructions || "Use professional judgment."} ${thinkerContext(thinker, quotes)}`;
   const chunks = splitForStreaming(cleanSource);
   openEventStream(res);
   try {
+    if (isTranslationFunction(functionId)) {
+      const parts = splitTranslationText(text);
+      const requestedWords = translationWordTarget(instructions, countTextWords(text), functionId === "translation-revision", text);
+      let translation = "";
+      for (let index = 0; index < parts.length; index++) {
+        if (res.destroyed || res.writableEnded) return;
+        const source = parts[index];
+        if (!source.trim()) continue;
+        const separator = translation ? translationSeparator(parts[index - 1] ?? "", source) : "";
+        const partTarget = requestedWords ? Math.max(1, Math.round(requestedWords * source.length / Math.max(1, text.length))) : undefined;
+        writeStreamEvent(res, { type: "section_start", index, total: parts.length, separator });
+        const prompt = translationPartPrompt({
+          revision: functionId === "translation-revision", instructions, source, index, total: parts.length,
+          proportion: source.length / Math.max(1, text.length), previousTranslation: translation, targetWords: partTarget,
+        });
+        let result;
+        for (let attempt = 0; attempt < 2; attempt++) {
+          if (attempt) writeStreamEvent(res, { type: "replace_output", text: translation + separator });
+          result = await generateWithFallbackStreaming(provider, prompt + (attempt ? "\nThe preceding attempt missed the length requirement. Recount and meet the stated word target." : ""), (token, providerUsed) => {
+            writeStreamEvent(res, { type: "token", index, total: parts.length, text: token, providerUsed });
+            (res as import("express").Response & { flush?: () => void }).flush?.();
+          }, { quotes: 0, maxWords: Math.min(8000, Math.max(2400, Array.from(source).length * 2)) });
+          if (!partTarget || Math.abs(countTextWords(result.text) - partTarget) <= Math.max(3, Math.ceil(partTarget * 0.1))) break;
+          if (attempt === 1) {
+            writeStreamEvent(res, { type: "error", message: "The translation did not meet your requested length. Partial output is preserved; adjust the instructions or retry." });
+            return;
+          }
+        }
+        if (!result) throw new Error("No translation was generated.");
+        if (!result.text.trim()) throw new Error("The translation provider returned no text.");
+        translation += separator + result.text;
+        writeStreamEvent(res, { type: "section_done", index, total: parts.length, generatedWords: countTextWords(result.text) });
+      }
+      writeStreamEvent(res, { type: "done", generatedWords: countTextWords(translation) });
+      return;
+    }
     const inputWords = countTextWords(cleanSource);
     const requestedTargetWords = inferLongFormTarget(targetWords, instructions, inputWords, functionId);
     if (requestedTargetWords) {
@@ -737,7 +791,11 @@ Use no more than 8 repairs. Make only necessary local repairs. The find value mu
       generatedDocument = stripControlLanguage(await appendMissingApaReferences(res, provider, generatedDocument, quotes));
       generatedWords = countTextWords(generatedDocument);
       const { maximumWords: maximumAcceptedWords } = wordTargetBounds(requestedTargetWords);
-      if (generatedWords > maximumAcceptedWords) {
+      const finalWordCeiling = isMastersThesisPage(functionId)
+        ? Math.min(maximumAcceptedWords, MASTER_THESIS_MAX_WORDS)
+        : isDissertationPage(functionId)
+          ? Math.min(maximumAcceptedWords, DISSERTATION_MAX_WORDS) : maximumAcceptedWords;
+      if (generatedWords > finalWordCeiling) {
         generatedDocument = trimToWordCountPreservingFormatting(generatedDocument, requestedTargetWords);
         generatedWords = countTextWords(generatedDocument);
         writeStreamEvent(res, {

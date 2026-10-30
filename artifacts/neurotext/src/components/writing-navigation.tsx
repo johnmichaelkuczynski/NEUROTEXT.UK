@@ -1,4 +1,4 @@
-export default function WritingNavigation({ current, busy }: { current: "creator" | "transformer" | "screenplay" | "screenplay-adaptation" | "dialogue" | "dialogue-adaptation" | "coherence" | "maxintel" | "profile"; busy: boolean }) {
+export default function WritingNavigation({ current, busy }: { current: "creator" | "transformer" | "screenplay" | "screenplay-adaptation" | "dialogue" | "dialogue-adaptation" | "coherence" | "maxintel" | "profile" | "thesis-creator" | "thesis-transformer" | "dissertation-creator" | "dissertation-transformer" | "translator"; busy: boolean }) {
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
   return (
     <nav aria-label="Writing pages" className="flex flex-wrap gap-3">
@@ -12,6 +12,11 @@ export default function WritingNavigation({ current, busy }: { current: "creator
         { id: "coherence", path: "/page-8", label: "Coherence evaluator" },
         { id: "maxintel", path: "/page-9", label: "Maximum intelligence rewrite" },
         { id: "profile", path: "/page-10", label: "Cognitive profiling" },
+        { id: "thesis-creator", path: "/page-11", label: "Master's thesis creator" },
+        { id: "thesis-transformer", path: "/page-12", label: "Text to master's thesis" },
+        { id: "dissertation-creator", path: "/page-13", label: "Dissertation creator" },
+        { id: "dissertation-transformer", path: "/page-14", label: "Text to dissertation" },
+        { id: "translator", path: "/page-15", label: "Translator" },
       ] as const).map((page) => (
         <a
           key={page.id}

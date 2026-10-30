@@ -10,6 +10,8 @@ import ScreenplayGenerator from '@/pages/screenplay-generator';
 import CoherenceEvaluator from '@/pages/coherence-evaluator';
 import MaximumIntelligenceRewrite from '@/pages/maximum-intelligence-rewrite';
 import CognitiveProfiling from '@/pages/cognitive-profiling';
+import MastersThesisCreator from '@/pages/masters-thesis-creator';
+import Translator from '@/pages/translator';
 import NotFound from '@/pages/not-found';
 import {
   Route,
@@ -67,6 +69,11 @@ function Router() {
         <Route path="/page-8">{() => <CoherenceEvaluator />}</Route>
         <Route path="/page-9">{() => <MaximumIntelligenceRewrite />}</Route>
         <Route path="/page-10">{() => <CognitiveProfiling />}</Route>
+        <Route path="/page-11">{() => <MastersThesisCreator key="thesis-scratch" />}</Route>
+        <Route path="/page-12">{() => <MastersThesisCreator key="thesis-adaptation" mode="adaptation" />}</Route>
+        <Route path="/page-13">{() => <MastersThesisCreator key="dissertation-scratch" documentType="dissertation" />}</Route>
+        <Route path="/page-14">{() => <MastersThesisCreator key="dissertation-adaptation" documentType="dissertation" mode="adaptation" />}</Route>
+        <Route path="/page-15">{() => <Translator />}</Route>
         <Route path="/page-1">{() => <Neurotext user={user ?? null} onLogout={logout} loginUrl={api('/auth/google')} />}</Route>
         <Route path="/">{() => <Redirect to="/page-2" />}</Route>
         <Route>{() => <NotFound />}</Route>

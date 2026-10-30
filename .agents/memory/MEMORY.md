@@ -5,3 +5,4 @@
 - [Post-merge database setup](post-merge-database-setup.md) — schema reconciliation takes longer than the platform’s former 20-second timeout.
 - [Function workspace retention](function-workspace-retention.md) — transfers copy papers between functions; they must never clear the originating function’s work.
 - [Separate writing functions](function-separation.md) — writing from scratch and rewriting existing text must be separate functions.
+- [Translation semantics](translation-semantics.md) — avoid academic expansion and bibliography insertion; shortening must not compound on ordinary revisions.

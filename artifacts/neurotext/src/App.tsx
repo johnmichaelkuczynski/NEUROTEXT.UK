@@ -9,6 +9,7 @@ import DocumentTransformer from '@/pages/document-transformer';
 import ScreenplayGenerator from '@/pages/screenplay-generator';
 import CoherenceEvaluator from '@/pages/coherence-evaluator';
 import MaximumIntelligenceRewrite from '@/pages/maximum-intelligence-rewrite';
+import CognitiveProfiling from '@/pages/cognitive-profiling';
 import NotFound from '@/pages/not-found';
 import {
   Route,
@@ -65,6 +66,7 @@ function Router() {
         <Route path="/page-7">{() => <ScreenplayGenerator key="dialogue-adaptation" mode="dialogue-adaptation" />}</Route>
         <Route path="/page-8">{() => <CoherenceEvaluator />}</Route>
         <Route path="/page-9">{() => <MaximumIntelligenceRewrite />}</Route>
+        <Route path="/page-10">{() => <CognitiveProfiling />}</Route>
         <Route path="/page-1">{() => <Neurotext user={user ?? null} onLogout={logout} loginUrl={api('/auth/google')} />}</Route>
         <Route path="/">{() => <Redirect to="/page-2" />}</Route>
         <Route>{() => <NotFound />}</Route>

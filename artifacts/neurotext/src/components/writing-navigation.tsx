@@ -1,4 +1,4 @@
-export default function WritingNavigation({ current, busy }: { current: "creator" | "transformer" | "screenplay" | "screenplay-adaptation" | "dialogue" | "dialogue-adaptation"; busy: boolean }) {
+export default function WritingNavigation({ current, busy }: { current: "creator" | "transformer" | "screenplay" | "screenplay-adaptation" | "dialogue" | "dialogue-adaptation" | "coherence"; busy: boolean }) {
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
   return (
     <nav aria-label="Writing pages" className="flex flex-wrap gap-3">
@@ -9,6 +9,7 @@ export default function WritingNavigation({ current, busy }: { current: "creator
         { id: "screenplay-adaptation", path: "/page-5", label: "Text to screenplay" },
         { id: "dialogue", path: "/page-6", label: "Dialogue creator" },
         { id: "dialogue-adaptation", path: "/page-7", label: "Text to dialogue" },
+        { id: "coherence", path: "/page-8", label: "Coherence evaluator" },
       ] as const).map((page) => (
         <a
           key={page.id}

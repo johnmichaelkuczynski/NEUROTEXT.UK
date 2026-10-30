@@ -29,7 +29,7 @@ if (!basePath) {
 
 function routeStatusPlugin(): Plugin {
   const normalizedBase = basePath === '/' ? '' : `/${basePath.replace(/^\/|\/$/g, '')}`;
-  const publicRoutes = new Set(['/', '/diagnostics', '/page-1', '/page-2', '/page-3', '/page-4', '/page-5', '/page-6', '/page-7']);
+  const publicRoutes = new Set(['/', '/diagnostics', '/page-1', '/page-2', '/page-3', '/page-4', '/page-5', '/page-6', '/page-7', '/page-8']);
 
   const install = (middlewares: Connect.Server) => {
     middlewares.use((request, response, next) => {

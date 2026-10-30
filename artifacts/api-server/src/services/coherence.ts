@@ -352,7 +352,9 @@ ${skeletonResponse.text.slice(0, 12000)}
 
 ${ANTI_SYCOPHANCY_CLAUSES}
 
-Return plain text in EXACTLY this order. Use no Markdown heading syntax. ${requestedTargetWords
+The user's instructions control the scope, depth, nature, and format of the analysis and take precedence over the default rubric and report template below. Evaluate only the requested kind of coherence; mathematical coherence and mere non-self-contradiction are examples, not limits. Even a single sentence is valid input. If the user requests only non-contradiction, do not add unrelated factual, stylistic, persuasive, or structural critiques. Do not invent missing premises or defects just because the input is short. A consistent set of claims is not necessarily true, and an unsupported claim is not by itself a contradiction.
+
+Use plain text with no Markdown heading syntax. If the user requests a specific structure or a short answer, follow it instead of forcing scorecards or all the template sections. Otherwise use the default report structure below. ${requestedTargetWords
   ? `The user requested an EXACTLY ${requestedTargetWords.toLocaleString()}-word coherence report. This opening section should contain approximately ${openingTargetWords.toLocaleString()} words and establish the scorecard and highest-priority findings; further evidence sections will follow until the exact total is reached.`
   : "Keep the whole audit under 1,200 words."}
 OVERALL SCORE: [integer from 0 to 100]/100

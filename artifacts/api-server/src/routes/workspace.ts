@@ -839,6 +839,10 @@ workspaceRouter.post("/coherence/stream", async (req, res) => {
         writeStreamEvent(res, { type: "token", text, providerUsed });
         (res as import("express").Response & { flush?: () => void }).flush?.();
       },
+      onReplaceOutput: (text) => {
+        writeStreamEvent(res, { type: "replace_output", text });
+        (res as import("express").Response & { flush?: () => void }).flush?.();
+      },
     });
     writeStreamEvent(res, {
       type: "done",

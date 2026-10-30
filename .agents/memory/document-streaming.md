@@ -9,6 +9,12 @@ For NEUROTEXT document generation, use the LLM providers' native streaming APIs 
 
 **How to apply:** Every document function must emit events immediately, append them in the result view, disable proxy buffering, and retain full accumulated text only for persistence or final processing. The first-visible-text deadline is cumulative across empty provider events, and the full fallback chain must fit inside the browser SLA. If a provider emits an oversized delta, normalize it into small paced word groups; one completed block is a streaming failure even when its content is acceptable.
 
+The user requires a pop-up for every text-generating function, showing the text word by word as it is written. The pop-up must be movable, resizable, and collapsible.
+
+**Why:** The user explicitly rejected watching an apparently blank page while generation runs.
+
+**How to apply:** Open the live window immediately on submission, before the first token. Moving, resizing, collapsing, or hiding it must not cancel generation or discard material. Reveal only text already received from the provider.
+
 Provider failure must never leave a usable document short. Preserve every partial token, continue the same block with the next configured provider without repeating text, and keep advancing toward the requested target.
 
 **Why:** Returning a partial block after one provider interruption preserved text but still allowed a long paper to terminate thousands of words below its requested length.

@@ -131,7 +131,7 @@ const DEFAULT_THESIS_TARGET_WORDS = "20000";
 const DEFAULT_DISSERTATION_TARGET_WORDS = "50000";
 
 function defaultTargetWords(functionId: string) {
-  if (functionId === "manipulator") return DEFAULT_FUNCTION_ONE_TARGET_WORDS;
+  if (functionId === "creator") return DEFAULT_FUNCTION_ONE_TARGET_WORDS;
   if (functionId === "objections") return DEFAULT_FUNCTION_TWO_TARGET_WORDS;
   if (functionId === "screenplay") return DEFAULT_FUNCTION_THREE_TARGET_WORDS;
   if (functionId === "dialogue") return DEFAULT_FUNCTION_FOUR_TARGET_WORDS;
@@ -144,7 +144,7 @@ function defaultTargetWords(functionId: string) {
 }
 
 function defaultInstructions(functionId: string) {
-  if (functionId === "manipulator") return DEFAULT_FUNCTION_ONE_INSTRUCTIONS;
+  if (functionId === "manipulator") return "Rewrite the text as instructed. Preserve its meaning and factual claims.";
   if (functionId === "objections") return DEFAULT_FUNCTION_TWO_INSTRUCTIONS;
   if (functionId === "screenplay") return DEFAULT_FUNCTION_THREE_INSTRUCTIONS;
   if (functionId === "dialogue") return DEFAULT_FUNCTION_FOUR_INSTRUCTIONS;
@@ -198,8 +198,10 @@ function functionOneWorkspace(workspace?: FunctionWorkspace): FunctionWorkspace 
   const base = workspace ?? emptyFunctionWorkspace();
   return {
     ...base,
-    instructions: base.instructions.trim() || DEFAULT_FUNCTION_ONE_INSTRUCTIONS,
-    targetWords: base.targetWords.trim() || DEFAULT_FUNCTION_ONE_TARGET_WORDS,
+    instructions: base.instructions.trim() && base.instructions !== DEFAULT_FUNCTION_ONE_INSTRUCTIONS
+      ? base.instructions
+      : defaultInstructions("manipulator"),
+    targetWords: base.targetWords,
   };
 }
 
@@ -213,16 +215,17 @@ function loadFunctionWorkspaces() {
 }
 
 const portals: Portal[] = [
-  { id: "manipulator", number: "01", title: "Document Creator & Manipulator", description: "Write a new document from scratch or transform source material into exactly what you need.", placeholder: "Optional: paste or upload source material. Leave this empty to write entirely from your instructions.", action: "Create or transform document" },
-  { id: "objections", number: "02", title: "Objections & Bullet-Proof Rewrite", description: "Find serious objections, answer them, and harden the argument.", placeholder: "Paste the argument or upload the document to stress-test.", action: "Generate objections" },
-  { id: "screenplay", number: "03", title: "Screenplay Generator", description: "Generate a screenplay from scratch or revise one from source material.", placeholder: "Optional: paste a story, outline, or screenplay. Leave empty to create from instructions alone.", action: "Generate screenplay" },
-  { id: "dialogue", number: "04", title: "Dialogue Generation", description: "Create dialogue from scratch or rework existing spoken material.", placeholder: "Optional: paste a scene, characters, or story context. Leave empty to create from instructions alone.", action: "Generate dialogue" },
-  { id: "coherence", number: "05", title: "Coherence Evaluator", description: "Audit and reconstruct long documents using the Skeleton + Tractatus architecture.", placeholder: "Paste or upload the document to evaluate for cross-chunk coherence.", action: "Run coherence evaluation" },
-  { id: "maxintel", number: "06", title: "Maximum Intelligence Rewriter", description: "Strengthen reasoning, structure, precision, and intellectual quality.", placeholder: "Paste the draft you want improved.", action: "Rewrite for intelligence" },
-  { id: "profile", number: "07", title: "Cognitive Profiling", description: "Extract a cognitive profile from uploaded writing.", placeholder: "Paste representative writing from the author.", action: "Build cognitive profile" },
-  { id: "thesis", number: "08", title: "Master’s Thesis Creator", description: "Create a coherent scholarly master’s thesis from instructions alone or supplied research.", placeholder: "Optional: paste research notes, sources, a proposal, or a draft. Leave empty to create from instructions alone.", action: "Create master’s thesis" },
-  { id: "dissertation", number: "09", title: "Dissertation Creator", description: "Create a coherent scholarly dissertation from instructions alone or supplied research.", placeholder: "Optional: paste research, an outline, source notes, or a draft. Leave empty to create from instructions alone.", action: "Create dissertation" },
-  { id: "translation", number: "10", title: "Document Translation", description: "Translate documents while preserving structure and meaning.", placeholder: "Paste or upload the document you want translated.", action: "Translate document" },
+  { id: "manipulator", number: "02", title: "Document Manipulation", description: "Rewrite or change text you already have.", placeholder: "Paste the text you want rewritten or changed.", action: "Rewrite document" },
+  { id: "creator", number: "01", title: "Create from Scratch", description: "Write a new document from scratch.", placeholder: "", action: "Create document" },
+  { id: "objections", number: "03", title: "Objections & Bullet-Proof Rewrite", description: "Find serious objections, answer them, and harden the argument.", placeholder: "Paste the argument or upload the document to stress-test.", action: "Generate objections" },
+  { id: "screenplay", number: "04", title: "Screenplay Generator", description: "Generate a screenplay from scratch or revise one from source material.", placeholder: "Optional: paste a story, outline, or screenplay. Leave empty to create from instructions alone.", action: "Generate screenplay" },
+  { id: "dialogue", number: "05", title: "Dialogue Generation", description: "Create dialogue from scratch or rework existing spoken material.", placeholder: "Optional: paste a scene, characters, or story context. Leave empty to create from instructions alone.", action: "Generate dialogue" },
+  { id: "coherence", number: "06", title: "Coherence Evaluator", description: "Audit and reconstruct long documents using the Skeleton + Tractatus architecture.", placeholder: "Paste or upload the document to evaluate for cross-chunk coherence.", action: "Run coherence evaluation" },
+  { id: "maxintel", number: "07", title: "Maximum Intelligence Rewriter", description: "Strengthen reasoning, structure, precision, and intellectual quality.", placeholder: "Paste the draft you want improved.", action: "Rewrite for intelligence" },
+  { id: "profile", number: "08", title: "Cognitive Profiling", description: "Extract a cognitive profile from uploaded writing.", placeholder: "Paste representative writing from the author.", action: "Build cognitive profile" },
+  { id: "thesis", number: "09", title: "Master’s Thesis Creator", description: "Create a coherent scholarly master’s thesis from instructions alone or supplied research.", placeholder: "Optional: paste research notes, sources, a proposal, or a draft. Leave empty to create from instructions alone.", action: "Create master’s thesis" },
+  { id: "dissertation", number: "10", title: "Dissertation Creator", description: "Create a coherent scholarly dissertation from instructions alone or supplied research.", placeholder: "Optional: paste research, an outline, source notes, or a draft. Leave empty to create from instructions alone.", action: "Create dissertation" },
+  { id: "translation", number: "11", title: "Document Translation", description: "Translate documents while preserving structure and meaning.", placeholder: "Paste or upload the document you want translated.", action: "Translate document" },
 ];
 
 const models = ["ZHI 1", "ZHI 2", "ZHI 3", "ZHI 4", "ZHI 5", "ZHI 6"];
@@ -406,8 +409,8 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
   const isDevelopmentOwner = user?.id === "development-owner";
   const isPermanentOwner = isDevelopmentOwner || user?.email.trim().toLowerCase() === "johnmichaelkuczynski@gmail.com";
   const functionWorkspaces = useRef<Record<string, FunctionWorkspace>>(loadFunctionWorkspaces());
-  const initialWorkspace = useRef(functionOneWorkspace(functionWorkspaces.current[portals[0].id])).current;
-  const [active, setActive] = useState(portals[0].id);
+  const initialWorkspace = useRef(functionWorkspaces.current.creator ?? emptyFunctionWorkspace()).current;
+  const [active, setActive] = useState("creator");
   const portal = useMemo(() => portals.find((item) => item.id === active) ?? portals[0], [active]);
   const [text, setText] = useState(initialWorkspace.text);
   const [instructions, setInstructions] = useState(initialWorkspace.instructions);
@@ -485,8 +488,8 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
     const currentIndex = portals.findIndex((item) => item.id === active);
     return portals[(currentIndex + 1) % portals.length];
   }, [active]);
-  const sourceRequired = ["objections", "coherence", "maxintel", "profile", "translation"].includes(active);
-  const canRun = sourceRequired ? Boolean(text.trim()) : Boolean(text.trim() || instructions.trim());
+  const sourceRequired = ["manipulator", "objections", "coherence", "maxintel", "profile", "translation"].includes(active);
+  const canRun = active === "creator" ? Boolean(instructions.trim()) : sourceRequired ? Boolean(text.trim()) : Boolean(text.trim() || instructions.trim());
 
   useEffect(() => {
     if (!showStreamModal) return;
@@ -692,6 +695,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
     });
     setActive(destinationId);
     restoreWorkspace(nextWorkspace);
+    window.requestAnimationFrame(() => document.getElementById("function-workspace")?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
   useEffect(() => {
@@ -791,7 +795,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
     const resumable = options?.resume
       ? options.draft ?? (savedDraft?.active === active ? savedDraft : null)
       : null;
-    const sourceText = resumable?.text ?? text;
+    const sourceText = active === "creator" ? "" : resumable?.text ?? text;
     const storedInstructions = options?.instructionOverride ?? resumable?.instructions ?? instructions;
     const storedTargetWords = resumable?.targetWords ?? targetWords;
     const sourceInstructions = !storedInstructions.trim() && defaultInstructions(active)
@@ -803,7 +807,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
     const sourceModel = resumable?.model ?? model;
     const sourceThinker = resumable?.thinker ?? thinker;
     const sourceQuotes = resumable?.quotes ?? quotes;
-    if (sourceRequired ? !sourceText.trim() : !sourceText.trim() && !sourceInstructions.trim()) return;
+    if (active === "creator" ? !sourceInstructions.trim() : sourceRequired ? !sourceText.trim() : !sourceText.trim() && !sourceInstructions.trim()) return;
     if ((options?.connectionRetry ?? 0) === 0) {
       trackEvent("generation_started", {
         function_id: active,
@@ -1369,7 +1373,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
     targetWordCount,
     requireExperimentalEvidence,
     selectedModel,
-    functionsToTest = portals,
+    functionsToTest = portals.filter((item) => item.id !== "creator"),
     setRunning,
     setResults,
   }: {
@@ -1793,11 +1797,11 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
         <section className="mb-8 max-w-3xl">
           <p className="mb-3 text-xs font-bold uppercase tracking-[.16em] text-[#1e64c8]">Document intelligence platform</p>
           <h1 className="text-3xl font-bold tracking-tight text-[#12223a] sm:text-5xl">Work with a document. Get a coherent result.</h1>
-          <p className="mt-4 text-base leading-7 text-[#56647a]">Create, transform, evaluate, and refine long-form documents with NEUROTEXT, an AI document intelligence platform with ten dedicated writing and analysis tools. Every function has its own document portal: choose a function, provide its document, choose an LLM, then run it.</p>
+          <p className="mt-4 text-base leading-7 text-[#56647a]">Choose a function below. Create a new document, rewrite existing text, or use one of the other writing and analysis tools.</p>
         </section>
 
         <section className="mb-8 grid gap-2 sm:grid-cols-2 lg:grid-cols-5" role="group" aria-label="Document functions">
-          {portals.map((item) => (
+          {[...portals.filter((item) => item.id === "creator"), ...portals.filter((item) => item.id !== "creator")].map((item) => (
             <button key={item.id} type="button" aria-pressed={active === item.id} disabled={busy && active !== item.id} onClick={() => switchFunction(item.id)} className={`rounded-lg border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-55 ${active === item.id ? "border-[#1e64c8] bg-[#eaf2ff] shadow-sm" : "border-[#dce1e9] bg-white hover:border-[#94b8ef]"}`}>
               <span className="text-xs font-bold text-[#1e64c8]">{item.number}</span>
               <span className="mt-2 block text-sm font-semibold leading-5">{item.title}</span>
@@ -1812,22 +1816,8 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
               <div><p className="text-xs font-bold uppercase tracking-[.14em] text-[#1e64c8]">Function {portal.number}</p><h2 className="mt-1 text-2xl font-bold">{portal.title}</h2><p className="mt-2 text-sm text-[#56647a]">{portal.description}</p></div>
             </div>
           </div>
-          {portal.id === "manipulator" && <div className="border-b border-[#b8cff0] bg-[#eaf2ff] p-5 sm:p-7">
-            <p className="text-xs font-bold uppercase tracking-[.16em] text-[#1e64c8]">Two ways to use Function 1</p>
-            <h3 className="mt-1 text-xl font-bold text-[#12223a]">Create something new or work from existing material</h3>
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <div className="rounded-lg border-2 border-[#1e64c8] bg-white p-4">
-                <p className="text-base font-bold text-[#12223a]">1. Start completely from scratch</p>
-                <p className="mt-2 text-sm leading-6 text-[#46566e]">Enter what you want in the Instructions box. Leave the Source document box empty. NEUROTEXT will create the document entirely from your instructions.</p>
-              </div>
-              <div className="rounded-lg border-2 border-[#7f9fc9] bg-white p-4">
-                <p className="text-base font-bold text-[#12223a]">2. Modify or build from a source</p>
-                <p className="mt-2 text-sm leading-6 text-[#46566e]">Enter what you want in the Instructions box, then paste or upload an existing paper, notes, outline, or other source material below.</p>
-              </div>
-            </div>
-          </div>}
           <div className="border-b border-[#dce1e9] bg-[#f5f9ff] p-5 sm:p-7">
-            {portal.id === "manipulator" && (
+            {diagnosticsOnly && portal.id === "manipulator" && (
               <label className="mb-5 block">
                 <span className="block text-xs font-bold uppercase tracking-[.14em] text-[#1e64c8]">Function 01 diagnostic preset</span>
                 <span className="mt-1 block text-sm text-[#56647a]">Load the identical source, instructions, and target length used by an owner diagnostic into the normal Function 01 interface.</span>
@@ -1846,17 +1836,17 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
             )}
             <label htmlFor="function-instructions" className="block">
               <span className="block text-xs font-bold uppercase tracking-[.14em] text-[#1e64c8]">Step 1 · Instructions</span>
-              <span className="mt-1 block text-lg font-bold text-[#152238]">What should NEUROTEXT do?</span>
-              <span className="mt-1 block text-sm text-[#56647a]">{portal.id === "manipulator" ? "Describe the new document you want created from scratch, or explain how NEUROTEXT should modify or use the optional source material below." : "Give the complete command for how the separate source document should be transformed, analyzed, refuted, translated, or used."}</span>
+              <span className="mt-1 block text-lg font-bold text-[#152238]">{portal.id === "creator" ? "What do you want written?" : portal.id === "manipulator" ? "How should the text be changed?" : "What should NEUROTEXT do?"}</span>
+              {portal.id !== "creator" && portal.id !== "manipulator" && <span className="mt-1 block text-sm text-[#56647a]">Describe what you want done with the text below.</span>}
               <textarea id="function-instructions" value={!instructions.trim() && defaultInstructions(portal.id) ? defaultInstructions(portal.id) : instructions} onChange={(event) => setInstructions(event.target.value)} className="mt-4 min-h-36 w-full resize-y rounded-lg border-2 border-[#1e64c8] bg-white p-4 text-base leading-7 outline-none placeholder:text-[#8391a5] focus:ring-4 focus:ring-[#dbeafe]" placeholder="Example: Rewrite this paper as a rigorous 3,000-word scholarly argument. Preserve its central thesis, address the strongest objection, and do not invent citations." />
             </label>
             {portal.id === "manipulator" && <div className="mt-4"><p className="mb-2 text-xs font-semibold text-[#56647a]">Optional instruction shortcuts — these fill the instruction box above:</p><div className="flex flex-wrap gap-2">{presets.map((preset) => <button type="button" key={preset} onClick={() => setInstructions(preset)} className="rounded border border-[#8eb0df] bg-white px-3 py-2 text-xs font-medium text-[#205cae] hover:bg-[#eef5ff]">{preset}</button>)}</div></div>}
           </div>
           <div className="grid gap-7 p-5 lg:grid-cols-[1.15fr_.85fr] lg:p-7">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[.14em] text-[#1e64c8]">{portal.id === "manipulator" ? "Step 2 · Source document · Optional" : "Step 2 · Source document"}</p>
-              <label htmlFor="source-document" className="mb-2 mt-1 block text-lg font-bold">{portal.id === "manipulator" ? "Leave empty when starting from scratch, or add existing material" : "Material to transform, analyze, refute, or draw from"}</label>
-              <p className="mb-3 text-sm text-[#56647a]">{sourceRequired ? "This function requires source material. Paste or upload it here. Instructions belong only in the instruction box above." : "Optional: paste or upload source material here, or leave this empty to create entirely from the instruction box above."}</p>
+            {portal.id !== "creator" && <div>
+              <p className="text-xs font-bold uppercase tracking-[.14em] text-[#1e64c8]">Step 2 · Your text</p>
+              <label htmlFor="source-document" className="mb-2 mt-1 block text-lg font-bold">{portal.id === "manipulator" ? "Text to rewrite or change" : "Text to work with"}</label>
+              <p className="mb-3 text-sm text-[#56647a]">{sourceRequired ? "Paste your text below or upload a document." : "Optional: paste text or upload a document."}</p>
                 <div onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); loadFile(event.dataTransfer.files[0]); }} className="rounded-lg border-2 border-dashed border-[#b9c8db] bg-[#fbfdff] p-4">
                 <textarea id="source-document" value={text} onChange={(event) => setText(event.target.value)} className="min-h-[230px] w-full resize-y bg-transparent text-sm leading-6 outline-none placeholder:text-[#8391a5]" placeholder={portal.placeholder} />
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[#e5e9ef] pt-3">
@@ -1872,7 +1862,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
                     </div>
                   </div>
               </div>
-            </div>
+            </div>}
             <div className="space-y-5">
               <label className="block"><span className="mb-2 block text-sm font-semibold">Choose LLM</span><select value={model} onChange={(event) => setModel(event.target.value)} className="h-11 w-full rounded-md border border-[#b9c8db] bg-white px-3 text-sm outline-none"><option value="GENIUS · Kuczynski">GENIUS 101 · Kuczynski (scholarly/style knowledge)</option><option value="ZHI 1">ZHI 1 · OpenAI GPT-5.6 Terra</option><option value="ZHI 2">ZHI 2 · Anthropic Claude Sonnet 4.6</option><option value="ZHI 3">ZHI 3 · OpenAI GPT-5.6 Terra</option><option value="ZHI 4">ZHI 4 · OpenAI GPT-5.6 Terra</option><option value="ZHI 5">ZHI 5 · Anthropic Claude Sonnet 4.6</option><option value="ZHI 6">ZHI 6 · OpenAI GPT-5.6 Terra</option></select><p className="mt-2 text-xs leading-5 text-[#64748b]">The selected provider is shown here; the evaluator also reports the provider that actually completed the run if it had to fail over.</p></label>
               <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_150px]">

@@ -31,7 +31,8 @@ import {
 } from "@workspace/api-zod";
 
 const functionOperations: Record<string, string> = {
-  manipulator: "If no source document is supplied, create a new document entirely from the user's instructions. If source material is supplied, transform it exactly as instructed and preserve all material facts unless the user asks to remove them.",
+  creator: "Create a new document from scratch, entirely from the user's instructions.",
+  manipulator: "Rewrite or transform the supplied text exactly as instructed. Preserve its meaning and all material facts unless the user explicitly asks to change them. Do not create an unrelated new document.",
   objections: "Generate the strongest serious objections to the document, explain why each matters, then produce a rewritten version that directly addresses them.",
   screenplay: "Create a properly formatted screenplay from the user's instructions, using any supplied source material when present, with scene headings, action, character cues, and dialogue.",
   dialogue: "Create vivid, character-distinct dialogue from the user's instructions, using any supplied source material when present.",
@@ -327,6 +328,14 @@ workspaceRouter.post("/functions/run", async (req, res) => {
     return;
   }
   const { functionId, text, instructions, targetWords, provider, thinker, quotes } = parsed.data;
+  if (functionId === "manipulator" && !text.trim()) {
+    res.status(400).json({ error: "Paste the text you want rewritten or changed." });
+    return;
+  }
+  if (functionId === "creator" && !instructions?.trim()) {
+    res.status(400).json({ error: "Describe the document you want written." });
+    return;
+  }
   const operation = functionOperations[functionId] ?? functionOperations.manipulator;
   const prompt = `You are completing a NEUROTEXT document function.
 FUNCTION: ${functionId}
@@ -336,7 +345,7 @@ TARGET WORD LENGTH: ${targetWords || "Match the appropriate length for the reque
 INTELLECTUAL PERSPECTIVE: ${thinkerContext(thinker, quotes)}
 ${FINISHED_DOCUMENT_RULES}
 SOURCE DOCUMENT:
-${text}`;
+${functionId === "creator" ? "" : text}`;
   try {
     const result = await generateWithFallback(provider, prompt, { quotes });
     res.json({ ...result, text: stripControlLanguage(result.text) });
@@ -423,7 +432,7 @@ function inferLongFormTarget(explicitTarget: string | undefined, instructions: s
   if (wordMatch) return parseTargetWordCount(wordMatch[1]);
   const pageMatch = request.match(/\b(\d{1,4})\s*[- ]?pages?\b/i);
   if (pageMatch) return Math.min(100000, Math.max(250, Number(pageMatch[1]) * 250));
-  if (functionId === "manipulator" && /\b(long[- ]?form|essay|paper|chapter|book|treatise|article)\b/i.test(request)) {
+  if (["manipulator", "creator"].includes(functionId) && /\b(long[- ]?form|essay|paper|chapter|book|treatise|article)\b/i.test(request)) {
     return Math.max(1000, inputWords);
   }
   return null;
@@ -458,7 +467,15 @@ workspaceRouter.post("/functions/stream", async (req, res) => {
     return;
   }
   const { functionId, text, instructions, targetWords, provider, thinker, quotes, resumeDocument, resumeSkeleton } = parsed.data;
-  const cleanSource = stripControlLanguage(text);
+  if (functionId === "manipulator" && !text.trim()) {
+    res.status(400).json({ error: "Paste the text you want rewritten or changed." });
+    return;
+  }
+  if (functionId === "creator" && !instructions?.trim()) {
+    res.status(400).json({ error: "Describe the document you want written." });
+    return;
+  }
+  const cleanSource = functionId === "creator" ? "" : stripControlLanguage(text);
   const operation = `${functionOperations[functionId] ?? functionOperations.manipulator} Preserve all facts, terminology, quotations, and negative results. ${instructions || "Use professional judgment."} ${thinkerContext(thinker, quotes)}`;
   const chunks = splitForStreaming(cleanSource);
   openEventStream(res);

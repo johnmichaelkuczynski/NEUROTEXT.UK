@@ -1,4 +1,5 @@
 import { selectedModel } from "@/components/model-selector";
+import OutputWordCount from "@/components/output-word-count";
 import { useEffect, useRef, useState } from "react";
 import WritingNavigation from "@/components/writing-navigation";
 import RewriteOutput from "@/components/rewrite-output";
@@ -273,6 +274,7 @@ export default function DocumentTransformer() {
 
   const outputActions = (
     <div className="flex flex-wrap items-center gap-3">
+      <OutputWordCount text={output} />
       <CopyButton text={output} label="Output" />
       <button type="button" onClick={downloadOutput} className={btn}>Download .txt</button>
     </div>

@@ -21,11 +21,17 @@ Text-to-dialogue must work from the supplied text alone; additional instructions
 
 **How to apply:** Do not disable an adaptation action solely because its optional instructions are empty. Keep the user's supplied text intact.
 
-The user subsequently said, “It is better. It is much better,” while viewing Text to dialogue.
+The user subsequently said, “It is better. It is much better,” while viewing Text to dialogue, and later, “Overall the app is working well,” while viewing Text to dissertation.
 
 **Why:** This is explicit positive feedback on the revised experience, not a request for another redesign.
 
 **How to apply:** Preserve the accepted flow while making later scoped changes.
+
+Every function's output needs a visible word counter, including thesis and dissertation outputs.
+
+**Why:** The user specifically said it is important to know how many words are in the dissertation.
+
+**How to apply:** Include the counter when adding future output surfaces. It must reflect the complete current output, including streamed additions and subsequent rewrites, not merely the portion visible in the box.
 
 Every function page, existing and future, must end with a revision box for the user's desired changes and a matching action button. The user first called this “Rewrite output” and subsequently requested “Critique and regenerate” on newer pages. Follow the requested label; these are the same final revision step, not two separate boxes. This revises the current output rather than starting over from the original input.
 

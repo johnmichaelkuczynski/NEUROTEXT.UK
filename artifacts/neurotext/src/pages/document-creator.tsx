@@ -1,4 +1,5 @@
 import { selectedModel } from "@/components/model-selector";
+import OutputWordCount from "@/components/output-word-count";
 import { useEffect, useRef, useState } from "react";
 import WritingNavigation from "@/components/writing-navigation";
 import RewriteOutput from "@/components/rewrite-output";
@@ -249,6 +250,7 @@ export default function DocumentCreator() {
         {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
         {output && (
           <section aria-label="Document output" className="space-y-4 border-t border-slate-200 pt-6">
+            <div className="font-semibold">Output <OutputWordCount text={output} /></div>
             <div className="flex flex-wrap gap-3">
               <button type="button" onClick={() => void copyOutput()} className="rounded-md border border-slate-300 bg-white px-4 py-2 font-semibold hover:bg-slate-50">
                 {copied ? "Copied" : "Copy"}

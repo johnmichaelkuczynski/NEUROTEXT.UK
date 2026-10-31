@@ -1,4 +1,5 @@
 import { selectedModel } from "@/components/model-selector";
+import OutputWordCount from "@/components/output-word-count";
 import { useEffect, useRef, useState } from "react";
 import WritingNavigation from "@/components/writing-navigation";
 import LiveGenerationPopup from "@/components/live-generation-popup";
@@ -307,7 +308,7 @@ export default function CoherenceEvaluator() {
         <div className="space-y-2">
           {output && evaluationVersion !== "reasoning-v2" && <p role="status" className="text-sm text-amber-800">Saved report from an earlier or unversioned evaluator. Evaluate coherence to produce a new analysis; the saved report has not been replaced.</p>}
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <label htmlFor="coherence-output" className="block text-base font-semibold">Output</label>
+            <label htmlFor="coherence-output" className="block text-base font-semibold">Output <OutputWordCount text={output} /></label>
             <div className="flex flex-wrap items-center gap-3">
               <CopyButton text={output} label="Output" />
               <button type="button" onClick={downloadOutput} disabled={!output.trim()} className={`${btn} px-3 py-1 text-sm`}>Download .txt</button>

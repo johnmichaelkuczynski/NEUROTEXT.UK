@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import OutputWordCount from "@/components/output-word-count";
 import { ArrowRight, Copy, Download, FileText, Loader2, Mail, Play, Repeat2, Save, ShieldCheck, Sparkles, Upload, X } from "lucide-react";
 import type { AuthUser } from "@/App";
 import { diagnosticTheses } from "@/data/diagnostic-theses";
@@ -1899,6 +1900,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
         </section>
 
         {(output || skeleton || busy) && <section className="mt-7 rounded-xl border border-[#dce1e9] bg-white p-5 shadow-sm lg:p-7">
+          <OutputWordCount text={output} />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div><p className="text-xs font-bold uppercase tracking-[.14em] text-[#1e64c8]">Result</p><h2 className="mt-1 text-xl font-bold">{portal.title}</h2></div>
             {output.trim() && <div className="flex flex-wrap gap-2">

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
+import OutputWordCount from "@/components/output-word-count";
 
 type Props = {
   open: boolean;
@@ -130,6 +131,7 @@ export default function LiveGenerationPopup({ open, onClose, text, busy, status,
               if (element) follow.current = element.scrollHeight - element.scrollTop - element.clientHeight < 70;
             }}
           >{visible || (busy ? "Waiting for the first words…" : "No text received.")}</div>
+          <OutputWordCount text={visible} />
           <button
             type="button"
             aria-label="Resize live output window. Drag or use arrow keys."

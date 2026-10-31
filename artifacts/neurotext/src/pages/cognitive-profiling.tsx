@@ -1,4 +1,5 @@
 import { selectedModel } from "@/components/model-selector";
+import OutputWordCount from "@/components/output-word-count";
 import { useEffect, useRef, useState } from "react";
 import WritingNavigation from "@/components/writing-navigation";
 import LiveGenerationPopup from "@/components/live-generation-popup";
@@ -385,7 +386,7 @@ export default function CognitiveProfiling() {
         {error && <p role="alert" data-testid="error-profile" className="text-sm text-red-700">{error}</p>}
         <div className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <label htmlFor="profile-output" className="block text-base font-semibold">Output</label>
+            <label htmlFor="profile-output" className="block text-base font-semibold">Output <OutputWordCount text={output} /></label>
             <div className="flex flex-wrap items-center gap-3">
               <CopyButton text={output} label="Output" />
               <button type="button" data-testid="button-download-output" onClick={downloadOutput} disabled={!output.trim()} className={`${btn} px-3 py-1 text-sm`}>Download .txt</button>

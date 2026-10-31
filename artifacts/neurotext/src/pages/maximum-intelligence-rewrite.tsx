@@ -1,3 +1,4 @@
+import { selectedModel } from "@/components/model-selector";
 import { useEffect, useRef, useState } from "react";
 import WritingNavigation from "@/components/writing-navigation";
 import LiveGenerationPopup from "@/components/live-generation-popup";
@@ -190,6 +191,7 @@ export default function MaximumIntelligenceRewrite() {
   };
 
   const run = async (fromOutput: boolean) => {
+    const provider = selectedModel();
     if (running.current) return;
     const text = fromOutput ? output : sourceText;
     if (!text.trim()) return;
@@ -235,7 +237,7 @@ export default function MaximumIntelligenceRewrite() {
               functionId: "maxintel",
               text,
               instructions: JSON.stringify({ authorPrompt: 1, instructions: active, styleSample, contentSource, revision: fromOutput, function: fromOutput ? "manipulator" : "maxintel" }),
-              provider: "ZHI 1",
+              provider,
               targetWords,
               resumeDocument: doc || undefined,
               resumeSkeleton: skeleton || undefined,

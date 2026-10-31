@@ -1,4 +1,5 @@
 import { authorFunction, authorReferenceMessage, buildAuthorPrompt, readPromptFields } from "./author-prompts.ts";
+import { generateSelectedModel } from "./model-selection.ts";
 
 export type AuthorRequest = {
   functionId: string;
@@ -15,65 +16,10 @@ export type AuthorModel = (request: ModelRequest, token: (text: string, provider
 // This transport is isolated from legacy/Translator behavior. No hidden prompts,
 // trimming, academic repair, automatic citations, or rewritten provider output.
 export const authorModel: AuthorModel = async (request, token) => {
-  const { openai } = await import("@workspace/integrations-openai-ai-server");
-  const { anthropic } = await import("@workspace/integrations-anthropic-ai");
-  // Both APIs require a nonempty conversational turn. With no optional reference
-  // fields, repeat an existing canonical line rather than inventing instructions.
-  const userMessage = request.userMessage || request.systemPrompt.split("\n")[0];
-  const providers = request.provider === "ZHI 2" || request.provider === "ZHI 5"
-    ? ["anthropic", "openai"] : ["openai", "anthropic"];
-  let lastError: unknown;
-  for (const provider of providers) {
-    let visible = false;
-    let text = "";
-    let truncated = false;
-    let finished = false;
-    try {
-      if (provider === "openai") {
-        const stream = await openai.chat.completions.create({
-          model: "gpt-5.6-terra",
-          temperature: request.temperature,
-          max_completion_tokens: request.maxTokens,
-          stream: true,
-          messages: [
-            { role: "system", content: request.systemPrompt },
-            { role: "user", content: userMessage },
-          ],
-        });
-        for await (const event of stream) {
-          const choice = event.choices[0];
-          if (choice?.finish_reason === "stop" || choice?.finish_reason === "length") finished = true;
-          if (choice?.finish_reason === "length") truncated = true;
-          const next = choice?.delta?.content ?? "";
-          if (next) { visible = true; text += next; token(next, "OpenAI · GPT-5.6 Terra"); }
-        }
-      } else {
-        const stream = anthropic.messages.stream({
-          model: "claude-sonnet-4-6",
-          temperature: request.temperature,
-          max_tokens: request.maxTokens,
-          system: request.systemPrompt,
-          messages: [{ role: "user", content: userMessage }],
-        });
-        for await (const event of stream) {
-          if (event.type === "message_stop") finished = true;
-          if (event.type === "message_delta" && event.delta.stop_reason === "max_tokens") truncated = true;
-          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-            const next = event.delta.text;
-            visible = true; text += next; token(next, "Anthropic · Claude Sonnet 4.6");
-          }
-        }
-      }
-      if (!finished) throw new Error("The model stream ended without a completion signal.");
-      if (!text.trim()) throw new Error("The model returned no text.");
-      return { text, providerUsed: provider === "openai" ? "OpenAI · GPT-5.6 Terra" : "Anthropic · Claude Sonnet 4.6", truncated };
-    } catch (error) {
-      lastError = error;
-      // Never silently combine a partial response with another provider's rewrite.
-      if (visible) throw error;
-    }
-  }
-  throw lastError instanceof Error ? lastError : new Error("No model completed the request.");
+  return generateSelectedModel(request.provider, request.userMessage, token, {
+    systemPrompt: request.systemPrompt,
+    maxTokens: request.maxTokens,
+  });
 };
 
 const CONTEXT_BYTES = 440_000;

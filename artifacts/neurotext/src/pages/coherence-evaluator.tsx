@@ -1,3 +1,4 @@
+import { selectedModel } from "@/components/model-selector";
 import { useEffect, useRef, useState } from "react";
 import WritingNavigation from "@/components/writing-navigation";
 import LiveGenerationPopup from "@/components/live-generation-popup";
@@ -146,6 +147,7 @@ export default function CoherenceEvaluator() {
   };
 
   const evaluate = async () => {
+    const provider = selectedModel();
     if (!text.trim() || running.current) return;
     running.current = true;
     setBusy(true);
@@ -169,7 +171,7 @@ export default function CoherenceEvaluator() {
           title: "Coherence evaluation",
           text,
           instructions: instructions.trim() ? instructions : undefined,
-          provider: "ZHI 1",
+          provider,
           mode: pickMode(instructions),
           allowFallback: true,
           targetWords: parseTargetWords(instructions),

@@ -1,5 +1,6 @@
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { generateSelectedModel, isSelectedModel } from "./model-selection";
 
 export type ProviderId =
   | "GENIUS · Kuczynski"
@@ -99,6 +100,11 @@ export async function generateWithFallback(
   prompt: string,
   options: GenerationOptions = {},
 ): Promise<{ text: string; providerUsed: string }> {
+  if (isSelectedModel(requestedProvider)) {
+    return generateSelectedModel(requestedProvider, prompt, () => {}, {
+      maxTokens: options.maxWords ? Math.max(256, Math.ceil(options.maxWords * 1.6)) : 8192,
+    });
+  }
   const provider = (providerChains[requestedProvider as ProviderId]
     ? requestedProvider
     : "ZHI 1") as ProviderId;
@@ -161,6 +167,11 @@ export async function generateWithFallbackStreaming(
   onToken: (token: string, providerUsed: string) => Promise<void> | void,
   options: GenerationOptions = {},
 ): Promise<{ text: string; providerUsed: string }> {
+  if (isSelectedModel(requestedProvider)) {
+    return generateSelectedModel(requestedProvider, prompt, onToken, {
+      maxTokens: options.maxWords ? Math.max(256, Math.ceil(options.maxWords * 1.6)) : 8192,
+    });
+  }
   const provider = (providerChains[requestedProvider as ProviderId]
     ? requestedProvider
     : "ZHI 1") as ProviderId;

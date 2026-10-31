@@ -4,13 +4,12 @@ import { generateAuthorDocument, splitAuthorSource, type AuthorModel, type Autho
 import { CORE_RULES } from "./author-prompts.ts";
 import { readFileSync } from "node:fs";
 
-test("provider transport has exact system roles and temperatures with nonblank conversational turns", () => {
+test("author transport delegates to the selected model without changing canonical system text", () => {
   const source = readFileSync(new URL("./author-generation.ts", import.meta.url), "utf8");
-  assert.match(source, /role: "system", content: request\.systemPrompt/);
-  assert.match(source, /system: request\.systemPrompt/);
-  assert.equal((source.match(/temperature: request\.temperature/g) ?? []).length, 2);
-  assert.match(source, /request\.userMessage \|\| request\.systemPrompt\.split\("\\n"\)\[0\]/);
-  assert.ok(!source.includes('content: request.userMessage || " "'));
+  assert.match(source, /generateSelectedModel\(request\.provider, request\.userMessage, token/);
+  assert.match(source, /systemPrompt: request\.systemPrompt/);
+  assert.ok(!source.includes("claude-sonnet-4-6"));
+  assert.ok(!source.includes("gpt-5.6-terra"));
 });
 
 test("a full document goes in one request and native output is unchanged", async () => {

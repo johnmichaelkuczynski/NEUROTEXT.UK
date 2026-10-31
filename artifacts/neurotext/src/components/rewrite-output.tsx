@@ -1,3 +1,4 @@
+import { selectedModel } from "./model-selector";
 import { useEffect, useId, useRef, useState } from "react";
 import LiveGenerationPopup from "@/components/live-generation-popup";
 
@@ -62,6 +63,7 @@ export default function RewriteOutput({
   };
 
   const rewrite = async () => {
+    const provider = selectedModel();
     if (busy || running.current || !output.trim()) return;
     const originalOutput = output;
     const changes = instructions.trim();
@@ -107,7 +109,7 @@ Return only the complete revised ${documentKind}, without commentary about the r
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               functionId: "manipulator", text: originalOutput, instructions: JSON.stringify({ authorPrompt: 1, revision: true, instructions: changes }),
-              provider: "ZHI 1", targetWords,
+              provider, targetWords,
               resumeDocument: document || undefined, resumeSkeleton: skeleton || undefined,
             }),
           });

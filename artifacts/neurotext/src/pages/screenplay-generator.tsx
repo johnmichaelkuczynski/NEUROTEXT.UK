@@ -1,3 +1,4 @@
+import { selectedModel } from "@/components/model-selector";
 import { useEffect, useRef, useState } from "react";
 import WritingNavigation from "@/components/writing-navigation";
 import LiveGenerationPopup from "@/components/live-generation-popup";
@@ -179,6 +180,7 @@ export default function ScreenplayGenerator({ mode = "scratch" }: { mode?: Mode 
   };
 
   const generate = async () => {
+    const provider = selectedModel();
     if (!instructions.trim() || (adaptation && !sourceText.trim()) || running.current) return;
     running.current = true;
     setBusy(true);
@@ -226,7 +228,7 @@ export default function ScreenplayGenerator({ mode = "scratch" }: { mode?: Mode 
               functionId: dialogue ? "dialogue" : "screenplay",
               text: adaptation ? sourceText : "",
               instructions: JSON.stringify({ authorPrompt: 1, ...(adaptation ? { instructions } : { topic: instructions }), styleSample: styleSource, contentSource }),
-              provider: "ZHI 1",
+              provider,
               targetWords,
               resumeDocument: doc || undefined,
               resumeSkeleton: skeleton || undefined,

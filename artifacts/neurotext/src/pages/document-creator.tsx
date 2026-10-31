@@ -1,3 +1,4 @@
+import { selectedModel } from "@/components/model-selector";
 import { useEffect, useRef, useState } from "react";
 import WritingNavigation from "@/components/writing-navigation";
 import RewriteOutput from "@/components/rewrite-output";
@@ -124,6 +125,7 @@ export default function DocumentCreator() {
   };
 
   const createDocument = async () => {
+    const provider = selectedModel();
     if (!instructions.trim() || busy || running.current) return;
     running.current = true;
     setBusy(true);
@@ -150,7 +152,7 @@ export default function DocumentCreator() {
               functionId: "creator",
               text: "",
               instructions: JSON.stringify({ authorPrompt: 1, topic: instructions, styleSample, contentSource }),
-              provider: "ZHI 1",
+              provider,
               resumeDocument: document || undefined,
               resumeSkeleton: skeleton || undefined,
             }),

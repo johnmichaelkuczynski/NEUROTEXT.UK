@@ -1,3 +1,4 @@
+import { selectedModel } from "@/components/model-selector";
 import { useEffect, useRef, useState } from "react";
 import WritingNavigation from "@/components/writing-navigation";
 import RewriteOutput from "@/components/rewrite-output";
@@ -155,6 +156,7 @@ export default function DocumentTransformer() {
   };
 
   const transform = async () => {
+    const provider = selectedModel();
     if (!documentText.trim() || !instructions.trim() || running.current) return;
     running.current = true;
     const priorOutput = output;
@@ -182,7 +184,7 @@ export default function DocumentTransformer() {
               functionId: "manipulator",
               text: documentText,
               instructions: JSON.stringify({ authorPrompt: 1, instructions, styleSample, contentSource }),
-              provider: "ZHI 1",
+              provider,
               resumeDocument: doc || undefined,
               resumeSkeleton: skeleton || undefined,
             }),

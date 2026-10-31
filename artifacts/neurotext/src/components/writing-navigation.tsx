@@ -1,6 +1,9 @@
+import ModelSelector from "./model-selector";
+
 export default function WritingNavigation({ current, busy }: { current: "creator" | "transformer" | "screenplay" | "screenplay-adaptation" | "dialogue" | "dialogue-adaptation" | "coherence" | "maxintel" | "profile" | "thesis-creator" | "thesis-transformer" | "dissertation-creator" | "dissertation-transformer" | "translator"; busy: boolean }) {
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
   return (
+    <div className="space-y-5">
     <nav aria-label="Writing pages" className="flex flex-wrap gap-3">
       {([
         { id: "creator", path: "/page-2", label: "Write from scratch" },
@@ -32,5 +35,7 @@ export default function WritingNavigation({ current, busy }: { current: "creator
         </a>
       ))}
     </nav>
+    <ModelSelector busy={busy} />
+    </div>
   );
 }

@@ -229,7 +229,7 @@ const portals: Portal[] = [
   { id: "translation", number: "11", title: "Document Translation", description: "Translate documents while preserving structure and meaning.", placeholder: "Paste or upload the document you want translated.", action: "Translate document" },
 ];
 
-const models = ["ZHI 1", "ZHI 2", "ZHI 3", "ZHI 4", "ZHI 5", "ZHI 6"];
+const models = ["ZHI 1", "ZHI 2", "ZHI 3", "ZHI 4"];
 const presets = ["Turn into a pitch", "Turn into a pitch with objections", "Turn into a screenplay", "Turn into a master's thesis"];
 const coherenceModes = [
   { value: "autodetect", label: "Autodetect" },
@@ -417,7 +417,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
   const [instructions, setInstructions] = useState(initialWorkspace.instructions);
   const [targetWords, setTargetWords] = useState(initialWorkspace.targetWords);
   const [functionOnePreset, setFunctionOnePreset] = useState("");
-  const [model, setModel] = useState(initialWorkspace.model);
+  const [model, setModel] = useState(models.includes(initialWorkspace.model) ? initialWorkspace.model : "ZHI 1");
   const [thinker, setThinker] = useState(initialWorkspace.thinker);
   const [quotes, setQuotes] = useState(initialWorkspace.quotes);
   const [output, setOutput] = useState(initialWorkspace.output);
@@ -654,7 +654,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
     setText(workspace.text);
     setInstructions(workspace.instructions);
     setTargetWords(workspace.targetWords);
-    setModel(workspace.model);
+    setModel(models.includes(workspace.model) ? workspace.model : "ZHI 1");
     setThinker(workspace.thinker);
     setQuotes(workspace.quotes);
     commitOutput(workspace.output);
@@ -827,7 +827,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
       setText(sourceText);
       setInstructions(sourceInstructions);
       setTargetWords(sourceTargetWords);
-      setModel(sourceModel);
+      setModel(models.includes(sourceModel) ? sourceModel : "ZHI 1");
       setThinker(sourceThinker);
       setQuotes(sourceQuotes);
       commitOutput(resumable.output);
@@ -1883,7 +1883,7 @@ export default function Neurotext({ user, onLogout, loginUrl, diagnosticsOnly = 
               </div>
             </div>}
             <div className="space-y-5">
-              <label className="block"><span className="mb-2 block text-sm font-semibold">Choose LLM</span><select value={model} onChange={(event) => setModel(event.target.value)} className="h-11 w-full rounded-md border border-[#b9c8db] bg-white px-3 text-sm outline-none"><option value="GENIUS · Kuczynski">GENIUS 101 · Kuczynski (scholarly/style knowledge)</option><option value="ZHI 1">ZHI 1 · OpenAI GPT-5.6 Terra</option><option value="ZHI 2">ZHI 2 · Anthropic Claude Sonnet 4.6</option><option value="ZHI 3">ZHI 3 · OpenAI GPT-5.6 Terra</option><option value="ZHI 4">ZHI 4 · OpenAI GPT-5.6 Terra</option><option value="ZHI 5">ZHI 5 · Anthropic Claude Sonnet 4.6</option><option value="ZHI 6">ZHI 6 · OpenAI GPT-5.6 Terra</option></select><p className="mt-2 text-xs leading-5 text-[#64748b]">The selected provider is shown here; the evaluator also reports the provider that actually completed the run if it had to fail over.</p></label>
+              <label className="block"><span className="mb-2 block text-sm font-semibold">Choose LLM</span><select value={model} disabled={busy} onChange={(event) => setModel(event.target.value)} className="h-11 w-full rounded-md border border-[#b9c8db] bg-white px-3 text-sm outline-none">{models.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
               <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_150px]">
                  <label className="block"><span className="mb-2 block text-sm font-semibold">Thinker perspective and style <span className="font-normal text-[#64748b]">(optional)</span></span><select value={thinker} onChange={(event) => { const nextThinker = event.target.value; setThinker(nextThinker); if (!nextThinker) setQuotes(0); }} className="h-11 w-full rounded-md border border-[#b9c8db] bg-white px-3 py-2 text-sm outline-none"><option value="">Standard NEUROTEXT style</option>{thinkers.map((name) => <option key={name} value={name}>{name}</option>)}</select><p className="mt-2 text-xs leading-5 text-[#64748b]">Select a named thinker only when you want that perspective and writing style. The standard option uses NEUROTEXT’s own style.</p></label>
                  <label className="block"><span className="mb-2 block text-sm font-semibold">Author quotes <span className="font-normal text-[#64748b]">(optional)</span></span><input type="number" min={0} max={20} step={1} value={quotes} disabled={!thinker} onChange={(event) => setQuotes(Math.max(0, Math.min(20, Number(event.target.value) || 0)))} className="h-11 w-full rounded-md border border-[#b9c8db] bg-white px-3 text-sm outline-none disabled:cursor-not-allowed disabled:bg-[#f1f4f8] disabled:text-[#94a3b8]" /><p className="mt-2 text-xs leading-5 text-[#64748b]">{thinker ? "0–20 verified quotes from the selected thinker." : "Select a thinker to enable optional author quotes."}</p></label>

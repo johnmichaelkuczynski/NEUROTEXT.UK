@@ -1,3 +1,4 @@
+import { selectedModel } from "@/components/model-selector";
 import { useEffect, useRef, useState } from "react";
 import WritingNavigation from "@/components/writing-navigation";
 import LiveGenerationPopup from "@/components/live-generation-popup";
@@ -207,6 +208,7 @@ export default function Translator() {
   };
 
   const run = async (revise: boolean) => {
+    const provider = selectedModel();
     if (running.current) return;
     const sourceSnap = sourceText;
     const langSnap = targetLanguage;
@@ -249,7 +251,7 @@ export default function Translator() {
             functionId: revise ? "translation-revision" : "translator",
             text: revise ? outputSnap : sourceSnap,
             instructions: composed,
-            provider: "ZHI 1",
+              provider,
           }),
         });
       } catch {

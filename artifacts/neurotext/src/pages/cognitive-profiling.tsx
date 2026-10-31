@@ -1,3 +1,4 @@
+import { selectedModel } from "@/components/model-selector";
 import { useEffect, useRef, useState } from "react";
 import WritingNavigation from "@/components/writing-navigation";
 import LiveGenerationPopup from "@/components/live-generation-popup";
@@ -201,6 +202,7 @@ export default function CognitiveProfiling() {
   };
 
   const run = async (revise: boolean) => {
+    const provider = selectedModel();
     if (running.current) return;
     // Snapshot everything at submission.
     const sourceSnap = text;
@@ -252,7 +254,7 @@ export default function CognitiveProfiling() {
               functionId: "profile",
               text: revise ? outputSnap : sourceSnap,
               instructions: JSON.stringify({ authorPrompt: 1, instructions: revise ? critiqueSnap : instructionsSnap, revision: revise, function: revise ? "manipulator" : "profile", originalText: revise ? sourceSnap : undefined }),
-              provider: "ZHI 1",
+              provider,
               targetWords,
               resumeDocument: doc || undefined,
               resumeSkeleton: targetWords && skeleton ? skeleton : undefined,

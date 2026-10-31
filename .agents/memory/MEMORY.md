@@ -7,3 +7,4 @@
 - [Separate writing functions](function-separation.md) — writing from scratch and rewriting existing text must be separate functions.
 - [Translation semantics](translation-semantics.md) — avoid academic expansion and bibliography insertion; shortening must not compound on ordinary revisions.
 - [Author prompt policy](author-prompt-policy.md) — preserve supplied CORE RULES and function prompts verbatim; no extra editorial instructions; Translator excluded.
+- [Model naming policy](model-naming-policy.md) — show only ZHI 1–4 aliases in model choices and request metadata; preserve the exact selected model.

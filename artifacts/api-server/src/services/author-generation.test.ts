@@ -71,3 +71,19 @@ test("a failed stream never reports completion and Translator never enters this 
   assert.ok(!events.some((event) => event.type === "done"));
   assert.equal(await generateAuthorDocument({ functionId: "translator", text: "input", provider: "ZHI 1" }, () => {}, () => true, model), undefined);
 });
+
+test("coherence uses the evaluation prompt, bounded initial budget, and first-text deadline", async () => {
+  const calls: Parameters<AuthorModel>[0][] = [];
+  const model: AuthorModel = async (request, emit) => {
+    calls.push(request);
+    emit("Coherent: recognition and emotional control are distinct.", "test");
+    return { text: "Coherent: recognition and emotional control are distinct.", providerUsed: "test", truncated: false };
+  };
+  await generateAuthorDocument({
+    functionId: "coherence", text: "I know it is safe but feel afraid.", provider: "ZHI 1",
+  }, () => {}, () => true, model);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].firstTextTimeoutMs, 90_000);
+  assert.equal(calls[0].maxTokens, 4096);
+  assert.ok(!calls[0].systemPrompt.startsWith(CORE_RULES));
+});

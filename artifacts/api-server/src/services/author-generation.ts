@@ -10,7 +10,7 @@ export type AuthorRequest = {
   resumeDocument?: string;
 };
 export type AuthorEvent = Record<string, unknown>;
-type ModelRequest = { systemPrompt: string; userMessage: string; temperature: number; maxTokens: number; provider: string };
+type ModelRequest = { systemPrompt: string; userMessage: string; temperature: number; maxTokens: number; provider: string; firstTextTimeoutMs?: number };
 export type AuthorModel = (request: ModelRequest, token: (text: string, provider: string) => void) => Promise<{ text: string; providerUsed: string; truncated: boolean }>;
 
 // This transport is isolated from legacy/Translator behavior. No hidden prompts,
@@ -19,6 +19,7 @@ export const authorModel: AuthorModel = async (request, token) => {
   return generateSelectedModel(request.provider, request.userMessage, token, {
     systemPrompt: request.systemPrompt,
     maxTokens: request.maxTokens,
+    firstTextTimeoutMs: request.firstTextTimeoutMs,
   });
 };
 
@@ -83,7 +84,8 @@ export async function generateAuthorDocument(
       const result = await model({
         ...prompt,
         provider: input.provider,
-        maxTokens: 32768,
+        maxTokens: fn === "coherence" ? Math.min(32768, Math.max(4096, Math.ceil(Number(input.targetWords || 0) * 2))) : 32768,
+        ...(fn === "coherence" ? { firstTextTimeoutMs: 90_000 } : {}),
         userMessage: [userMessage, context].filter(Boolean).join("\n\n"),
       }, (text, provider) => {
         output += text;

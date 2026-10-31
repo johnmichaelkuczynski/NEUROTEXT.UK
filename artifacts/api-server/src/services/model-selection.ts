@@ -42,32 +42,45 @@ export async function generateSelectedModel(
   provider: string,
   prompt: string,
   onToken: (text: string, providerUsed: string) => Promise<void> | void,
-  options: { systemPrompt?: string; maxTokens?: number } = {},
+  options: { systemPrompt?: string; maxTokens?: number; firstTextTimeoutMs?: number } = {},
 ) {
   const request = selectedModelRequest(provider, prompt, options.systemPrompt, options.maxTokens);
+  const controller = new AbortController();
+  let timedOut = false;
+  // Coherence requests must not silently wait through SDK retries for minutes.
+  // Cancel the upstream request itself, not just the browser's waiting state.
+  const firstTextTimer = options.firstTextTimeoutMs ? setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, options.firstTextTimeoutMs) : undefined;
+  const transportOptions = options.firstTextTimeoutMs
+    ? { signal: controller.signal, maxRetries: 0, timeout: 300_000 }
+    : undefined;
   let text = "";
   let truncated = false;
   let finished = false;
   let finishReason: string | undefined;
+  try {
   if (request.selection.provider === "openai") {
     const { openai } = await import("@workspace/integrations-openai-ai-server");
-    const stream = await openai.chat.completions.create(request.openai);
+    const stream = await openai.chat.completions.create(request.openai, transportOptions);
     for await (const event of stream) {
       const choice = event.choices[0];
       finishReason = choice?.finish_reason ?? finishReason;
       if (choice?.finish_reason === "stop" || choice?.finish_reason === "length") finished = true;
       if (choice?.finish_reason === "length") truncated = true;
       const next = choice?.delta?.content ?? "";
-      if (next) { text += next; await onToken(next, provider); }
+      if (next) { clearTimeout(firstTextTimer); text += next; await onToken(next, provider); }
     }
   } else {
     const { anthropic } = await import("@workspace/integrations-anthropic-ai");
-    const stream = anthropic.messages.stream(request.anthropic);
+    const stream = anthropic.messages.stream(request.anthropic, transportOptions);
     for await (const event of stream) {
       if (event.type === "message_delta") finishReason = event.delta.stop_reason ?? finishReason;
       if (event.type === "message_stop") finished = true;
       if (event.type === "message_delta" && event.delta.stop_reason === "max_tokens") truncated = true;
       if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+        if (event.delta.text) clearTimeout(firstTextTimer);
         text += event.delta.text;
         await onToken(event.delta.text, provider);
       }
@@ -76,4 +89,10 @@ export async function generateSelectedModel(
   if (!finished) throw new Error(`${provider} ended without a completion signal. Partial output is preserved.`);
   if (!text.trim()) throw new Error(`${provider} returned no text.`);
   return { text, providerUsed: provider, truncated, finishReason };
+  } catch (error) {
+    if (timedOut) throw new Error(`${provider} did not begin the coherence report within 90 seconds. The request was stopped; your input and previous output are preserved. Try again or choose another model.`);
+    throw error;
+  } finally {
+    clearTimeout(firstTextTimer);
+  }
 }

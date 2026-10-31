@@ -1,0 +1,20 @@
+**Judgment: coherent in its central structure, with a specific unresolved gap. One sentence, as literally worded, contradicts the conclusion it is meant to support.**
+
+**The literal contradiction.** The pivotal sentence says the obsessive-compulsive's delusions "are always superimposed on a *delusive* understanding of reality, whereas, in the case of schizophrenia… the delusion is primary." The summary says neurotic delusions result from "a disempowering of an underlying *correct* conception of reality." Both cannot hold in the same respect. One describes the neurotic's underlying understanding as delusive, the other as correct. Read literally, the sentence also erases the neurotic/psychotic contrast: if both rest on delusive understandings, nothing makes the psychotic's delusion uniquely "primary." This is almost certainly a wording error, since the rest of the text requires "non-delusive." Still, the text as written asserts the opposite of its thesis at its key step.
+
+**Apparent tensions the text resolves.** The opening claims that the obsessive-compulsive's intellect is "unimpaired in respect of clarity." Later the text concedes that his intellect "may lack clarity" and that he can be "thoroughly taken in." These do not contradict each other.
+- The opening is a general characterization, hedged by "can make the right judgments."
+- The later remarks are acknowledged exceptions.
+- The final section supplies the governing distinction between conscious judgment and an underlying conception that persists "underneath the haze of rationalizations."
+
+The criterion does shift. Ego-dystonia is defined by conscious recognition, but OCD's status as a neurosis finally rests on latent correct conceptions. The hedge that the terms have "roughly the same extension" accommodates this shift, so there is no inconsistency.
+
+**The inferential gap.** The concessions leave the argument depending on one claim: in OCD, correct conceptions are *always* present, even when the patient is fully taken in. The only support offered is behavioral. When the patient is confronted, he resists intensely and constructs rebuttals. The text infers that "that point spoke to him… because… he sees reality as it is."
+
+This is a defeasible abductive inference, and it does not establish the "always" claim.
+- **Alternative explanation for resistance.** Vigorous, point-by-point resistance fits equally well with someone who holds a false belief they value and feel threatened by challenging. Committed ideologues often argue this way without any latent correct view.
+- **Alternative explanation for indifference.** The psychotic's indifference ("washes over him") need not show that the correct conception is absent. It could reflect disorganization or diminished engagement.
+
+Without a further premise linking resistance specifically to latent recognition, the conclusion that OCD is "nonetheless not a psychosis" rests on an unsupported generalization. It is not circular, because the resistance is offered as evidence rather than assumed. But it is underdetermined by the evidence offered.
+
+**Minor wording issue.** The phrase "relative to those afflicted by psychopathology" presumably means "psychosis," since OCD is itself psychopathology. This is a wording slip, not a substantive failure.

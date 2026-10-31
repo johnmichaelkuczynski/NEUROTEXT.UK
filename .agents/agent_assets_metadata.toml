@@ -28,3 +28,17 @@ mtime_ms = 1789302627703
 storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:e2ad7e59-c0c8-4aef-9e05-a0bcf05c98c9/ad7ff131-9eff-45e4-acde-27da53c92d1b/f5a507b5-1178-4844-9635-127ece7fd3f6"
 storage_version_token = "1789302632014276"
 content_type = "text/plain"
+
+[[outputs]]
+id = "-VnnZQz2fYEpuHBIslQzf"
+uri = "file://exports/coherence-evaluator-verified-report.txt"
+type = "text"
+title = "Coherence analysis of your submitted paper"
+description = "Exact, unedited output from the corrected evaluator, tested with ZHI 1. First words arrived in 15 seconds; the report completed in 26 seconds."
+logical_id = "339afeaf-1ccd-4bc4-905e-2df8df8979c2"
+content_hash = "sha256:a9f6be06a4fbf38bda7895e1407c5898f06a87bf87a1c230edbaa1bbe8a17dab"
+size = 3299
+mtime_ms = 1793418080489
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:e2ad7e59-c0c8-4aef-9e05-a0bcf05c98c9/339afeaf-1ccd-4bc4-905e-2df8df8979c2/61d7dcd3-97cc-4fb9-8f89-7de8e1d01703"
+storage_version_token = "1793418091809858"
+content_type = "text/plain"

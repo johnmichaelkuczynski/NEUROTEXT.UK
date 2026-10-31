@@ -862,6 +862,11 @@ workspaceRouter.post("/coherence/stream", async (req, res) => {
     return;
   }
   openEventStream(res);
+  const startedAt = Date.now();
+  let firstToken = false;
+  const heartbeat = setInterval(() => {
+    writeStreamEvent(res, { type: "heartbeat", elapsedMs: Date.now() - startedAt });
+  }, 10_000);
   try {
     writeStreamEvent(res, {
       type: "analysis_started",
@@ -884,6 +889,10 @@ workspaceRouter.post("/coherence/stream", async (req, res) => {
         (res as import("express").Response & { flush?: () => void }).flush?.();
       },
       onAuditToken: (text, providerUsed) => {
+        if (!firstToken && text) {
+          firstToken = true;
+          req.log.info({ elapsedMs: Date.now() - startedAt, provider: providerUsed }, "Coherence first report token");
+        }
         writeStreamEvent(res, { type: "token", text, providerUsed });
         (res as import("express").Response & { flush?: () => void }).flush?.();
       },
@@ -903,8 +912,11 @@ workspaceRouter.post("/coherence/stream", async (req, res) => {
     });
   } catch (error) {
     req.log.error({ error }, "Streaming coherence evaluation failed");
-    writeStreamEvent(res, { type: "error", message: "The coherence analysis was interrupted and will be retried automatically." });
+    writeStreamEvent(res, { type: "error", message: error instanceof Error && error.message.includes("did not begin the coherence report")
+      ? error.message
+      : "The coherence analysis was interrupted. Your input and any partial output are preserved. Try again." });
   } finally {
+    clearInterval(heartbeat);
     res.end();
   }
 });

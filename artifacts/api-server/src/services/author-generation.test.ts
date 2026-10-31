@@ -87,3 +87,32 @@ test("coherence uses the evaluation prompt, bounded initial budget, and first-te
   assert.equal(calls[0].maxTokens, 4096);
   assert.ok(!calls[0].systemPrompt.startsWith(CORE_RULES));
 });
+
+test("academic diagnostic previews stop after one bounded sample even at the output limit", async () => {
+  let calls = 0;
+  const events: AuthorEvent[] = [];
+  const model: AuthorModel = async (request, emit) => {
+    calls++;
+    assert.equal(request.maxTokens, 4096);
+    emit("Title. Abstract: A bounded sample.", "test");
+    return { text: "Title. Abstract: A bounded sample.", providerUsed: "test", truncated: true };
+  };
+  await generateAuthorDocument({ functionId: "dissertation-creator", text: "", provider: "ZHI 1", targetWords: "180", diagnosticPreview: true, instructions: "A sample on shared responsibility." }, event => events.push(event), () => true, model);
+  assert.equal(calls, 1);
+  assert.equal(events.at(-1)?.diagnosticPreview, true);
+  assert.equal(events.at(-1)?.truncated, true);
+});
+
+test("objections uses the exact-transformation transport instead of academic expansion", async () => {
+  const requests: Parameters<AuthorModel>[0][] = [];
+  const model: AuthorModel = async (request, emit) => {
+    requests.push(request);
+    emit("Objection: benefit alone does not ensure participation. Revision: use a rota.", "test");
+    return { text: "Objection: benefit alone does not ensure participation. Revision: use a rota.", providerUsed: "test", truncated: false };
+  };
+  await generateAuthorDocument({ functionId: "objections", text: "All who benefit will participate.", instructions: "Keep it under 140 words.", provider: "ZHI 1" }, () => {}, () => true, model);
+  assert.equal(requests.length, 1);
+  assert.match(requests[0].systemPrompt, /strongest serious objections/);
+  assert.match(requests[0].systemPrompt, /Keep it under 140 words/);
+  assert.ok(!requests[0].systemPrompt.includes("doctoral dissertation"));
+});

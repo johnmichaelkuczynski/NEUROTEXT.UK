@@ -1,6 +1,9 @@
 import ModelSelector from "./model-selector";
+import { useEffect } from "react";
+import { restoreClearedFunction } from "@/lib/clear-writing-page";
 
-export default function WritingNavigation({ current, busy }: { current: "creator" | "transformer" | "screenplay" | "screenplay-adaptation" | "dialogue" | "dialogue-adaptation" | "coherence" | "maxintel" | "profile" | "thesis-creator" | "thesis-transformer" | "dissertation-creator" | "dissertation-transformer" | "translator"; busy: boolean }) {
+export default function WritingNavigation({ current, busy }: { current: "creator" | "transformer" | "screenplay" | "screenplay-adaptation" | "dialogue" | "dialogue-adaptation" | "coherence" | "maxintel" | "profile" | "thesis-creator" | "thesis-transformer" | "dissertation-creator" | "dissertation-transformer" | "translator" | "diagnostics"; busy: boolean }) {
+  useEffect(restoreClearedFunction, []);
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
   return (
     <div className="space-y-5">
@@ -20,6 +23,7 @@ export default function WritingNavigation({ current, busy }: { current: "creator
         { id: "dissertation-creator", path: "/page-13", label: "Dissertation creator" },
         { id: "dissertation-transformer", path: "/page-14", label: "Text to dissertation" },
         { id: "translator", path: "/page-15", label: "Translator" },
+        { id: "diagnostics", path: "/diagnostics", label: "Diagnostics" },
       ] as const).map((page) => (
         <a
           key={page.id}

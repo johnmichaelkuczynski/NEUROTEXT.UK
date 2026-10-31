@@ -8,6 +8,7 @@ export type AuthorRequest = {
   targetWords?: string;
   provider: string;
   resumeDocument?: string;
+  diagnosticPreview?: boolean;
 };
 export type AuthorEvent = Record<string, unknown>;
 type ModelRequest = { systemPrompt: string; userMessage: string; temperature: number; maxTokens: number; provider: string; firstTextTimeoutMs?: number };
@@ -46,8 +47,17 @@ export async function generateAuthorDocument(
   model: AuthorModel = authorModel,
 ) {
   const fields = readPromptFields(input.instructions);
+  if (input.functionId === "objections") {
+    fields.instructions = [
+      "Generate the strongest serious objections to the supplied document, explain why each matters, then produce a complete rewritten version that directly addresses them. Return the objections and the rewritten document, not a plan for writing them.",
+      fields.instructions,
+      input.targetWords ? `Target length for the entire response: ${input.targetWords} words.` : "",
+    ].filter(Boolean).join("\n\n");
+  }
   const fn = authorFunction(input.functionId, input.text, fields);
   if (!fn) return undefined;
+  const preview = input.diagnosticPreview === true && ["thesis-creator", "thesis-transformer", "dissertation-creator", "dissertation-transformer"].includes(fn);
+  let previewTruncated = false;
   const references = authorReferenceMessage({ ...fields, function: fn });
   const emptyPrompt = buildAuthorPrompt(fn, "", fields, input.targetWords);
   const overhead = Buffer.byteLength(emptyPrompt.systemPrompt + references);
@@ -84,7 +94,7 @@ export async function generateAuthorDocument(
       const result = await model({
         ...prompt,
         provider: input.provider,
-        maxTokens: fn === "coherence" ? Math.min(32768, Math.max(4096, Math.ceil(Number(input.targetWords || 0) * 2))) : 32768,
+        maxTokens: preview ? 4096 : fn === "coherence" ? Math.min(32768, Math.max(4096, Math.ceil(Number(input.targetWords || 0) * 2))) : 32768,
         ...(fn === "coherence" ? { firstTextTimeoutMs: 90_000 } : {}),
         userMessage: [userMessage, context].filter(Boolean).join("\n\n"),
       }, (text, provider) => {
@@ -94,12 +104,14 @@ export async function generateAuthorDocument(
         emit({ type: "token", text, providerUsed: provider });
       });
       providerUsed = result.providerUsed;
+      if (preview) { previewTruncated = result.truncated; break; }
       if (!result.truncated) break;
       if (continuation === 31) throw new Error("The model reached repeated output limits. Partial output is preserved.");
     }
     emit({ type: "section_done", index: index + 1, total: chunks.length });
+    if (preview) break;
   }
   if (!connected()) throw new Error("Connection closed before generation finished.");
-  emit({ type: "done", providerUsed, generatedWords: output.match(/\S+/g)?.length ?? 0 });
+  emit({ type: "done", providerUsed, generatedWords: output.match(/\S+/g)?.length ?? 0, ...(preview ? { diagnosticPreview: true, truncated: previewTruncated } : {}) });
   return { text: output, providerUsed };
 }

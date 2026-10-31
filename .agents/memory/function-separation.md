@@ -15,6 +15,18 @@ The first specified section is “Write from scratch” (the user explicitly rep
 
 **How to apply:** Preserve this separation when naming, listing, or implementing NEUROTEXT functions. Use plain descriptions of the text the user supplies rather than unexplained “source text” terminology.
 
+Text-to-dialogue must work from the supplied text alone; additional instructions are optional. Apply the same source-only entry behavior to text-to-screenplay, while scratch creation still requires a topic.
+
+**Why:** The user rejected being forced to fill in instructions when the chosen transformation already states what to do.
+
+**How to apply:** Do not disable an adaptation action solely because its optional instructions are empty. Keep the user's supplied text intact.
+
+The user subsequently said, “It is better. It is much better,” while viewing Text to dialogue.
+
+**Why:** This is explicit positive feedback on the revised experience, not a request for another redesign.
+
+**How to apply:** Preserve the accepted flow while making later scoped changes.
+
 Every function page, existing and future, must end with a revision box for the user's desired changes and a matching action button. The user first called this “Rewrite output” and subsequently requested “Critique and regenerate” on newer pages. Follow the requested label; these are the same final revision step, not two separate boxes. This revises the current output rather than starting over from the original input.
 
 **Why:** The user explicitly requires this for “each function, past and future” so someone who is partly satisfied can request changes without redoing the result from scratch, and explicitly names the last box “Critique and regenerate” on the profiling and thesis pages.

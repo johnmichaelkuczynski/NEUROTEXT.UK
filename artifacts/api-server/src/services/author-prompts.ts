@@ -142,6 +142,7 @@ export function readPromptFields(instructions?: string): PromptFields {
 }
 
 export function authorFunction(id: string, text: string, fields: PromptFields): AuthorFunction | undefined {
+  if (id === "objections") return "manipulator";
   if (id === "translator" || id === "translation-revision" || id === "translation") return undefined;
   if (fields.revision) return fields.function ?? "manipulator";
   if (id === "thesis-revision" || id === "dissertation-revision") return "manipulator";

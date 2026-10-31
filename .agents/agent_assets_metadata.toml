@@ -42,3 +42,17 @@ mtime_ms = 1793418080489
 storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:e2ad7e59-c0c8-4aef-9e05-a0bcf05c98c9/339afeaf-1ccd-4bc4-905e-2df8df8979c2/61d7dcd3-97cc-4fb9-8f89-7de8e1d01703"
 storage_version_token = "1793418091809858"
 content_type = "text/plain"
+
+[[outputs]]
+id = "kjLrRyIWuvj0gUCkfSsxn"
+uri = "file://generated-artifacts/function-diagnostics-verified-report.json"
+type = "unspecified"
+title = "Diagnostics evidence — 34 checks passed"
+description = "Exact inputs, outputs, timings, streaming measurements, original failures, and focused rechecks using ZHI 1 through the development preview. These are functional smoke checks, not expert quality grades."
+logical_id = "8299fa46-0752-425a-bd28-ca653ab895fb"
+content_hash = "sha256:de1273bc6febe0a1edbb0dce5f2dc335361b51832a8f0b5f74200ade6e7fc460"
+size = 191968
+mtime_ms = 1793419143997
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:e2ad7e59-c0c8-4aef-9e05-a0bcf05c98c9/8299fa46-0752-425a-bd28-ca653ab895fb/8ef0ee03-c34f-4181-9982-be65c61b31ca"
+storage_version_token = "1793419305806338"
+content_type = "application/octet-stream"

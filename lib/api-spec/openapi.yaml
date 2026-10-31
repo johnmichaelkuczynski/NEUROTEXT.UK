@@ -448,6 +448,9 @@ components:
         thinker: { type: string }
         quotes: { type: number, minimum: 0, maximum: 20 }
         resumeDocument: { type: string }
+        diagnosticPreview:
+          type: boolean
+          description: "Generate a strictly token-bounded diagnostic sample for thesis/dissertation functions, not a complete academic document."
         resumeSkeleton: { type: string }
       required: [functionId, text, provider]
     DocumentFunctionResult:

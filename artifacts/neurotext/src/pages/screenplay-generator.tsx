@@ -181,7 +181,7 @@ export default function ScreenplayGenerator({ mode = "scratch" }: { mode?: Mode 
 
   const generate = async () => {
     const provider = selectedModel();
-    if (!instructions.trim() || (adaptation && !sourceText.trim()) || running.current) return;
+    if ((adaptation ? !sourceText.trim() : !instructions.trim()) || running.current) return;
     running.current = true;
     setBusy(true);
     setError("");
@@ -326,14 +326,14 @@ export default function ScreenplayGenerator({ mode = "scratch" }: { mode?: Mode 
         {adaptation && (
           <Box id="screenplay-adaptation-source" label={`Text to turn into a ${documentKind}`} text={sourceText} onChange={setSourceText} disabled={busy} upload minH="min-h-48" />
         )}
-        <Box id="screenplay-instructions" label="User's instructions (including word count)" text={instructions} onChange={setInstructions} disabled={busy} upload={false} minH="min-h-40" />
+        <Box id="screenplay-instructions" label={adaptation ? "Instructions (optional, including word count)" : "User's instructions (including word count)"} text={instructions} onChange={setInstructions} disabled={busy} upload={false} minH="min-h-40" />
         <Box id="screenplay-style-source" label="Style source (optional)" text={styleSource} onChange={setStyleSource} disabled={busy} upload />
         <Box id="screenplay-content-source" label="Content source (optional)" text={contentSource} onChange={setContentSource} disabled={busy} upload />
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={() => void generate()}
-            disabled={busy || !instructions.trim() || (adaptation && !sourceText.trim())}
+          disabled={busy || (adaptation ? !sourceText.trim() : !instructions.trim())}
             className="rounded-md bg-blue-700 px-5 py-3 text-base font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy ? (adaptation ? `Turning into ${documentKind}…` : `Generating ${documentKind}…`) : actionLabel}

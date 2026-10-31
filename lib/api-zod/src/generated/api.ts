@@ -283,6 +283,7 @@ export const RunDocumentFunctionBody = zod.object({
   "thinker": zod.string().optional(),
   "quotes": zod.number().min(runDocumentFunctionBodyQuotesMin).max(runDocumentFunctionBodyQuotesMax).optional(),
   "resumeDocument": zod.string().optional(),
+  "diagnosticPreview": zod.boolean().optional().describe('Generate a strictly token-bounded diagnostic sample for thesis\/dissertation functions, not a complete academic document.'),
   "resumeSkeleton": zod.string().optional()
 })
 

@@ -12,6 +12,7 @@ import MaximumIntelligenceRewrite from '@/pages/maximum-intelligence-rewrite';
 import CognitiveProfiling from '@/pages/cognitive-profiling';
 import MastersThesisCreator from '@/pages/masters-thesis-creator';
 import Translator from '@/pages/translator';
+import FunctionDiagnostics from '@/pages/function-diagnostics';
 import NotFound from '@/pages/not-found';
 import {
   Route,
@@ -55,7 +56,8 @@ function Router() {
   return (
     <RoutedErrorBoundary>
       <Switch>
-        <Route path="/diagnostics">{() => user === undefined
+        <Route path="/diagnostics">{() => <FunctionDiagnostics />}</Route>
+        <Route path="/owner-diagnostics">{() => user === undefined
           ? <div className="min-h-screen bg-[#f7f8fa] p-8 text-[#152238]">Checking owner access…</div>
           : ownerAccess
             ? <Neurotext user={user} onLogout={logout} loginUrl={api('/auth/google')} diagnosticsOnly />

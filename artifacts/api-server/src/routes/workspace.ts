@@ -870,6 +870,7 @@ workspaceRouter.post("/coherence/stream", async (req, res) => {
   try {
     writeStreamEvent(res, {
       type: "analysis_started",
+      evaluationVersion: "reasoning-v2",
       mode: parsed.data.mode,
       requestedProvider: parsed.data.provider,
     });

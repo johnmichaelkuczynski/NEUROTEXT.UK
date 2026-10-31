@@ -207,6 +207,8 @@ export interface DocumentFunctionInput {
      */
   quotes?: number;
   resumeDocument?: string;
+  /** Generate a strictly token-bounded diagnostic sample for thesis/dissertation functions, not a complete academic document. */
+  diagnosticPreview?: boolean;
   resumeSkeleton?: string;
 }
 

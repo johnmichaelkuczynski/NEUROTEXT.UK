@@ -3,11 +3,12 @@ import { useEffect, useRef, useState } from "react";
 import WritingNavigation from "@/components/writing-navigation";
 import LiveGenerationPopup from "@/components/live-generation-popup";
 import RewriteOutput from "@/components/rewrite-output";
+import { clearWritingPage } from "@/lib/clear-writing-page";
 
 const DRAFT_KEY = "neurotext-coherence-evaluator-draft";
 const PAGE_TITLE = "Coherence evaluator";
 
-type Draft = { text: string; instructions: string; output: string };
+type Draft = { text: string; instructions: string; output: string; evaluationVersion?: string };
 
 function loadDraft(): Draft {
   const empty: Draft = { text: "", instructions: "", output: "" };
@@ -19,6 +20,7 @@ function loadDraft(): Draft {
       text: typeof d?.text === "string" ? d.text : "",
       instructions: typeof d?.instructions === "string" ? d.instructions : "",
       output: typeof d?.output === "string" ? d.output : "",
+      evaluationVersion: typeof d?.evaluationVersion === "string" ? d.evaluationVersion : undefined,
     };
   } catch {
     return empty;
@@ -114,6 +116,7 @@ export default function CoherenceEvaluator() {
   const [text, setText] = useState(initial.text);
   const [instructions, setInstructions] = useState(initial.instructions);
   const [output, setOutput] = useState(initial.output);
+  const [evaluationVersion, setEvaluationVersion] = useState(initial.evaluationVersion);
   const [busy, setBusy] = useState(false);
   const [rewritingOutput, setRewritingOutput] = useState(false);
   const [status, setStatus] = useState("");
@@ -128,11 +131,11 @@ export default function CoherenceEvaluator() {
 
   useEffect(() => {
     try {
-      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ text, instructions, output }));
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ text, instructions, output, evaluationVersion }));
     } catch {
       // Storage may be unavailable; the page keeps working.
     }
-  }, [text, instructions, output]);
+  }, [text, instructions, output, evaluationVersion]);
 
   const downloadOutput = () => {
     if (!output.trim()) return;
@@ -158,6 +161,7 @@ export default function CoherenceEvaluator() {
     let report = "";
     let prep = "";
     let completed = false;
+    let receivedVersion: string | undefined;
     const fail = (message: string) => {
       setError(message);
       setStatus(report ? "Evaluation stopped. Partial report preserved." : "Evaluation stopped");
@@ -192,7 +196,7 @@ export default function CoherenceEvaluator() {
       let fatal = "";
       const consume = (line: string) => {
         if (!line.trim() || fatal) return;
-        let event: { type?: string; text?: unknown; skeleton?: unknown; index?: unknown; total?: unknown; message?: unknown; error?: unknown };
+        let event: { type?: string; text?: unknown; skeleton?: unknown; index?: unknown; total?: unknown; message?: unknown; error?: unknown; evaluationVersion?: string };
         try {
           event = JSON.parse(line);
         } catch {
@@ -200,7 +204,8 @@ export default function CoherenceEvaluator() {
         }
         switch (event.type) {
           case "analysis_started":
-            setStatus("Preparing analysis…");
+            receivedVersion = event.evaluationVersion;
+            setStatus("Testing consistency and reasoning…");
             break;
           case "evidence_token": {
             prep += String(event.text ?? "");
@@ -222,6 +227,7 @@ export default function CoherenceEvaluator() {
             setStatus("Structure mapped. Writing report…");
             break;
           case "token":
+            setEvaluationVersion(receivedVersion);
             report += String(event.text ?? "");
             setLiveText(report);
             setOutput(report);
@@ -270,7 +276,17 @@ export default function CoherenceEvaluator() {
     <main className="min-h-screen bg-white px-5 py-8 text-slate-900">
       <div className="mx-auto max-w-3xl space-y-6">
         <WritingNavigation current="coherence" busy={busy} />
-        <h1 className="text-2xl font-semibold">{PAGE_TITLE}</h1>
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-2xl font-semibold">{PAGE_TITLE}</h1>
+          <button type="button" className={btn} onClick={() => {
+            try {
+              clearWritingPage(DRAFT_KEY);
+            } catch {
+              setError("The browser blocked clearing saved text. Allow browser storage and try again.");
+              return;
+            }
+          }}>Clear</button>
+        </div>
         <Box id="coherence-text" label="Text to evaluate" text={text} onChange={setText} disabled={busy} minH="min-h-48" />
         <Box id="coherence-instructions" label="Instructions (optional)" text={instructions} onChange={setInstructions} disabled={busy} minH="min-h-32" />
         <div className="flex flex-wrap items-center gap-3">
@@ -289,6 +305,7 @@ export default function CoherenceEvaluator() {
         {status && <p role="status" className="text-sm text-slate-600">{status}</p>}
         {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
         <div className="space-y-2">
+          {output && evaluationVersion !== "reasoning-v2" && <p role="status" className="text-sm text-amber-800">Saved report from an earlier or unversioned evaluator. Evaluate coherence to produce a new analysis; the saved report has not been replaced.</p>}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <label htmlFor="coherence-output" className="block text-base font-semibold">Output</label>
             <div className="flex flex-wrap items-center gap-3">

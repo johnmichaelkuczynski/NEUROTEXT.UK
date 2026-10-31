@@ -8,3 +8,5 @@
 - [Translation semantics](translation-semantics.md) — avoid academic expansion and bibliography insertion; shortening must not compound on ordinary revisions.
 - [Author prompt policy](author-prompt-policy.md) — preserve author writing prompts; coherence must judge reasoning independently, not defend or summarize the thesis; Translator excluded.
 - [Model naming policy](model-naming-policy.md) — show only ZHI 1–4 aliases in model choices and request metadata; preserve the exact selected model.
+- [Interface resets](interface-resets.md) — Clear stays at the current function; obsolete fallback content must not flash during reload.
+- [Diagnostics scope](diagnostic-scope.md) — test every function and rewrite with real speed/streaming evidence; academic generation is bounded to samples.

@@ -2,14 +2,22 @@ import { selectedModel } from "@/components/model-selector";
 import { useEffect, useRef, useState } from "react";
 import WritingNavigation from "@/components/writing-navigation";
 import LiveGenerationPopup from "@/components/live-generation-popup";
+import type { TranslationTerm } from "@workspace/api-client-react";
 
 const DRAFT_KEY = "neurotext-translator-draft";
 const PAGE_TITLE = "Translator";
 
-type Draft = { sourceText: string; targetLanguage: string; instructions: string; output: string; critique: string };
+type Draft = { sourceText: string; targetLanguage: string; instructions: string; output: string; critique: string; terminology: TranslationTerm[] };
+
+function readTerminology(value: unknown): TranslationTerm[] {
+  if (!Array.isArray(value) || value.length > 1000) return [];
+  return value.filter((term): term is TranslationTerm =>
+    !!term && typeof term.source === "string" && !!term.source.trim() && term.source.length <= 200
+    && typeof term.target === "string" && !!term.target.trim() && term.target.length <= 200);
+}
 
 function loadDraft(): Draft {
-  const empty: Draft = { sourceText: "", targetLanguage: "English", instructions: "", output: "", critique: "" };
+  const empty: Draft = { sourceText: "", targetLanguage: "English", instructions: "", output: "", critique: "", terminology: [] };
   try {
     const saved = typeof window !== "undefined" ? sessionStorage.getItem(DRAFT_KEY) : null;
     if (!saved) return empty;
@@ -22,6 +30,7 @@ function loadDraft(): Draft {
       instructions: s(d.instructions),
       output: s(d.output),
       critique: s(d.critique),
+      terminology: readTerminology(d.terminology),
     };
   } catch {
     return empty;
@@ -171,6 +180,7 @@ export default function Translator() {
   const [instructions, setInstructions] = useState(initial.instructions);
   const [output, setOutput] = useState(initial.output);
   const [critique, setCritique] = useState(initial.critique);
+  const [terminology, setTerminology] = useState(initial.terminology);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
@@ -189,11 +199,11 @@ export default function Translator() {
 
   useEffect(() => {
     try {
-      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ sourceText, targetLanguage, instructions, output, critique }));
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ sourceText, targetLanguage, instructions, output, critique, terminology }));
     } catch {
       // Storage may be full or unavailable; the page keeps working.
     }
-  }, [sourceText, targetLanguage, instructions, output, critique]);
+  }, [sourceText, targetLanguage, instructions, output, critique, terminology]);
 
   const downloadOutput = () => {
     if (!output.trim()) return;
@@ -251,6 +261,7 @@ export default function Translator() {
             functionId: revise ? "translation-revision" : "translator",
             text: revise ? outputSnap : sourceSnap,
             instructions: composed,
+            translationTerminology: revise ? terminology : undefined,
               provider,
           }),
         });
@@ -267,9 +278,10 @@ export default function Translator() {
       let buffer = "";
       let completed = false;
       let serverError = "";
+      let terminologyWarning = "";
       const consume = (line: string) => {
         if (!line.trim() || serverError) return;
-        let event: { type?: string; text?: unknown; separator?: unknown; message?: unknown; error?: unknown };
+        let event: { type?: string; text?: unknown; separator?: unknown; message?: unknown; error?: unknown; terms?: unknown };
         try {
           event = JSON.parse(line);
         } catch {
@@ -279,6 +291,7 @@ export default function Translator() {
           case "token": {
             const t = String(event.text ?? "");
             if (!t) break;
+            if (!started && !revise) safe(() => setTerminology([]));
             started = true;
             doc += t;
             show();
@@ -301,6 +314,12 @@ export default function Translator() {
             break;
           case "provider_retry":
             safe(() => setStatus(typeof event.message === "string" && event.message.trim() ? event.message : "Provider busy. Retrying…"));
+            break;
+          case "translation_terminology":
+            safe(() => setTerminology(readTerminology(event.terms)));
+            break;
+          case "translation_terminology_warning":
+            terminologyWarning = String(event.message || "Terminology tracking could not update. Review terminology in the completed text.");
             break;
           case "done":
             completed = true;
@@ -345,7 +364,7 @@ export default function Translator() {
             : `No translation was received. ${retryHint}`,
         );
       }
-      safe(() => setStatus("Complete"));
+      safe(() => setStatus(terminologyWarning ? `Complete. ${terminologyWarning}` : "Complete"));
     } catch (err) {
       const message = err instanceof Error ? err.message : `The translation failed. ${retryHint}`;
       safe(() => {

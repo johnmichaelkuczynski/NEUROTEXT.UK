@@ -272,6 +272,12 @@ export const AnalyzeCoherenceResponse = zod.object({
 export const runDocumentFunctionBodyQuotesMin = 0;
 export const runDocumentFunctionBodyQuotesMax = 20;
 
+export const runDocumentFunctionBodyTranslationTerminologyItemSourceMax = 200;
+
+export const runDocumentFunctionBodyTranslationTerminologyItemTargetMax = 200;
+
+export const runDocumentFunctionBodyTranslationTerminologyMax = 1000;
+
 
 
 export const RunDocumentFunctionBody = zod.object({
@@ -284,7 +290,11 @@ export const RunDocumentFunctionBody = zod.object({
   "quotes": zod.number().min(runDocumentFunctionBodyQuotesMin).max(runDocumentFunctionBodyQuotesMax).optional(),
   "resumeDocument": zod.string().optional(),
   "diagnosticPreview": zod.boolean().optional().describe('Generate a strictly token-bounded diagnostic sample for thesis\/dissertation functions, not a complete academic document.'),
-  "resumeSkeleton": zod.string().optional()
+  "resumeSkeleton": zod.string().optional(),
+  "translationTerminology": zod.array(zod.object({
+  "source": zod.string().min(1).max(runDocumentFunctionBodyTranslationTerminologyItemSourceMax),
+  "target": zod.string().min(1).max(runDocumentFunctionBodyTranslationTerminologyItemTargetMax)
+})).max(runDocumentFunctionBodyTranslationTerminologyMax).optional()
 })
 
 export const RunDocumentFunctionResponse = zod.object({

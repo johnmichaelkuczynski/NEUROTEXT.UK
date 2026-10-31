@@ -514,13 +514,17 @@ workspaceRouter.post("/functions/stream", async (req, res) => {
     }
     if (isTranslationFunction(functionId)) {
       await streamTranslation(
-        { text, instructions, provider, revision: functionId === "translation-revision" },
+        { text, instructions, provider, revision: functionId === "translation-revision", translationTerminology: parsed.data.translationTerminology },
         generateWithFallbackStreaming,
         (event) => {
           writeStreamEvent(res, event);
           (res as import("express").Response & { flush?: () => void }).flush?.();
         },
         () => res.destroyed || res.writableEnded,
+        {
+          extract: generateWithFallback,
+          warning: index => req.log.warn({ index }, "Translation terminology extraction failed; retaining established terms"),
+        },
       );
       return;
     }

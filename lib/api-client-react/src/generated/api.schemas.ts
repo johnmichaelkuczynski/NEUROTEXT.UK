@@ -192,6 +192,19 @@ export interface CoherenceResult {
   providerUsage: CoherenceProviderUsage;
 }
 
+export interface TranslationTerm {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  source: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  target: string;
+}
+
 export interface DocumentFunctionInput {
   /** @minLength 1 */
   functionId: string;
@@ -210,6 +223,8 @@ export interface DocumentFunctionInput {
   /** Generate a strictly token-bounded diagnostic sample for thesis/dissertation functions, not a complete academic document. */
   diagnosticPreview?: boolean;
   resumeSkeleton?: string;
+  /** @maxItems 1000 */
+  translationTerminology?: TranslationTerm[];
 }
 
 export interface DocumentFunctionResult {

@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { TranslationTerm } from './translationTerm';
 
 export interface DocumentFunctionInput {
   /** @minLength 1 */
@@ -24,4 +25,6 @@ export interface DocumentFunctionInput {
   /** Generate a strictly token-bounded diagnostic sample for thesis/dissertation functions, not a complete academic document. */
   diagnosticPreview?: boolean;
   resumeSkeleton?: string;
+  /** @maxItems 1000 */
+  translationTerminology?: TranslationTerm[];
 }

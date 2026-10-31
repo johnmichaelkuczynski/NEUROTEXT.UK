@@ -30,4 +30,5 @@ export * from './getCurrentUser200';
 export * from './healthStatus';
 export * from './ocrInput';
 export * from './ocrResult';
+export * from './translationTerm';
 export * from './workspaceSummary';

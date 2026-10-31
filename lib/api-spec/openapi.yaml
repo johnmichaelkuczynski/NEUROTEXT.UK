@@ -452,7 +452,18 @@ components:
           type: boolean
           description: "Generate a strictly token-bounded diagnostic sample for thesis/dissertation functions, not a complete academic document."
         resumeSkeleton: { type: string }
+        translationTerminology:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: "#/components/schemas/TranslationTerm"
       required: [functionId, text, provider]
+    TranslationTerm:
+      type: object
+      properties:
+        source: { type: string, minLength: 1, maxLength: 200 }
+        target: { type: string, minLength: 1, maxLength: 200 }
+      required: [source, target]
     DocumentFunctionResult:
       type: object
       properties:

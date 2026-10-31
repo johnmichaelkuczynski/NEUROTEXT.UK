@@ -1,5 +1,8 @@
-import type { GenerationOptions, GenerationResult } from "./llm-router.ts";
-import { splitTranslationText, translationPartPrompt, translationSeparator, translationWordTarget } from "./translation.ts";
+import type { GenerationOptions, GenerationResult, generateWithFallback } from "./llm-router.ts";
+import {
+  splitTranslationText, translationPartPrompt, translationSeparator, translationWordTarget,
+  mergeTranslationTerminology, translationTerminologyPrompt, type TranslationTerm,
+} from "./translation.ts";
 
 type StreamEvent = { type: string; [key: string]: unknown };
 type Generate = (
@@ -13,14 +16,20 @@ const wordCount = (text: string) => text.trim().split(/\s+/u).filter(Boolean).le
 // Kept separate from academic generation: a partial translation has no safe
 // source boundary from which to resume automatically.
 export async function streamTranslation(
-  input: { text: string; instructions?: string; provider: string; revision: boolean },
+  input: { text: string; instructions?: string; provider: string; revision: boolean; translationTerminology?: TranslationTerm[] },
   generate: Generate,
   emit: (event: StreamEvent) => void,
   isClosed: () => boolean,
+  tracking?: {
+    extract: typeof generateWithFallback;
+    warning: (index: number) => void;
+  },
 ) {
   const { text, instructions, provider, revision } = input;
   const parts = splitTranslationText(text);
   const requestedWords = translationWordTarget(instructions, wordCount(text), revision, text);
+  // A fresh translation never inherits another document's terminology.
+  let terminology = revision ? input.translationTerminology ?? [] : [];
   let translation = "";
   for (let index = 0; index < parts.length; index++) {
     if (isClosed()) return;
@@ -31,7 +40,7 @@ export async function streamTranslation(
     emit({ type: "section_start", index, total: parts.length, separator });
     const prompt = translationPartPrompt({
       revision, instructions, source, index, total: parts.length,
-      proportion: source.length / Math.max(1, text.length), previousTranslation: translation, targetWords: partTarget,
+      proportion: source.length / Math.max(1, text.length), previousTranslation: translation, targetWords: partTarget, terminology,
     });
     let result;
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -61,6 +70,32 @@ export async function streamTranslation(
     if (!result.text.trim()) throw new Error("The translation provider returned no text.");
     translation += separator + result.text;
     emit({ type: "section_done", index, total: parts.length, generatedWords: wordCount(result.text) });
+    if (tracking) {
+      // Auxiliary learning must never erase accepted text or make it non-resumable.
+      let learned = false;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        if (isClosed()) return;
+        try {
+          const extracted = await tracking.extract(provider, translationTerminologyPrompt({
+            source, output: result.text, instructions, terminology, revision,
+          }), { quotes: 0, maxWords: 2400 });
+          if (extracted.truncated || extracted.completion === "incomplete") continue;
+          terminology = mergeTranslationTerminology(terminology, extracted.text, source, result.text, revision);
+          learned = true;
+          break;
+        } catch {
+          // Retry only extraction; keep the last valid map if both attempts fail.
+        }
+      }
+      if (!learned) {
+        tracking.warning(index);
+        emit({
+          type: "translation_terminology_warning",
+          message: "Terminology tracking could not update for part of this translation. Previously established terms were retained; review terminology in the completed text.",
+        });
+      }
+      emit({ type: "translation_terminology", terms: terminology });
+    }
   }
   emit({ type: "done", generatedWords: wordCount(translation) });
 }

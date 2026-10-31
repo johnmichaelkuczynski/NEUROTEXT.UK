@@ -1,6 +1,6 @@
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { openai } from "@workspace/integrations-openai-ai-server";
-import { generateSelectedModel, isSelectedModel } from "./model-selection";
+import { generateSelectedModel, isSelectedModel } from "./model-selection.ts";
 
 export type ProviderId =
   | "GENIUS · Kuczynski"
@@ -29,6 +29,25 @@ export type GenerationOptions = {
   allowFallback?: boolean;
   paceMs?: number;
 };
+
+// Optional: providers that omit finish reasons must not be reported as complete.
+export type GenerationResult = {
+  text: string;
+  providerUsed: string;
+  finishReason?: string;
+  completion?: "complete" | "incomplete";
+  truncated?: boolean;
+};
+
+function completionMetadata(reason: unknown): Pick<GenerationResult, "finishReason" | "completion" | "truncated"> {
+  if (typeof reason !== "string" || !reason) return {};
+  const truncated = ["length", "max_tokens", "max_output_tokens", "model_context_window_exceeded"].includes(reason);
+  const complete = ["stop", "end_turn", "stop_sequence"].includes(reason);
+  return {
+    finishReason: reason,
+    ...(truncated || complete ? { truncated, completion: truncated ? "incomplete" as const : "complete" as const } : { completion: "incomplete" as const }),
+  };
+}
 
 const providerDisplayNames = {
   genius: "GENIUS 101 · Kuczynski",
@@ -99,11 +118,12 @@ export async function generateWithFallback(
   requestedProvider: string,
   prompt: string,
   options: GenerationOptions = {},
-): Promise<{ text: string; providerUsed: string }> {
+): Promise<GenerationResult> {
   if (isSelectedModel(requestedProvider)) {
-    return generateSelectedModel(requestedProvider, prompt, () => {}, {
+    const result = await generateSelectedModel(requestedProvider, prompt, () => {}, {
       maxTokens: options.maxWords ? Math.max(256, Math.ceil(options.maxWords * 1.6)) : 8192,
     });
+    return { ...result, ...completionMetadata(result.finishReason) };
   }
   const provider = (providerChains[requestedProvider as ProviderId]
     ? requestedProvider
@@ -121,8 +141,8 @@ export async function generateWithFallback(
           "Genius connect",
         );
         if (!response.ok) throw new Error(`Genius request failed with status ${response.status}.`);
-        const body = (await response.json()) as { response?: string };
-        if (body.response?.trim()) return { text: body.response.trim(), providerUsed: providerDisplayNames.genius };
+        const body = (await response.json()) as { response?: string; finish_reason?: string; stop_reason?: string };
+        if (body.response?.trim()) return { text: body.response.trim(), providerUsed: providerDisplayNames.genius, ...completionMetadata(body.finish_reason ?? body.stop_reason) };
       } else if (candidate === "openai") {
         const response = await withTimeout(
           openai.chat.completions.create({
@@ -134,7 +154,7 @@ export async function generateWithFallback(
           "OpenAI connect",
         );
         const text = response.choices[0]?.message?.content?.trim();
-        if (text) return { text, providerUsed: providerDisplayNames.openai };
+        if (text) return { text, providerUsed: providerDisplayNames.openai, ...completionMetadata(response.choices[0]?.finish_reason) };
       } else {
         const response = await withTimeout(
           anthropic.messages.create({
@@ -150,7 +170,7 @@ export async function generateWithFallback(
           .map((block) => block.text)
           .join("")
           .trim();
-        if (text) return { text, providerUsed: providerDisplayNames.anthropic };
+        if (text) return { text, providerUsed: providerDisplayNames.anthropic, ...completionMetadata(response.stop_reason) };
       }
     } catch (error) {
       lastError = error;
@@ -166,11 +186,12 @@ export async function generateWithFallbackStreaming(
   prompt: string,
   onToken: (token: string, providerUsed: string) => Promise<void> | void,
   options: GenerationOptions = {},
-): Promise<{ text: string; providerUsed: string }> {
+): Promise<GenerationResult> {
   if (isSelectedModel(requestedProvider)) {
-    return generateSelectedModel(requestedProvider, prompt, onToken, {
+    const result = await generateSelectedModel(requestedProvider, prompt, onToken, {
       maxTokens: options.maxWords ? Math.max(256, Math.ceil(options.maxWords * 1.6)) : 8192,
     });
+    return { ...result, ...completionMetadata(result.finishReason) };
   }
   const provider = (providerChains[requestedProvider as ProviderId]
     ? requestedProvider
@@ -196,6 +217,7 @@ Continue from the exact final sentence. Do not repeat any existing text. Return 
     const firstVisibleRemaining = () => Math.max(1, firstVisibleDeadline - Date.now());
     try {
       let text = "";
+      let finishReason: unknown;
       if (candidate === "genius") {
         const response = await withTimeout(
           geniusRequest(candidatePrompt, options, true),
@@ -214,11 +236,13 @@ Continue from the exact final sentence. Do not repeat any existing text. Return 
           buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
           const lines = buffer.split(/\r?\n/);
           buffer = lines.pop() ?? "";
+          if (done && buffer) { lines.push(buffer); buffer = ""; }
           for (const line of lines) {
             if (!line.startsWith("data:")) continue;
             const raw = line.slice(5).trim();
             if (!raw || raw === "[DONE]") continue;
-            const body = JSON.parse(raw) as { response?: string; text?: string; delta?: string; content?: string; done?: boolean };
+            const body = JSON.parse(raw) as { response?: string; text?: string; delta?: string; content?: string; done?: boolean; finish_reason?: string; stop_reason?: string; choices?: Array<{ finish_reason?: string }> };
+            finishReason = body.finish_reason ?? body.stop_reason ?? body.choices?.[0]?.finish_reason ?? finishReason;
             if (body.done) continue;
             const next = body.delta ?? body.text ?? body.content ?? body.response ?? "";
             if (!next) continue;
@@ -237,6 +261,7 @@ Continue from the exact final sentence. Do not repeat any existing text. Return 
           return {
             text: `${retainedText}${retainedText ? " " : ""}${fullResponse}`.trim(),
             providerUsed: providerDisplayNames.genius,
+            ...completionMetadata(finishReason),
           };
         }
       } else if (candidate === "openai") {
@@ -257,6 +282,7 @@ Continue from the exact final sentence. Do not repeat any existing text. Return 
             : await withTimeout(iterator.next(), firstVisibleRemaining(), "OpenAI first visible text", () => stream.controller.abort());
           if (partResult.done) break;
           const part = partResult.value;
+          finishReason = part.choices[0]?.finish_reason ?? finishReason;
           const token = part.choices[0]?.delta?.content ?? "";
           if (!token) continue;
           emitted = true;
@@ -268,6 +294,7 @@ Continue from the exact final sentence. Do not repeat any existing text. Return 
           return {
             text: `${retainedText}${retainedText ? " " : ""}${text}`.trim(),
             providerUsed: providerDisplayNames.openai,
+            ...completionMetadata(finishReason),
           };
         }
       } else {
@@ -278,6 +305,7 @@ Continue from the exact final sentence. Do not repeat any existing text. Return 
         });
         const iterator = stream[Symbol.asyncIterator]();
         const consume = async (event: Awaited<ReturnType<typeof iterator.next>>["value"]) => {
+          if (event?.type === "message_delta") finishReason = event.delta.stop_reason ?? finishReason;
           if (!event || event.type !== "content_block_delta" || event.delta.type !== "text_delta") return;
           const token = event.delta.text;
           if (!token) return;
@@ -297,6 +325,7 @@ Continue from the exact final sentence. Do not repeat any existing text. Return 
           return {
             text: `${retainedText}${retainedText ? " " : ""}${text}`.trim(),
             providerUsed: providerDisplayNames.anthropic,
+            ...completionMetadata(finishReason),
           };
         }
       }
@@ -309,7 +338,7 @@ Continue from the exact final sentence. Do not repeat any existing text. Return 
     }
   }
   if (retainedText) {
-    return { text: retainedText, providerUsed: lastProviderUsed };
+    return { text: retainedText, providerUsed: lastProviderUsed, completion: "incomplete", finishReason: "stream_error" };
   }
   throw lastError instanceof Error
     ? lastError

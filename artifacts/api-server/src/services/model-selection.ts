@@ -48,11 +48,13 @@ export async function generateSelectedModel(
   let text = "";
   let truncated = false;
   let finished = false;
+  let finishReason: string | undefined;
   if (request.selection.provider === "openai") {
     const { openai } = await import("@workspace/integrations-openai-ai-server");
     const stream = await openai.chat.completions.create(request.openai);
     for await (const event of stream) {
       const choice = event.choices[0];
+      finishReason = choice?.finish_reason ?? finishReason;
       if (choice?.finish_reason === "stop" || choice?.finish_reason === "length") finished = true;
       if (choice?.finish_reason === "length") truncated = true;
       const next = choice?.delta?.content ?? "";
@@ -62,6 +64,7 @@ export async function generateSelectedModel(
     const { anthropic } = await import("@workspace/integrations-anthropic-ai");
     const stream = anthropic.messages.stream(request.anthropic);
     for await (const event of stream) {
+      if (event.type === "message_delta") finishReason = event.delta.stop_reason ?? finishReason;
       if (event.type === "message_stop") finished = true;
       if (event.type === "message_delta" && event.delta.stop_reason === "max_tokens") truncated = true;
       if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
@@ -72,5 +75,5 @@ export async function generateSelectedModel(
   }
   if (!finished) throw new Error(`${provider} ended without a completion signal. Partial output is preserved.`);
   if (!text.trim()) throw new Error(`${provider} returned no text.`);
-  return { text, providerUsed: provider, truncated };
+  return { text, providerUsed: provider, truncated, finishReason };
 }

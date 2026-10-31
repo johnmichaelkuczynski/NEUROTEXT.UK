@@ -11,7 +11,8 @@ import { generateAuthorDocument } from "../services/author-generation";
 import { authorFunction, readPromptFields } from "../services/author-prompts";
 import { isMastersThesisPage, mastersThesisRequestError, MASTER_THESIS_MAX_WORDS } from "../services/masters-thesis-limits";
 import { isDissertationPage, dissertationRequestError, DISSERTATION_MAX_WORDS } from "../services/dissertation-limits";
-import { isTranslationFunction, translationRequestError, translationPartPrompt, translationSeparator, splitTranslationText, translationWordTarget } from "../services/translation";
+import { isTranslationFunction, translationRequestError } from "../services/translation";
+import { streamTranslation } from "../services/translation-stream";
 import { generateWithFallback, generateWithFallbackStreaming } from "../services/llm-router";
 import {
   openLiveDocumentStream as openEventStream,
@@ -512,39 +513,15 @@ workspaceRouter.post("/functions/stream", async (req, res) => {
       return;
     }
     if (isTranslationFunction(functionId)) {
-      const parts = splitTranslationText(text);
-      const requestedWords = translationWordTarget(instructions, countTextWords(text), functionId === "translation-revision", text);
-      let translation = "";
-      for (let index = 0; index < parts.length; index++) {
-        if (res.destroyed || res.writableEnded) return;
-        const source = parts[index];
-        if (!source.trim()) continue;
-        const separator = translation ? translationSeparator(parts[index - 1] ?? "", source) : "";
-        const partTarget = requestedWords ? Math.max(1, Math.round(requestedWords * source.length / Math.max(1, text.length))) : undefined;
-        writeStreamEvent(res, { type: "section_start", index, total: parts.length, separator });
-        const prompt = translationPartPrompt({
-          revision: functionId === "translation-revision", instructions, source, index, total: parts.length,
-          proportion: source.length / Math.max(1, text.length), previousTranslation: translation, targetWords: partTarget,
-        });
-        let result;
-        for (let attempt = 0; attempt < 2; attempt++) {
-          if (attempt) writeStreamEvent(res, { type: "replace_output", text: translation + separator });
-          result = await generateWithFallbackStreaming(provider, prompt + (attempt ? "\nThe preceding attempt missed the length requirement. Recount and meet the stated word target." : ""), (token, providerUsed) => {
-            writeStreamEvent(res, { type: "token", index, total: parts.length, text: token, providerUsed });
-            (res as import("express").Response & { flush?: () => void }).flush?.();
-          }, { quotes: 0, maxWords: Math.min(8000, Math.max(2400, Array.from(source).length * 2)) });
-          if (!partTarget || Math.abs(countTextWords(result.text) - partTarget) <= Math.max(3, Math.ceil(partTarget * 0.1))) break;
-          if (attempt === 1) {
-            writeStreamEvent(res, { type: "error", message: "The translation did not meet your requested length. Partial output is preserved; adjust the instructions or retry." });
-            return;
-          }
-        }
-        if (!result) throw new Error("No translation was generated.");
-        if (!result.text.trim()) throw new Error("The translation provider returned no text.");
-        translation += separator + result.text;
-        writeStreamEvent(res, { type: "section_done", index, total: parts.length, generatedWords: countTextWords(result.text) });
-      }
-      writeStreamEvent(res, { type: "done", generatedWords: countTextWords(translation) });
+      await streamTranslation(
+        { text, instructions, provider, revision: functionId === "translation-revision" },
+        generateWithFallbackStreaming,
+        (event) => {
+          writeStreamEvent(res, event);
+          (res as import("express").Response & { flush?: () => void }).flush?.();
+        },
+        () => res.destroyed || res.writableEnded,
+      );
       return;
     }
     const inputWords = countTextWords(cleanSource);

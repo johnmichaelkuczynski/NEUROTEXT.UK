@@ -14,3 +14,9 @@ Treat an explicit relative shortening request as measurable where the source lan
 **Why:** A live “cut length in half” check initially retained about 65% of the source with qualitative instructions alone. Reusing the original reduction on every revision would also progressively shrink a translation even when the user only requested a style change.
 
 **How to apply:** Distinguish original preferences from the latest critique, check explicit shortening against an appropriate measure, and avoid silent completion when a measured target is missed.
+
+For translations, prefer an explicit incomplete-output error with preserved text over an unverified automatic continuation after an output-limit cutoff.
+
+**Why:** A partial multilingual translation does not identify the exact remaining source span. Guessing that boundary can omit or duplicate material, even when a continuation reads fluently. This is intentionally different from academic expansion recovery.
+
+**How to apply:** Stop before accepting a truncated part or retrying its length requirement. Resume automatically only when a reliable source-to-output boundary can be established; otherwise retain all streamed text and clearly report incompleteness.

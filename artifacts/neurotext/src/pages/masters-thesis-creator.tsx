@@ -419,7 +419,7 @@ export default function MastersThesisCreator({ mode = "scratch", documentType = 
             body: JSON.stringify({
               functionId,
               text: requestText,
-              instructions: request,
+              instructions: JSON.stringify({ authorPrompt: 1, ...(revise || adapt ? { instructions: revise ? critiqueSnap : instructionsSnap } : { topic: instructionsSnap }), styleSample: styleSnap, contentSource: contentSnap, revision: revise, function: revise ? "manipulator" : undefined, originalText: revise && adapt ? sourceSnap : undefined }),
               provider: "ZHI 1",
               targetWords,
               resumeDocument: doc || undefined,

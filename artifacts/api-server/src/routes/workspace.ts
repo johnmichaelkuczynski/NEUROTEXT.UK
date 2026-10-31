@@ -7,6 +7,8 @@ import { randomUUID } from "node:crypto";
 import { pool } from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { runCoherenceJob } from "../services/coherence";
+import { generateAuthorDocument } from "../services/author-generation";
+import { authorFunction, readPromptFields } from "../services/author-prompts";
 import { isMastersThesisPage, mastersThesisRequestError, MASTER_THESIS_MAX_WORDS } from "../services/masters-thesis-limits";
 import { isDissertationPage, dissertationRequestError, DISSERTATION_MAX_WORDS } from "../services/dissertation-limits";
 import { isTranslationFunction, translationRequestError, translationPartPrompt, translationSeparator, splitTranslationText, translationWordTarget } from "../services/translation";
@@ -360,6 +362,11 @@ ${FINISHED_DOCUMENT_RULES}
 SOURCE DOCUMENT:
 ${functionId === "creator" ? "" : text}`;
   try {
+    if (authorFunction(functionId, text, readPromptFields(instructions))) {
+      const result = await generateAuthorDocument(parsed.data, () => {});
+      res.json(result);
+      return;
+    }
     const result = await generateWithFallback(provider, prompt, { quotes });
     res.json({ ...result, text: stripControlLanguage(result.text) });
   } catch (error) {
@@ -498,6 +505,12 @@ workspaceRouter.post("/functions/stream", async (req, res) => {
   const chunks = splitForStreaming(cleanSource);
   openEventStream(res);
   try {
+    if (authorFunction(functionId, text, readPromptFields(instructions))) {
+      await generateAuthorDocument(parsed.data, (event) => {
+        writeStreamEvent(res, event);
+      }, () => !res.destroyed && !res.writableEnded);
+      return;
+    }
     if (isTranslationFunction(functionId)) {
       const parts = splitTranslationText(text);
       const requestedWords = translationWordTarget(instructions, countTextWords(text), functionId === "translation-revision", text);
@@ -880,7 +893,7 @@ workspaceRouter.post("/coherence/stream", async (req, res) => {
     });
     const result = await runCoherenceJob({
       ...parsed.data,
-      text: stripControlLanguage(parsed.data.text),
+      text: parsed.data.text,
     }, {
       onSkeleton: (text, providerUsed) => {
         writeStreamEvent(res, { type: "skeleton", text, providerUsed });

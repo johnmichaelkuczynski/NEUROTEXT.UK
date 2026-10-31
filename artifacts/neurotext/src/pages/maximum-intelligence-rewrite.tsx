@@ -234,7 +234,7 @@ export default function MaximumIntelligenceRewrite() {
             body: JSON.stringify({
               functionId: "maxintel",
               text,
-              instructions: request,
+              instructions: JSON.stringify({ authorPrompt: 1, instructions: active, styleSample, contentSource, revision: fromOutput, function: fromOutput ? "manipulator" : "maxintel" }),
               provider: "ZHI 1",
               targetWords,
               resumeDocument: doc || undefined,

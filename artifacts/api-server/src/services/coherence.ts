@@ -1,6 +1,7 @@
 import { pool } from "@workspace/db";
 import { randomUUID } from "node:crypto";
 import { generateWithFallback, generateWithFallbackStreaming } from "./llm-router";
+import { generateAuthorDocument } from "./author-generation";
 
 export const ANTI_SYCOPHANCY_CLAUSES = `- Preserve every REJECTS entry verbatim. Do not soften, qualify, or convert a REJECTS into an OPEN.
 - Preserve every numerical value, date, proper name, citation, and quoted phrase exactly as it appears.
@@ -214,7 +215,7 @@ function parseScorecard(output: string, mode: CoherenceMode): CoherenceScorecard
   };
 }
 
-export async function runCoherenceJob(input: {
+async function runLegacyCoherenceJob(input: {
   title: string;
   text: string;
   instructions?: string;
@@ -474,4 +475,51 @@ ${sourceBasis.slice(0, 24000)}`;
       audit: [...auditProviders],
     } satisfies CoherenceProviderUsage,
   };
+}
+
+export async function runCoherenceJob(
+  input: Parameters<typeof runLegacyCoherenceJob>[0],
+  hooks?: Parameters<typeof runLegacyCoherenceJob>[1],
+) {
+  await ensureSchema();
+  const jobId = randomUUID();
+  await pool.query(
+    `INSERT INTO neurotext_coherence_jobs (id, title, original_text, instructions, provider, mode, status)
+     VALUES ($1, $2, $3, $4, $5, $6, 'generating')`,
+    [jobId, input.title, input.text, input.instructions ?? "", input.provider, input.mode],
+  );
+  try {
+    const result = await generateAuthorDocument({
+      functionId: "coherence", text: input.text, provider: input.provider,
+      targetWords: input.targetWords,
+      instructions: JSON.stringify({ authorPrompt: 1, function: "coherence", instructions: input.instructions }),
+    }, (event) => {
+      if (event.type === "token") void hooks?.onAuditToken?.(String(event.text), String(event.providerUsed));
+    });
+    if (!result) throw new Error("Coherence prompt is unavailable.");
+    const verdict = result.text.match(/(?:5\.\s*)?(?:\*\*)?VERDICT(?:\*\*)?\s*:\s*([\s\S]*)$/i)?.[1] ?? "";
+    const scoreText = verdict.match(/\b(10|[1-9])\s*(?:\/\s*10|out of 10)\b/)?.[1]
+      ?? verdict.match(/^\s*(10|[1-9])\b/)?.[1];
+    // Preserve the existing 0–100 metadata contract, while the unchanged model
+    // report shows the author's requested 1–10 verdict.
+    const scorecard: CoherenceScorecard = {
+      mode: modeTitles[resolveMode(input.mode)],
+      score: scoreText ? Number(scoreText) * 10 : null,
+      verdict,
+      dimensions: [],
+    };
+    await pool.query(
+      `UPDATE neurotext_coherence_jobs SET final_output=$2, coherence_score=$3,
+       coherence_report=$4::jsonb, provider_used=$5, status='complete', updated_at=NOW() WHERE id=$1`,
+      [jobId, result.text, scorecard.score, JSON.stringify(scorecard), result.providerUsed],
+    );
+    return {
+      jobId, status: "complete", providerUsed: result.providerUsed, skeleton: "",
+      output: result.text, coherenceScore: scorecard.score, scorecard,
+      providerUsage: { evidence: [], skeleton: [], audit: [result.providerUsed] } satisfies CoherenceProviderUsage,
+    };
+  } catch (error) {
+    await pool.query("UPDATE neurotext_coherence_jobs SET status='failed', updated_at=NOW() WHERE id=$1", [jobId]);
+    throw error;
+  }
 }

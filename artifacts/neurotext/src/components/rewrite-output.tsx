@@ -106,7 +106,7 @@ Return only the complete revised ${documentKind}, without commentary about the r
             credentials: "include",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              functionId: "manipulator", text: originalOutput, instructions: request + continuation,
+              functionId: "manipulator", text: originalOutput, instructions: JSON.stringify({ authorPrompt: 1, revision: true, instructions: changes }),
               provider: "ZHI 1", targetWords,
               resumeDocument: document || undefined, resumeSkeleton: skeleton || undefined,
             }),

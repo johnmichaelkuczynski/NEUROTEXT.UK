@@ -181,7 +181,7 @@ export default function DocumentTransformer() {
             body: JSON.stringify({
               functionId: "manipulator",
               text: documentText,
-              instructions: request,
+              instructions: JSON.stringify({ authorPrompt: 1, instructions, styleSample, contentSource }),
               provider: "ZHI 1",
               resumeDocument: doc || undefined,
               resumeSkeleton: skeleton || undefined,

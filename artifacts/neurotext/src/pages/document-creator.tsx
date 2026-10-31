@@ -149,7 +149,7 @@ export default function DocumentCreator() {
             body: JSON.stringify({
               functionId: "creator",
               text: "",
-              instructions: request,
+              instructions: JSON.stringify({ authorPrompt: 1, topic: instructions, styleSample, contentSource }),
               provider: "ZHI 1",
               resumeDocument: document || undefined,
               resumeSkeleton: skeleton || undefined,

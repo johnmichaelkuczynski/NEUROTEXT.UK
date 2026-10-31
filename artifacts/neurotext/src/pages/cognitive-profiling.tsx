@@ -250,11 +250,11 @@ export default function CognitiveProfiling() {
             credentials: "include",
             body: JSON.stringify({
               functionId: "profile",
-              text: sourceSnap,
-              instructions: baseInstructions + continuation,
+              text: revise ? outputSnap : sourceSnap,
+              instructions: JSON.stringify({ authorPrompt: 1, instructions: revise ? critiqueSnap : instructionsSnap, revision: revise, function: revise ? "manipulator" : "profile", originalText: revise ? sourceSnap : undefined }),
               provider: "ZHI 1",
               targetWords,
-              resumeDocument: targetWords && doc ? doc : undefined,
+              resumeDocument: doc || undefined,
               resumeSkeleton: targetWords && skeleton ? skeleton : undefined,
             }),
           });

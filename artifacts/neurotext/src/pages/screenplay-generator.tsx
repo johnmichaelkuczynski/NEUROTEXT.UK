@@ -225,7 +225,7 @@ export default function ScreenplayGenerator({ mode = "scratch" }: { mode?: Mode 
             body: JSON.stringify({
               functionId: dialogue ? "dialogue" : "screenplay",
               text: adaptation ? sourceText : "",
-              instructions: request,
+              instructions: JSON.stringify({ authorPrompt: 1, ...(adaptation ? { instructions } : { topic: instructions }), styleSample: styleSource, contentSource }),
               provider: "ZHI 1",
               targetWords,
               resumeDocument: doc || undefined,

@@ -27,7 +27,10 @@ NEUROTEXT is a persistent, streaming document-intelligence platform with ten spe
 - All provider streams are normalized through the same NEUROTEXT SSE event protocol.
 - Each of the ten functions has an independently persisted workspace.
 - ZHI model labels are stable product-facing aliases; provider model identifiers remain server-side.
-- Perplexity Sonar Pro, Grok, and DeepSeek use Replit-managed OpenRouter access. OpenAI and Anthropic use their Replit-managed integrations. Venice AI uses `VENICE_API_KEY`.
+- Generation uses each provider's official API directly, with no Replit AI proxy or OpenRouter dependency at runtime.
+- Server credentials: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `PERPLEXITY_API_KEY`; optional providers use `XAI_API_KEY`, `DEEPSEEK_API_KEY`, and `VENICE_API_KEY`. Missing keys fail explicitly only when that provider is selected.
+- OpenAI defaults to `gpt-5` and Anthropic to `claude-sonnet-4-5`; override with `OPENAI_MODEL` and `ANTHROPIC_MODEL`. Grok and DeepSeek support `XAI_MODEL` and `DEEPSEEK_MODEL`.
+- For Coolify, supply the same credentials as server environment variables. The old `AI_INTEGRATIONS_*` secrets are not used for document generation. Provider migration alone does not configure Coolify hosting, database, routing, or persistent storage.
 
 ## Product
 

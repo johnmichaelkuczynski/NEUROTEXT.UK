@@ -404,10 +404,10 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ZHI 6 · Perplexity Sonar Pro">ZHI 6 · Perplexity Sonar Pro</SelectItem>
-                  <SelectItem value="ZHI 1 · OpenAI GPT-5.6 Terra">ZHI 1 · OpenAI GPT-5.6 Terra</SelectItem>
-                  <SelectItem value="ZHI 2 · Anthropic Claude Sonnet 5">ZHI 2 · Anthropic Claude Sonnet 5</SelectItem>
-                  <SelectItem value="ZHI 3 · xAI Grok 4.6">ZHI 3 · xAI Grok 4.6</SelectItem>
-                  <SelectItem value="ZHI 4 · DeepSeek V4 Pro">ZHI 4 · DeepSeek V4 Pro</SelectItem>
+                  <SelectItem value="ZHI 1 · OpenAI GPT-5.6 Terra">ZHI 1 · OpenAI</SelectItem>
+                  <SelectItem value="ZHI 2 · Anthropic Claude Sonnet 5">ZHI 2 · Anthropic Claude</SelectItem>
+                  <SelectItem value="ZHI 3 · xAI Grok 4.6">ZHI 3 · xAI Grok</SelectItem>
+                  <SelectItem value="ZHI 4 · DeepSeek V4 Pro">ZHI 4 · DeepSeek</SelectItem>
                   <SelectItem value="ZHI 5 · Venice AI">ZHI 5 · Venice AI</SelectItem>
                 </SelectContent>
               </Select>

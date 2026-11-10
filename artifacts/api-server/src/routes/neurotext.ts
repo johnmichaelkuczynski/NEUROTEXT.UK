@@ -23,9 +23,7 @@ import {
   neurotextVisitors,
   neurotextWorkspaces,
 } from "@workspace/db";
-import { openai } from "@workspace/integrations-openai-ai-server";
-import { openrouter } from "@workspace/integrations-openrouter-ai";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { getAnthropic } from "@workspace/integrations-anthropic-ai";
 import OpenAI from "openai";
 import { createLiveDocumentStream } from "../services/live-document-stream";
 
@@ -52,24 +50,37 @@ const LEGACY_DEFAULT_MODEL = "ZHI 1 · OpenAI GPT-5.6 Terra";
 
 function selectedProvider(label: string) {
   if (label.startsWith("ZHI 6")) {
-    return { kind: "openrouter" as const, model: "perplexity/sonar-pro", name: "Perplexity Sonar Pro via OpenRouter" };
+    return { kind: "perplexity" as const, model: "sonar-pro", name: "Perplexity Sonar Pro" };
   }
   if (label.startsWith("ZHI 2")) {
-    return { kind: "anthropic" as const, model: "claude-sonnet-5", name: "Anthropic Claude Sonnet 5" };
+    return { kind: "anthropic" as const, model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5", name: "Anthropic" };
   }
   if (label.startsWith("ZHI 3")) {
-    return { kind: "openrouter" as const, model: "x-ai/grok-4.6", name: "xAI Grok 4.6 via OpenRouter" };
+    return { kind: "xai" as const, model: process.env.XAI_MODEL || "grok-4", name: "xAI Grok" };
   }
   if (label.startsWith("ZHI 4")) {
-    return { kind: "openrouter" as const, model: "deepseek/deepseek-v4-pro", name: "DeepSeek V4 Pro via OpenRouter" };
+    return { kind: "deepseek" as const, model: process.env.DEEPSEEK_MODEL || "deepseek-chat", name: "DeepSeek" };
   }
   if (label.startsWith("ZHI 5")) {
     return { kind: "venice" as const, model: "zai-org-glm-5-1", name: "Venice AI" };
   }
   if (label.startsWith("ZHI 1")) {
-    return { kind: "openai" as const, model: "gpt-5.6-terra", name: "OpenAI GPT-5.6 Terra" };
+    return { kind: "openai" as const, model: process.env.OPENAI_MODEL || "gpt-5", name: "OpenAI" };
   }
-  return { kind: "openrouter" as const, model: "perplexity/sonar-pro", name: "Perplexity Sonar Pro via OpenRouter" };
+  return { kind: "perplexity" as const, model: "sonar-pro", name: "Perplexity Sonar Pro" };
+}
+
+function directClient(kind: "openai" | "perplexity" | "xai" | "deepseek" | "venice") {
+  const config = {
+    openai: { key: "OPENAI_API_KEY", baseURL: "https://api.openai.com/v1" },
+    perplexity: { key: "PERPLEXITY_API_KEY", baseURL: "https://api.perplexity.ai" },
+    xai: { key: "XAI_API_KEY", baseURL: "https://api.x.ai/v1" },
+    deepseek: { key: "DEEPSEEK_API_KEY", baseURL: "https://api.deepseek.com" },
+    venice: { key: "VENICE_API_KEY", baseURL: "https://api.venice.ai/api/v1" },
+  }[kind];
+  const apiKey = process.env[config.key];
+  if (!apiKey) throw new Error(`${config.key} is not configured. Add this provider's API key to the server environment.`);
+  return new OpenAI({ apiKey, baseURL: config.baseURL });
 }
 
 type WorkspacePayload = {
@@ -226,7 +237,7 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
       ];
 
       if (provider.kind === "anthropic") {
-        const completion = anthropic.messages.stream({
+        const completion = getAnthropic().messages.stream({
           model: provider.model,
           max_tokens: 8192,
           system: messages[0].content,
@@ -238,21 +249,10 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
           }
         }
       } else {
-        const client =
-          provider.kind === "openrouter"
-            ? openrouter
-            : provider.kind === "venice"
-              ? new OpenAI({
-                  apiKey: process.env.VENICE_API_KEY,
-                  baseURL: "https://api.venice.ai/api/v1",
-                })
-              : openai;
-        if (provider.kind === "venice" && !process.env.VENICE_API_KEY) {
-          throw new Error("VENICE_API_KEY is not configured in Replit Secrets.");
-        }
+        const client = directClient(provider.kind);
         const completion = await client.chat.completions.create({
           model: provider.model,
-          max_completion_tokens: 8192,
+          ...(provider.kind === "openai" ? { max_completion_tokens: 8192 } : { max_tokens: 8192 }),
           stream: true,
           messages,
         });

@@ -8,6 +8,9 @@ NEUROTEXT is a persistent, streaming document-intelligence platform with ten spe
 - `pnpm --filter @workspace/api-server run dev` — run the Express API server on `PORT`
 - `pnpm run typecheck` — typecheck all workspace packages
 - `pnpm run build` — typecheck and build all packages
+- `pnpm run build:production` — typecheck and build the production frontend and API
+- `NODE_ENV=production npm start` — initialize missing PostgreSQL tables and serve frontend/API on port 5000
+- `pnpm run test:production` — isolated production smoke check without optional provider keys
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate typed API hooks and Zod schemas
 - `pnpm --filter @workspace/db run push` — apply development database schema changes
 
@@ -30,7 +33,8 @@ NEUROTEXT is a persistent, streaming document-intelligence platform with ten spe
 - Generation uses each provider's official API directly, with no Replit AI proxy or OpenRouter dependency at runtime.
 - Server credentials: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `PERPLEXITY_API_KEY`; optional providers use `XAI_API_KEY`, `DEEPSEEK_API_KEY`, and `VENICE_API_KEY`. Missing keys fail explicitly only when that provider is selected.
 - OpenAI defaults to `gpt-5` and Anthropic to `claude-sonnet-4-5`; override with `OPENAI_MODEL` and `ANTHROPIC_MODEL`. Grok and DeepSeek support `XAI_MODEL` and `DEEPSEEK_MODEL`.
-- For Coolify, supply the same credentials as server environment variables. The old `AI_INTEGRATIONS_*` secrets are not used for document generation. Provider migration alone does not configure Coolify hosting, database, routing, or persistent storage.
+- Coolify uses the root multi-stage Dockerfile; see `COOLIFY.md` and `ENV_VARS.md`. Production requires `DATABASE_URL`, a stable `SESSION_SECRET`, and the HTTPS origin `PUBLIC_BASE_URL`. The old `AI_INTEGRATIONS_*` variables are unused.
+- Production serves the SPA and API on one HTTP listener behind one trusted Traefik proxy hop. Anonymous workspaces use signed, secure cookies; this is not user authentication.
 
 ## Product
 

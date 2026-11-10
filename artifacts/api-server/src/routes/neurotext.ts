@@ -182,12 +182,6 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
   }
 
   const sid = sessionId(req);
-  res.cookie("neurotext_session", sid, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 1000 * 60 * 60 * 24 * 365,
-  });
 
   const [usage] = await db
     .select()

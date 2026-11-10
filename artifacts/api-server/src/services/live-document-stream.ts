@@ -32,7 +32,7 @@ export function createLiveDocumentStream(req: Request, res: Response) {
     }
   }, 12_000);
 
-  req.on("close", () => {
+  res.on("close", () => {
     closed = true;
     clearInterval(heartbeat);
   });

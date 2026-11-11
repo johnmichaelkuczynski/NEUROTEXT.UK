@@ -478,7 +478,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
               {FUNCTION_LABELS[functionId]}
             </h3>
             <p className="text-muted-foreground mt-2 text-sm max-w-2xl">
-              {functionId === 10 ? 'Paste, type or upload your assignment. NEUROTEXT answers the questions and shows the relevant working, including mathematical notation.' : 'Write a new document from scratch or transform source material into exactly what you need.'}
+              {functionId === 7 ? 'Profile the author’s thinking from their writing. Supply the document first; special requirements are optional.' : functionId === 10 ? 'Paste, type or upload your assignment. NEUROTEXT answers the questions and shows the relevant working, including mathematical notation.' : 'Write a new document from scratch or transform source material into exactly what you need.'}
             </p>
             {(functionId === 8 || functionId === 9) && (
               <p className="text-xs text-muted-foreground mt-2">
@@ -513,7 +513,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
         <fieldset disabled={isResetting} className="grid min-w-0 lg:grid-cols-[1fr_300px] gap-8">
           <div className="space-y-8">
             
-            <section>
+            {functionId !== 7 && <section>
               <div className="mb-3">
                 <div className="text-[11px] font-bold text-primary tracking-widest uppercase mb-1">
                   {functionId === 10 ? 'Step 1 • Assignment' : 'Step 1 • Instructions'}
@@ -564,7 +564,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                   <Button variant="outline" size="sm" className="h-7 text-[11px]" onClick={() => setInstructions("Turn into a master's thesis.")}>Master's thesis</Button>
                 </div>
               )}
-            </section>
+            </section>}
 
             {functionId === 9 && (
               <section>
@@ -630,10 +630,12 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
               <div className="mb-3 flex justify-between items-end">
                 <div>
                   <div className="text-[11px] font-bold text-primary tracking-widest uppercase mb-1">
-                    {functionId === 10 ? 'Step 2 • Supporting materials • Optional' : functionId === 9 ? 'Step 3 • Source Material • Optional' : 'Step 2 • Source Document • Optional'}
+                    {functionId === 7 ? 'Step 1 • Document to profile' : functionId === 10 ? 'Step 2 • Supporting materials • Optional' : functionId === 9 ? 'Step 3 • Source Material • Optional' : 'Step 2 • Source Document • Optional'}
                   </div>
                    <h4 className="font-bold text-foreground text-sm">
-                     {functionId === 10
+                     {functionId === 7
+                       ? 'Enter or upload the document whose author you want profiled'
+                       : functionId === 10
                        ? 'Articles, readings or other materials needed for the assignment'
                        : functionId === 9
                        ? 'Supporting references — separate from your instructions and rough draft'
@@ -644,11 +646,11 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
               
               <div className="relative">
                 <Textarea 
-                  aria-label={functionId === 10 ? 'Supporting materials' : 'Source material'}
+                  aria-label={functionId === 7 ? 'Document to profile' : functionId === 10 ? 'Supporting materials' : 'Source material'}
                   value={sourceDocument}
                   onChange={(e) => setSourceDocument(e.target.value)}
                   className="min-h-[250px] text-sm resize-y font-mono"
-                  placeholder={functionId === 10 ? 'Paste supporting articles or readings here, or upload them below. Leave blank if the assignment needs no supporting materials.' : functionId === 9 ? 'Paste supporting reference material here, or upload text, a PDF or an image with Mathpix OCR.' : 'Paste text here, or upload text, a PDF or an image with Mathpix OCR.'}
+                  placeholder={functionId === 7 ? 'Paste the author’s writing here, or upload their document or screenshot below...' : functionId === 10 ? 'Paste supporting articles or readings here, or upload them below. Leave blank if the assignment needs no supporting materials.' : functionId === 9 ? 'Paste supporting reference material here, or upload text, a PDF or an image with Mathpix OCR.' : 'Paste text here, or upload text, a PDF or an image with Mathpix OCR.'}
                 />
                 
                 <div className="flex items-center justify-between mt-3 px-1">
@@ -657,7 +659,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                   </div>
                   <Button variant="outline" size="sm" className="h-8 text-xs font-semibold" disabled={isReadingSource || currentStatus === 'preparing' || currentStatus === 'writing'} onClick={() => document.getElementById(`upload-${functionId}`)?.click()}>
                     {isReadingSource ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Upload className="w-3 h-3 mr-2" />}
-                    {isReadingSource ? 'Reading with Mathpix...' : functionId === 10 ? 'Upload supporting materials' : 'Upload document'}
+                    {isReadingSource ? 'Reading with Mathpix...' : functionId === 7 ? 'Upload document to profile' : functionId === 10 ? 'Upload supporting materials' : 'Upload document'}
                   </Button>
                   <input
                     type="file"
@@ -665,7 +667,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                     className="hidden"
                     accept={DOCUMENT_UPLOAD_ACCEPT}
                     multiple={functionId === 10}
-                    aria-label={functionId === 10 ? 'Upload supporting materials' : 'Upload document'}
+                    aria-label={functionId === 7 ? 'Upload document to profile' : functionId === 10 ? 'Upload supporting materials' : 'Upload document'}
                     onChange={event => {
                       const files = Array.from(event.target.files || []);
                       event.target.value = '';
@@ -678,6 +680,20 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                 </p>
               </div>
             </section>
+
+            {functionId === 7 && (
+              <section>
+                <div className="mb-3">
+                  <div className="text-[11px] font-bold text-primary tracking-widest uppercase mb-1">Step 2 • Special requirements • Optional</div>
+                  <Label htmlFor="profiling-requirements" className="font-bold text-foreground text-sm">Any particular focus or requirements?</Label>
+                  <p className="text-xs text-muted-foreground mt-1">Leave this blank for a cognitive profile of the author. Add a focus or preferred format only if you want one.</p>
+                </div>
+                <Textarea id="profiling-requirements" aria-label="Special requirements (optional)" value={instructions}
+                  onChange={event => setInstructions(event.target.value)}
+                  className="min-h-[120px] text-sm resize-y"
+                  placeholder="Optional: focus on how the author reasons, weighs evidence, or handles objections..." />
+              </section>
+            )}
 
           </div>
           
@@ -738,10 +754,10 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                 <Button 
                   onClick={handleRun} 
                   className="w-full font-bold text-sm h-12 shadow-sm"
-                  disabled={isReadingDraft || isReadingSource || isReadingAssignment || (functionId === 10 ? !instructions.trim() : (!instructions && !instructionDraft && !sourceDocument))}
+                  disabled={isReadingDraft || isReadingSource || isReadingAssignment || (functionId === 7 ? !sourceDocument.trim() : functionId === 10 ? !instructions.trim() : (!instructions && !instructionDraft && !sourceDocument))}
                 >
                   <Play className="w-4 h-4 mr-2" />
-                  {functionId === 10 ? 'Complete assignment' : 'Create or transform document'}
+                  {functionId === 7 ? 'Profile author' : functionId === 10 ? 'Complete assignment' : 'Create or transform document'}
                 </Button>
               ) : (
                 <Button 

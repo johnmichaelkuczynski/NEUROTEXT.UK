@@ -30,6 +30,7 @@ import { DOCUMENT_SYSTEM_PROMPT, documentInputSection, separateLegacyDraft } fro
 import { academicChapterCount } from "../services/academic-structure";
 import { generateAcademicDocument } from "../services/academic-generation";
 import { HOMEWORK_SYSTEM_PROMPT, homeworkPrompt } from "../services/homework";
+import { cognitiveProfilePrompt } from "../services/cognitive-profiling";
 
 const router: IRouter = Router();
 
@@ -148,6 +149,7 @@ function normalizeWorkspace(functionId: number, payload: unknown, updatedAt = ne
 }
 
 function promptFor(data: typeof StreamFunctionBody._output, current: string, remaining: number) {
+  if (data.functionId === 7) return cognitiveProfilePrompt(data, current, remaining);
   const functionName = FUNCTION_NAMES[data.functionId - 1];
   const continuity = current ? current.slice(-9000) : "";
   const finalBlock = remaining <= 1700;
@@ -180,6 +182,10 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
     return;
   }
   const data = separateLegacyDraft(parsed.data);
+  if (data.functionId === 7 && !data.sourceDocument.trim()) {
+    res.status(400).json({ error: "Paste or upload the document whose author you want profiled." });
+    return;
+  }
   if (data.functionId === 10 && !data.instructions.trim()) {
     res.status(400).json({ error: "Paste, type or upload an assignment first." });
     return;

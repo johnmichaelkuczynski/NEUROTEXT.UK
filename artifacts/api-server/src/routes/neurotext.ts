@@ -27,6 +27,8 @@ import { getAnthropic } from "@workspace/integrations-anthropic-ai";
 import OpenAI from "openai";
 import { createLiveDocumentStream } from "../services/live-document-stream";
 import { DOCUMENT_SYSTEM_PROMPT, documentInputSection, separateLegacyDraft } from "../services/document-inputs";
+import { academicChapterCount } from "../services/academic-structure";
+import { generateAcademicDocument } from "../services/academic-generation";
 
 const router: IRouter = Router();
 
@@ -205,63 +207,76 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
   const provider = selectedProvider(data.selectedModel);
 
   try {
-    while (words < data.targetWords && !stream.isClosed()) {
-      const remaining = data.targetWords - words;
-      stream.send({ type: "status", status: "writing", message: "Writing live" });
-      let block = "";
-      const onContent = (content: string) => {
-        if (!content || stream.isClosed()) return;
-        if (!firstWordMs && /\S/.test(content)) firstWordMs = Date.now() - started;
-        block += content;
-        document += content;
-        words = wordCount(document);
-        stream.send({ type: "token", content });
-        stream.send({
-          type: "progress",
-          words,
-          target: data.targetWords,
-          percent: Math.min(99, Math.round((words / data.targetWords) * 100)),
-        });
-      };
-
+    const onContent = (content: string) => {
+      if (!content || stream.isClosed()) return;
+      if (!firstWordMs && /\S/.test(content)) firstWordMs = Date.now() - started;
+      document += content;
+      words = wordCount(document);
+      stream.send({ type: "token", content });
+      stream.send({
+        type: "progress",
+        words,
+        target: data.targetWords,
+        percent: Math.min(99, Math.round((words / data.targetWords) * 100)),
+      });
+    };
+    const generate = async (system: string, prompt: string, consume: (text: string) => void, maxTokens = 8192) => {
       const messages = [
-        {
-          role: "system" as const,
-          content: DOCUMENT_SYSTEM_PROMPT,
-        },
-        { role: "user" as const, content: promptFor(data, document, remaining) },
+        { role: "system" as const, content: system },
+        { role: "user" as const, content: prompt },
       ];
-
       if (provider.kind === "anthropic") {
         const completion = getAnthropic().messages.stream({
           model: provider.model,
-          max_tokens: 8192,
+          max_tokens: maxTokens,
           system: messages[0].content,
           messages: [{ role: "user", content: messages[1].content }],
         });
         for await (const event of completion) {
+          if (stream.isClosed()) { completion.abort(); break; }
           if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-            onContent(event.delta.text);
+            consume(event.delta.text);
           }
         }
       } else {
         const client = directClient(provider.kind);
         const completion = await client.chat.completions.create({
           model: provider.model,
-          ...(provider.kind === "openai" ? { max_completion_tokens: 8192 } : { max_tokens: 8192 }),
+          ...(provider.kind === "openai" ? { max_completion_tokens: maxTokens } : { max_tokens: maxTokens }),
           stream: true,
           messages,
         });
         for await (const chunk of completion) {
-          onContent(chunk.choices[0]?.delta?.content ?? "");
+          if (stream.isClosed()) { completion.controller.abort(); break; }
+          consume(chunk.choices[0]?.delta?.content ?? "");
         }
       }
+    };
 
-      if (!block.trim()) throw new Error("The selected provider returned no document text.");
-      if (wordCount(block) < 80 && words < data.targetWords) {
-        throw new Error("The selected provider stopped before completing a substantive block.");
+    if (academicChapterCount(data.functionId)) {
+      await generateAcademicDocument({
+        data,
+        generate,
+        emit: onContent,
+        isClosed: stream.isClosed,
+        status: message => { stream.send({ type: "status", status: "writing", message }); },
+      });
+    } else {
+      while (words < data.targetWords && !stream.isClosed()) {
+        const remaining = data.targetWords - words;
+        stream.send({ type: "status", status: "writing", message: "Writing live" });
+        let block = "";
+        await generate(DOCUMENT_SYSTEM_PROMPT, promptFor(data, document, remaining), content => {
+          block += content;
+          onContent(content);
+        });
+        if (!block.trim()) throw new Error("The selected provider returned no document text.");
+        if (wordCount(block) < 80 && words < data.targetWords) {
+          throw new Error("The selected provider stopped before completing a substantive block.");
+        }
       }
     }
+    if (stream.isClosed()) return;
 
     const finalWords = wordCount(document);
     const valid = finalWords >= Math.ceil(data.targetWords * 0.9);

@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Play, Square, FileText, Download, Copy, Upload, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { appendDraft, DEFAULT_DISSERTATION_TASK, readInstructionFile } from '@/lib/instruction-upload';
+import { AcademicDocument } from '@/components/academic-document';
 
 const FUNCTION_LABELS: Record<number, string> = {
   1: 'Document Creator & Manipulator',
@@ -336,6 +337,11 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
             <p className="text-muted-foreground mt-2 text-sm max-w-2xl">
               Write a new document from scratch or transform source material into exactly what you need.
             </p>
+            {(functionId === 8 || functionId === 9) && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Includes a title, table of contents, {functionId === 9 ? 'five' : 'four'} clearly divided chapters, and final references.
+              </p>
+            )}
           </div>
           <Button variant="ghost" onClick={onClose} className="text-muted-foreground self-start shrink-0 h-8 text-xs font-semibold">
             Close Workspace
@@ -661,9 +667,11 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                     className="prose prose-sm md:prose-base max-w-none prose-slate font-serif leading-relaxed"
                     data-testid="live-document-text"
                   >
-                    {currentOutput.split('\n\n').map((paragraph, i) => (
-                      <p key={i}>{paragraph}</p>
-                    ))}
+                    {(functionId === 8 || functionId === 9) && currentOutput.includes('\n\nTable of Contents\n\n')
+                      ? <AcademicDocument text={currentOutput} />
+                      : currentOutput.split('\n\n').map((paragraph, i) => (
+                        <p key={i}>{paragraph}</p>
+                      ))}
                   </div>
                 ) : (
                   <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-4 py-20">

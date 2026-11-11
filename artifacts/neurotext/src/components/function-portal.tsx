@@ -31,7 +31,7 @@ const FUNCTION_LABELS: Record<number, string> = {
   7: 'Cognitive Profiling',
   8: "Master's Thesis Creator",
   9: 'Dissertation Creator',
-  10: 'Document Translation',
+  10: 'Homework',
 };
 
 const FUNCTION_MIN_WORDS: Record<number, number> = {
@@ -44,7 +44,7 @@ const FUNCTION_MIN_WORDS: Record<number, number> = {
   7: 4000,
   8: 20000,
   9: 45000,
-  10: 4000,
+  10: 100,
 };
 
 const DEFAULT_INSTRUCTION = "Turn the source material into a rigorous 5,000-word scholarly essay, replete with relevant legitimate scholarly studies and evidence. Include supported APA-style in-text citations and a complete APA 7 References bibliography. Do not invent sources, quotations, findings, authors, titles, dates, or publication details.";
@@ -78,7 +78,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
   const [instructions, setInstructions] = useState('');
   const [instructionDraft, setInstructionDraft] = useState('');
   const [sourceDocument, setSourceDocument] = useState('');
-  const [targetWords, setTargetWords] = useState<number>(FUNCTION_MIN_WORDS[functionId]);
+  const [targetWords, setTargetWords] = useState<number>(functionId === 10 ? 500 : FUNCTION_MIN_WORDS[functionId]);
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
   const [thinker, setThinker] = useState('');
   const [isReadingDraft, setIsReadingDraft] = useState(false);
@@ -129,7 +129,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
       setInstructions(functionId === 1 ? DEFAULT_INSTRUCTION : '');
       setInstructionDraft('');
       setSourceDocument('');
-      setTargetWords(FUNCTION_MIN_WORDS[functionId]);
+      setTargetWords(functionId === 10 ? 500 : FUNCTION_MIN_WORDS[functionId]);
       setSelectedModel(DEFAULT_MODEL);
       setThinker('');
     }
@@ -365,7 +365,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
               {FUNCTION_LABELS[functionId]}
             </h3>
             <p className="text-muted-foreground mt-2 text-sm max-w-2xl">
-              Write a new document from scratch or transform source material into exactly what you need.
+              {functionId === 10 ? 'Paste, type or upload your assignment. NEUROTEXT answers the questions and shows the relevant working, including mathematical notation.' : 'Write a new document from scratch or transform source material into exactly what you need.'}
             </p>
             {(functionId === 8 || functionId === 9) && (
               <p className="text-xs text-muted-foreground mt-2">
@@ -403,13 +403,15 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
             <section>
               <div className="mb-3">
                 <div className="text-[11px] font-bold text-primary tracking-widest uppercase mb-1">
-                  Step 1 • Instructions
+                  {functionId === 10 ? 'Step 1 • Additional instructions • Optional' : 'Step 1 • Instructions'}
                 </div>
                 <h4 className="font-bold text-foreground text-sm">
                   What should NEUROTEXT do?
                 </h4>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {functionId === 9
+                  {functionId === 10
+                    ? 'Add any preferences here, or type the assignment itself. Upload or paste an assignment below; no extra instructions are needed.'
+                    : functionId === 9
                     ? 'Tell NEUROTEXT what to do, for example: “Turn the rough draft into a proper dissertation.” Put the draft in Step 2 and supporting sources in Step 3.'
                     : 'Describe the new document you want created from scratch, or explain how NEUROTEXT should modify or use the optional source material below.'}
                 </p>
@@ -494,10 +496,12 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
               <div className="mb-3 flex justify-between items-end">
                 <div>
                   <div className="text-[11px] font-bold text-primary tracking-widest uppercase mb-1">
-                    {functionId === 9 ? 'Step 3 • Source Material • Optional' : 'Step 2 • Source Document • Optional'}
+                    {functionId === 10 ? 'Step 2 • Assignment' : functionId === 9 ? 'Step 3 • Source Material • Optional' : 'Step 2 • Source Document • Optional'}
                   </div>
                    <h4 className="font-bold text-foreground text-sm">
-                     {functionId === 9
+                     {functionId === 10
+                       ? 'Type, paste or upload the questions you want answered'
+                       : functionId === 9
                        ? 'Supporting references — separate from your instructions and rough draft'
                        : 'Separate from the prompt — paste or upload source material only'}
                    </h4>
@@ -509,7 +513,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                   value={sourceDocument}
                   onChange={(e) => setSourceDocument(e.target.value)}
                   className="min-h-[250px] text-sm resize-y font-mono"
-                  placeholder={functionId === 9 ? 'Paste supporting reference material here, or upload text, a PDF or an image with Mathpix OCR.' : 'Paste text here, or upload text, a PDF or an image with Mathpix OCR.'}
+                  placeholder={functionId === 10 ? 'Paste or type your assignment here, or upload a screenshot, PDF or text file below. Mathpix reads text and equations from screenshots and PDFs.' : functionId === 9 ? 'Paste supporting reference material here, or upload text, a PDF or an image with Mathpix OCR.' : 'Paste text here, or upload text, a PDF or an image with Mathpix OCR.'}
                 />
                 
                 <div className="flex items-center justify-between mt-3 px-1">
@@ -518,7 +522,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                   </div>
                   <Button variant="outline" size="sm" className="h-8 text-xs font-semibold" disabled={isReadingSource || stream.status === 'preparing' || stream.status === 'writing'} onClick={() => document.getElementById(`upload-${functionId}`)?.click()}>
                     {isReadingSource ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Upload className="w-3 h-3 mr-2" />}
-                    {isReadingSource ? 'Reading with Mathpix...' : 'Upload document'}
+                    {isReadingSource ? 'Reading with Mathpix...' : functionId === 10 ? 'Upload assignment or screenshot' : 'Upload document'}
                   </Button>
                   <input
                     type="file"
@@ -575,7 +579,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
 
             <section>
               <Label className="text-xs font-bold text-foreground mb-2 block">
-                Target word length <span className="text-muted-foreground font-normal">(min {FUNCTION_MIN_WORDS[functionId]})</span>
+                {functionId === 10 ? 'Suggested answer length' : 'Target word length'} <span className="text-muted-foreground font-normal">{functionId === 10 ? '(guidance only)' : `(min ${FUNCTION_MIN_WORDS[functionId]})`}</span>
               </Label>
               <Input 
                 type="number" 

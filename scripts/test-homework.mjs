@@ -1,0 +1,22 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { HOMEWORK_SYSTEM_PROMPT, homeworkPrompt } from "../artifacts/api-server/src/services/homework.ts";
+
+const input = { functionId: 10, instructions: "", sourceDocument: String.raw`1. Solve \(2x+4=10\). 2. Explain photosynthesis.`, targetWords: 500, selectedModel: "ZHI 6 · Perplexity Sonar Pro" };
+const prompt = homeworkPrompt(input, "");
+assert.ok(prompt.includes(JSON.stringify(input.sourceDocument)));
+assert.ok(prompt.includes("Answer all supplied questions"));
+assert.ok(HOMEWORK_SYSTEM_PROMPT.includes("Do not pad short answers"));
+assert.ok(HOMEWORK_SYSTEM_PROMPT.includes("each question and subpart"));
+assert.ok(HOMEWORK_SYSTEM_PROMPT.includes(String.raw`\( ... \)`));
+assert.ok(homeworkPrompt({ ...input, instructions: "Find x", sourceDocument: "" }, "").includes("Find x"));
+assert.ok(homeworkPrompt(input, "Question 1 answer").includes("without repeating"));
+const portal = readFileSync("artifacts/neurotext/src/components/function-portal.tsx", "utf8");
+const route = readFileSync("artifacts/api-server/src/routes/neurotext.ts", "utf8");
+assert.ok(portal.includes("Upload assignment or screenshot"));
+assert.ok(portal.includes("await readDocumentUpload(file, controller.signal)"));
+assert.ok(portal.includes("10: 'Homework'"));
+assert.ok(route.includes("await generate(HOMEWORK_SYSTEM_PROMPT, homeworkPrompt(data, document)"));
+assert.ok(route.includes("data.functionId === 10 ? finalWords > 0"));
+assert.ok(!route.includes("Document Translation"));
+console.log("Homework prompt, typed/pasted assignments, shared Mathpix upload wiring and short-answer completion checks passed.");

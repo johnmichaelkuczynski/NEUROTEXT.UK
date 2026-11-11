@@ -29,6 +29,7 @@ import { createLiveDocumentStream } from "../services/live-document-stream";
 import { DOCUMENT_SYSTEM_PROMPT, documentInputSection, separateLegacyDraft } from "../services/document-inputs";
 import { academicChapterCount } from "../services/academic-structure";
 import { generateAcademicDocument } from "../services/academic-generation";
+import { HOMEWORK_SYSTEM_PROMPT, homeworkPrompt } from "../services/homework";
 
 const router: IRouter = Router();
 
@@ -42,10 +43,10 @@ const FUNCTION_NAMES = [
   "Cognitive Profiling",
   "Master's Thesis Creator",
   "Dissertation Creator",
-  "Document Translation",
+  "Homework",
 ] as const;
 
-const MINIMUMS = [4000, 6500, 4000, 4000, 4000, 8000, 4000, 20000, 45000, 4000];
+const MINIMUMS = [4000, 6500, 4000, 4000, 4000, 8000, 4000, 20000, 45000, 100];
 const DEFAULT_INSTRUCTION =
   "Turn the source material into a rigorous 5,000-word scholarly essay, replete with relevant legitimate scholarly studies and evidence. Include supported APA-style in-text citations and a complete APA 7 References bibliography. Do not invent sources, quotations, findings, authors, titles, dates, or publication details.";
 const DEFAULT_MODEL = "ZHI 6 · Perplexity Sonar Pro";
@@ -106,7 +107,7 @@ function defaultWorkspace(functionId: number): WorkspacePayload {
     instructions: functionId === 1 ? DEFAULT_INSTRUCTION : "",
     instructionDraft: "",
     sourceDocument: "",
-    targetWords: functionId === 1 ? 5000 : MINIMUMS[functionId - 1] ?? 4000,
+    targetWords: functionId === 10 ? 500 : functionId === 1 ? 5000 : MINIMUMS[functionId - 1] ?? 4000,
     selectedModel: DEFAULT_MODEL,
     thinker: "Standard NEUROTEXT style",
     quotationCount: 0,
@@ -177,6 +178,10 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
     return;
   }
   const data = separateLegacyDraft(parsed.data);
+  if (data.functionId === 10 && !data.instructions.trim() && !data.sourceDocument.trim()) {
+    res.status(400).json({ error: "Paste, type or upload an assignment first." });
+    return;
+  }
   const minimum = MINIMUMS[data.functionId - 1] ?? 4000;
   if (data.targetWords < minimum && !data.diagnostic) {
     res.status(400).json({
@@ -253,7 +258,10 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
       }
     };
 
-    if (academicChapterCount(data.functionId)) {
+    if (data.functionId === 10) {
+      await generate(HOMEWORK_SYSTEM_PROMPT, homeworkPrompt(data, document), onContent, 16384);
+      if (!document.trim()) throw new Error("The selected provider returned no homework answer.");
+    } else if (academicChapterCount(data.functionId)) {
       await generateAcademicDocument({
         data,
         generate,
@@ -279,7 +287,7 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
     if (stream.isClosed()) return;
 
     const finalWords = wordCount(document);
-    const valid = finalWords >= Math.ceil(data.targetWords * 0.9);
+    const valid = data.functionId === 10 ? finalWords > 0 : finalWords >= Math.ceil(data.targetWords * 0.9);
     if (!valid) throw new Error(`Generation stopped at ${finalWords} of ${data.targetWords} requested words.`);
 
     await db

@@ -15,7 +15,7 @@ const FUNCTION_LABELS: Record<number, string> = {
   7: 'Cognitive Profiling',
   8: "Master's Thesis Creator",
   9: 'Dissertation Creator',
-  10: 'Document Translation',
+  10: 'Homework',
 };
 
 export default function Dashboard() {

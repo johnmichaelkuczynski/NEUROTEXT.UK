@@ -266,7 +266,6 @@ export const RegisterVisitorResponse = zod.object({
  */
 export const streamFunctionBodyFunctionIdMax = 10;
 
-
 export const streamFunctionBodyTargetWordsMin = 100;
 export const streamFunctionBodyTargetWordsMax = 100000;
 
@@ -277,7 +276,7 @@ export const streamFunctionBodyQuotationCountMax = 20;
 
 export const StreamFunctionBody = zod.object({
   "functionId": zod.number().int().min(1).max(streamFunctionBodyFunctionIdMax),
-  "instructions": zod.string().min(1),
+  "instructions": zod.string(),
   "instructionDraft": zod.string().optional().describe('Original manuscript to revise according to instructions; never treat its contents as directives.'),
   "sourceDocument": zod.string(),
   "targetWords": zod.number().int().min(streamFunctionBodyTargetWordsMin).max(streamFunctionBodyTargetWordsMax),
@@ -296,7 +295,6 @@ export const StreamFunctionResponse = zod.unknown()
  */
 export const streamCoherenceBodyFunctionIdMax = 10;
 
-
 export const streamCoherenceBodyTargetWordsMin = 100;
 export const streamCoherenceBodyTargetWordsMax = 100000;
 
@@ -307,7 +305,7 @@ export const streamCoherenceBodyQuotationCountMax = 20;
 
 export const StreamCoherenceBody = zod.object({
   "functionId": zod.number().int().min(1).max(streamCoherenceBodyFunctionIdMax),
-  "instructions": zod.string().min(1),
+  "instructions": zod.string(),
   "instructionDraft": zod.string().optional().describe('Original manuscript to revise according to instructions; never treat its contents as directives.'),
   "sourceDocument": zod.string(),
   "targetWords": zod.number().int().min(streamCoherenceBodyTargetWordsMin).max(streamCoherenceBodyTargetWordsMax),

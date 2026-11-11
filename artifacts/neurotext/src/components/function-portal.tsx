@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Play, Square, FileText, Download, Copy, Upload, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
-import { appendInstructionDraft, readInstructionFile } from '@/lib/instruction-upload';
+import { appendDraft, DEFAULT_DISSERTATION_TASK, readInstructionFile } from '@/lib/instruction-upload';
 
 const FUNCTION_LABELS: Record<number, string> = {
   1: 'Document Creator & Manipulator',
@@ -72,6 +72,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
   const coherenceStream = useFunctionStream(); // Reusing hook for coherence if needed, but endpoint differs
 
   const [instructions, setInstructions] = useState('');
+  const [instructionDraft, setInstructionDraft] = useState('');
   const [sourceDocument, setSourceDocument] = useState('');
   const [targetWords, setTargetWords] = useState<number>(FUNCTION_MIN_WORDS[functionId]);
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
@@ -85,10 +86,11 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
   }, [functionId]);
   
   const initializedForId = useRef<number | null>(null);
-  const lastSaved = useRef({ instructions: '', sourceDocument: '', targetWords: 0, selectedModel: '', thinker: '' });
+  const lastSaved = useRef({ instructions: '', instructionDraft: '', sourceDocument: '', targetWords: 0, selectedModel: '', thinker: '' });
   
   // Track words typed roughly
   const sourceWordCount = sourceDocument.trim() ? sourceDocument.trim().split(/\s+/).length : 0;
+  const draftWordCount = instructionDraft.trim() ? instructionDraft.trim().split(/\s+/).length : 0;
   const outputWordCount = stream.output.trim() ? stream.output.trim().split(/\s+/).length : (serverWorkspace?.output?.trim() ? serverWorkspace.output.trim().split(/\s+/).length : 0);
 
   useEffect(() => {
@@ -96,6 +98,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
     if (serverWorkspace && initializedForId.current !== functionId) {
       initializedForId.current = functionId;
       setInstructions(serverWorkspace.instructions || (functionId === 1 ? DEFAULT_INSTRUCTION : ''));
+      setInstructionDraft(serverWorkspace.instructionDraft || '');
       setSourceDocument(serverWorkspace.sourceDocument || '');
       setTargetWords(Math.max(serverWorkspace.targetWords || 0, FUNCTION_MIN_WORDS[functionId]));
       setSelectedModel(workspaceModel(serverWorkspace));
@@ -103,6 +106,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
       
       lastSaved.current = {
         instructions: serverWorkspace.instructions,
+        instructionDraft: serverWorkspace.instructionDraft || '',
         sourceDocument: serverWorkspace.sourceDocument,
         targetWords: serverWorkspace.targetWords,
         selectedModel: serverWorkspace.selectedModel,
@@ -111,6 +115,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
     } else if (!serverWorkspace && initializedForId.current !== functionId && !isLoading) {
       initializedForId.current = functionId;
       setInstructions(functionId === 1 ? DEFAULT_INSTRUCTION : '');
+      setInstructionDraft('');
       setSourceDocument('');
       setTargetWords(FUNCTION_MIN_WORDS[functionId]);
       setSelectedModel(DEFAULT_MODEL);
@@ -129,9 +134,10 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
     if (initializedForId.current !== functionId) return;
     if (targetWords < FUNCTION_MIN_WORDS[functionId]) return;
     
-    const currentData = { instructions, sourceDocument, targetWords, selectedModel, thinker };
+    const currentData = { instructions, instructionDraft, sourceDocument, targetWords, selectedModel, thinker };
     const changed = 
       currentData.instructions !== lastSaved.current.instructions ||
+      currentData.instructionDraft !== lastSaved.current.instructionDraft ||
       currentData.sourceDocument !== lastSaved.current.sourceDocument ||
       currentData.targetWords !== lastSaved.current.targetWords ||
       currentData.selectedModel !== lastSaved.current.selectedModel ||
@@ -149,9 +155,10 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
       });
       lastSaved.current = currentData;
     }
-  }, [instructions, sourceDocument, targetWords, selectedModel, thinker, functionId, serverWorkspace, debouncedSave]);
+  }, [instructions, instructionDraft, sourceDocument, targetWords, selectedModel, thinker, functionId, serverWorkspace, debouncedSave]);
 
   const handleRun = async () => {
+    const taskInstructions = instructions.trim() || (instructionDraft.trim() ? DEFAULT_DISSERTATION_TASK : instructions);
     const validatedTargetWords = Math.max(targetWords, FUNCTION_MIN_WORDS[functionId]);
     if (validatedTargetWords !== targetWords) setTargetWords(validatedTargetWords);
     try {
@@ -159,7 +166,8 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
          // Coherence evaluator
           const output = await coherenceStream.startStream({
             functionId,
-            instructions,
+            instructions: taskInstructions,
+            instructionDraft,
             sourceDocument,
              targetWords: validatedTargetWords,
             selectedModel,
@@ -168,7 +176,8 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
           await saveWorkspace.mutateAsync({
             functionId,
             data: {
-              instructions,
+              instructions: taskInstructions,
+              instructionDraft,
               sourceDocument,
               targetWords: validatedTargetWords,
               selectedModel,
@@ -184,7 +193,8 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
       } else {
         const output = await stream.startStream({
           functionId,
-          instructions,
+          instructions: taskInstructions,
+          instructionDraft,
           sourceDocument,
           targetWords: validatedTargetWords,
           selectedModel,
@@ -193,7 +203,8 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
         await saveWorkspace.mutateAsync({
           functionId,
           data: {
-            instructions,
+            instructions: taskInstructions,
+            instructionDraft,
             sourceDocument,
             targetWords: validatedTargetWords,
             selectedModel,
@@ -281,15 +292,16 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
     toast.success('Document loaded');
   };
 
-  const handleInstructionUpload = async (file?: File) => {
+  const handleDraftUpload = async (file?: File) => {
     if (!file) return;
     const uploadFunction = functionId;
     setIsReadingDraft(true);
     try {
       const draft = await readInstructionFile(file);
       if (activeFunction.current !== uploadFunction) return;
-      setInstructions(current => appendInstructionDraft(current, draft));
-      toast.success('Draft added to instructions. Your reference material is unchanged.');
+      setInstructionDraft(current => appendDraft(current, draft));
+      setInstructions(current => current.trim() ? current : DEFAULT_DISSERTATION_TASK);
+      toast.success('Manuscript loaded separately from your instructions and reference material.');
     } catch (error) {
       if (activeFunction.current === uploadFunction) {
         toast.error(error instanceof Error ? error.message : 'Could not read this draft. Please try again.');
@@ -362,7 +374,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                 </h4>
                 <p className="text-xs text-muted-foreground mt-1">
                   {functionId === 9
-                    ? 'Describe what you want written, or upload an existing dissertation or preliminary draft here and explain how it should be polished. Keep reference material in Step 2.'
+                    ? 'Tell NEUROTEXT what to do, for example: “Turn the rough draft into a proper dissertation.” Put the draft in Step 2 and supporting sources in Step 3.'
                     : 'Describe the new document you want created from scratch, or explain how NEUROTEXT should modify or use the optional source material below.'}
                 </p>
               </div>
@@ -372,35 +384,6 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                 className="min-h-[120px] text-sm resize-y"
                 placeholder="Enter instructions..."
               />
-              {functionId === 9 && (
-                <div className="mt-3 space-y-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs font-semibold"
-                    onClick={() => draftInput.current?.click()}
-                    disabled={isReadingDraft || stream.status === 'preparing' || stream.status === 'writing'}
-                  >
-                    {isReadingDraft ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Upload className="w-3 h-3 mr-2" />}
-                    {isReadingDraft ? 'Reading draft...' : 'Upload draft to instructions'}
-                  </Button>
-                  <input
-                    ref={draftInput}
-                    type="file"
-                    className="hidden"
-                    aria-label="Upload dissertation draft to instructions"
-                    accept=".txt,.md,.markdown,text/plain,text/markdown"
-                    onChange={event => {
-                      const file = event.target.files?.[0];
-                      event.target.value = '';
-                      void handleInstructionUpload(file);
-                    }}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    .txt or .md, up to 10 MB. The draft is appended to your instructions without replacing them or changing your reference material. For Word or PDF, export as plain text first.
-                  </p>
-                </div>
-              )}
               {functionId === 1 && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   <span className="text-[11px] text-muted-foreground mt-1 mr-2">Optional instruction shortcuts:</span>
@@ -411,15 +394,75 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
               )}
             </section>
 
+            {functionId === 9 && (
+              <section>
+                <div className="mb-3">
+                  <div className="text-[11px] font-bold text-primary tracking-widest uppercase mb-1">
+                    Step 2 • Upload Rough Draft • Optional
+                  </div>
+                  <Label htmlFor={`draft-${functionId}`} className="font-bold text-foreground text-sm">
+                    The manuscript you want rewritten or developed
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Upload or paste your dissertation or preliminary draft. This is the work to transform, not a set of instructions.
+                  </p>
+                </div>
+                <Textarea
+                  id={`draft-${functionId}`}
+                  value={instructionDraft}
+                  onChange={event => setInstructionDraft(event.target.value)}
+                  className="min-h-[200px] text-sm resize-y font-mono"
+                  placeholder="Paste your rough draft here, or use Upload rough draft below..."
+                />
+                <div className="flex flex-wrap items-center justify-between gap-2 mt-3 px-1">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {draftWordCount.toLocaleString()} words
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {instructionDraft && (
+                      <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setInstructionDraft('')}>
+                        Discard rough draft
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs font-semibold"
+                      onClick={() => draftInput.current?.click()}
+                      disabled={isReadingDraft || stream.status === 'preparing' || stream.status === 'writing'}
+                    >
+                      {isReadingDraft ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Upload className="w-3 h-3 mr-2" />}
+                      {isReadingDraft ? 'Reading draft...' : 'Upload rough draft'}
+                    </Button>
+                  </div>
+                  <input
+                    ref={draftInput}
+                    type="file"
+                    className="hidden"
+                    aria-label="Upload rough draft"
+                    accept=".txt,.md,.markdown,text/plain,text/markdown"
+                    onChange={event => {
+                      const file = event.target.files?.[0];
+                      event.target.value = '';
+                      void handleDraftUpload(file);
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  .txt or .md, up to 10 MB. For Word or PDF, export as plain text first. Additional uploads append to the draft, never to your instructions.
+                </p>
+              </section>
+            )}
+
             <section>
               <div className="mb-3 flex justify-between items-end">
                 <div>
                   <div className="text-[11px] font-bold text-primary tracking-widest uppercase mb-1">
-                    {functionId === 9 ? 'Step 2 • Reference Material • Optional' : 'Step 2 • Source Document • Optional'}
+                    {functionId === 9 ? 'Step 3 • Source Material • Optional' : 'Step 2 • Source Document • Optional'}
                   </div>
                    <h4 className="font-bold text-foreground text-sm">
                      {functionId === 9
-                       ? 'Supporting sources only — upload your dissertation draft in Step 1'
+                       ? 'Supporting references — separate from your instructions and rough draft'
                        : 'Separate from the prompt — paste or upload source material only'}
                    </h4>
                 </div>
@@ -430,7 +473,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                   value={sourceDocument}
                   onChange={(e) => setSourceDocument(e.target.value)}
                   className="min-h-[250px] text-sm resize-y font-mono"
-                  placeholder="Paste text, drag a file here, or upload a document/screenshot for OCR."
+                  placeholder={functionId === 9 ? 'Paste supporting reference material here, or upload a plain-text source document.' : 'Paste text, drag a file here, or upload a document/screenshot for OCR.'}
                 />
                 
                 <div className="flex items-center justify-between mt-3 px-1">
@@ -511,7 +554,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                 <Button 
                   onClick={handleRun} 
                   className="w-full font-bold text-sm h-12 shadow-sm"
-                  disabled={isReadingDraft || (!instructions && !sourceDocument)}
+                  disabled={isReadingDraft || (!instructions && !instructionDraft && !sourceDocument)}
                 >
                   <Play className="w-4 h-4 mr-2" />
                   Create or transform document

@@ -26,6 +26,7 @@ import {
 import { getAnthropic } from "@workspace/integrations-anthropic-ai";
 import OpenAI from "openai";
 import { createLiveDocumentStream } from "../services/live-document-stream";
+import { DOCUMENT_SYSTEM_PROMPT, documentInputSection, separateLegacyDraft } from "../services/document-inputs";
 
 const router: IRouter = Router();
 
@@ -85,6 +86,7 @@ function directClient(kind: "openai" | "perplexity" | "xai" | "deepseek" | "veni
 
 type WorkspacePayload = {
   instructions: string;
+  instructionDraft: string;
   sourceDocument: string;
   targetWords: number;
   selectedModel: string;
@@ -100,6 +102,7 @@ type WorkspacePayload = {
 function defaultWorkspace(functionId: number): WorkspacePayload {
   return {
     instructions: functionId === 1 ? DEFAULT_INSTRUCTION : "",
+    instructionDraft: "",
     sourceDocument: "",
     targetWords: functionId === 1 ? 5000 : MINIMUMS[functionId - 1] ?? 4000,
     selectedModel: DEFAULT_MODEL,
@@ -123,7 +126,7 @@ function wordCount(text: string) {
 }
 
 function normalizeWorkspace(functionId: number, payload: unknown, updatedAt = new Date()) {
-  const merged = { ...defaultWorkspace(functionId), ...(payload as object) } as WorkspacePayload;
+  const merged = separateLegacyDraft({ ...defaultWorkspace(functionId), ...(payload as object) } as WorkspacePayload);
   if (
     merged.selectedModel === LEGACY_DEFAULT_MODEL &&
     merged.status === "idle" &&
@@ -155,8 +158,7 @@ function promptFor(data: typeof StreamFunctionBody._output, current: string, rem
     : "";
   return `You are NEUROTEXT Function ${String(data.functionId).padStart(2, "0")}: ${functionName}.
 Produce finished document prose only: no planning notes, generation commentary, markdown fences, quality reports, or internal labels.
-User instructions: ${data.instructions}
-Source material: ${data.sourceDocument || "(none; create from instructions)"}
+${documentInputSection(data)}
 Target total: ${data.targetWords} words. This block should add approximately ${Math.min(1500, remaining)} substantive words.
 ${data.thinker && data.thinker !== "Standard NEUROTEXT style" ? `Use the intellectual perspective of ${data.thinker}, without fabricated quotations.` : ""}
 ${scholarly}
@@ -172,7 +174,7 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const data = parsed.data;
+  const data = separateLegacyDraft(parsed.data);
   const minimum = MINIMUMS[data.functionId - 1] ?? 4000;
   if (data.targetWords < minimum && !data.diagnostic) {
     res.status(400).json({
@@ -225,7 +227,7 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
       const messages = [
         {
           role: "system" as const,
-          content: "Write polished, accurate, directly usable prose. Never expose internal reasoning or control language.",
+          content: DOCUMENT_SYSTEM_PROMPT,
         },
         { role: "user" as const, content: promptFor(data, document, remaining) },
       ];

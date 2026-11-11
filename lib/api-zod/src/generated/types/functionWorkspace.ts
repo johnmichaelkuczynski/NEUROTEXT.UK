@@ -14,6 +14,8 @@ export interface FunctionWorkspace {
      */
   functionId: number;
   instructions: string;
+  /** Manuscript to transform, not instructions or supporting references. */
+  instructionDraft?: string;
   sourceDocument: string;
   /**
      * @minimum 100

@@ -15,9 +15,8 @@ export async function readInstructionFile(file: File): Promise<string> {
   return text;
 }
 
-export function appendInstructionDraft(instructions: string, draft: string): string {
-  const task = instructions.trim()
-    ? instructions
-    : 'Polish and develop the dissertation draft below, preserving its central arguments, terminology, and system of thought.';
-  return `${task}\n\nDissertation draft to revise (not reference material):\n${draft}`;
+export const DEFAULT_DISSERTATION_TASK = 'Turn the uploaded manuscript into a proper dissertation, preserving its central arguments, terminology, and system of thought.';
+
+export function appendDraft(existingDraft: string, draft: string): string {
+  return existingDraft ? `${existingDraft}\n\n${draft}` : draft;
 }

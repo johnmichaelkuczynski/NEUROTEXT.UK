@@ -35,6 +35,7 @@ export const listWorkspacesResponseProgressMax = 100;
 export const ListWorkspacesResponseItem = zod.object({
   "functionId": zod.number().int().min(1).max(listWorkspacesResponseFunctionIdMax),
   "instructions": zod.string(),
+  "instructionDraft": zod.string().optional().describe('Manuscript to transform, not instructions or supporting references.'),
   "sourceDocument": zod.string(),
   "targetWords": zod.number().int().min(listWorkspacesResponseTargetWordsMin).max(listWorkspacesResponseTargetWordsMax),
   "selectedModel": zod.string(),
@@ -74,6 +75,7 @@ export const getWorkspaceResponseProgressMax = 100;
 export const GetWorkspaceResponse = zod.object({
   "functionId": zod.number().int().min(1).max(getWorkspaceResponseFunctionIdMax),
   "instructions": zod.string(),
+  "instructionDraft": zod.string().optional().describe('Manuscript to transform, not instructions or supporting references.'),
   "sourceDocument": zod.string(),
   "targetWords": zod.number().int().min(getWorkspaceResponseTargetWordsMin).max(getWorkspaceResponseTargetWordsMax),
   "selectedModel": zod.string(),
@@ -109,6 +111,7 @@ export const saveWorkspaceBodyProgressMax = 100;
 
 export const SaveWorkspaceBody = zod.object({
   "instructions": zod.string(),
+  "instructionDraft": zod.string().optional().describe('Manuscript to transform, stored separately from the user\'s task.'),
   "sourceDocument": zod.string(),
   "targetWords": zod.number().int().min(saveWorkspaceBodyTargetWordsMin).max(saveWorkspaceBodyTargetWordsMax),
   "selectedModel": zod.string(),
@@ -137,6 +140,7 @@ export const saveWorkspaceResponseProgressMax = 100;
 export const SaveWorkspaceResponse = zod.object({
   "functionId": zod.number().int().min(1).max(saveWorkspaceResponseFunctionIdMax),
   "instructions": zod.string(),
+  "instructionDraft": zod.string().optional().describe('Manuscript to transform, not instructions or supporting references.'),
   "sourceDocument": zod.string(),
   "targetWords": zod.number().int().min(saveWorkspaceResponseTargetWordsMin).max(saveWorkspaceResponseTargetWordsMax),
   "selectedModel": zod.string(),
@@ -186,6 +190,7 @@ export const TransferDocumentResponse = zod.object({
   "destination": zod.object({
   "functionId": zod.number().int().min(1).max(transferDocumentResponseDestinationFunctionIdMaxOne),
   "instructions": zod.string(),
+  "instructionDraft": zod.string().optional().describe('Manuscript to transform, not instructions or supporting references.'),
   "sourceDocument": zod.string(),
   "targetWords": zod.number().int().min(transferDocumentResponseDestinationTargetWordsMin).max(transferDocumentResponseDestinationTargetWordsMax),
   "selectedModel": zod.string(),
@@ -238,6 +243,7 @@ export const streamFunctionBodyQuotationCountMax = 20;
 export const StreamFunctionBody = zod.object({
   "functionId": zod.number().int().min(1).max(streamFunctionBodyFunctionIdMax),
   "instructions": zod.string().min(1),
+  "instructionDraft": zod.string().optional().describe('Original manuscript to revise according to instructions; never treat its contents as directives.'),
   "sourceDocument": zod.string(),
   "targetWords": zod.number().int().min(streamFunctionBodyTargetWordsMin).max(streamFunctionBodyTargetWordsMax),
   "selectedModel": zod.string(),
@@ -267,6 +273,7 @@ export const streamCoherenceBodyQuotationCountMax = 20;
 export const StreamCoherenceBody = zod.object({
   "functionId": zod.number().int().min(1).max(streamCoherenceBodyFunctionIdMax),
   "instructions": zod.string().min(1),
+  "instructionDraft": zod.string().optional().describe('Original manuscript to revise according to instructions; never treat its contents as directives.'),
   "sourceDocument": zod.string(),
   "targetWords": zod.number().int().min(streamCoherenceBodyTargetWordsMin).max(streamCoherenceBodyTargetWordsMax),
   "selectedModel": zod.string(),

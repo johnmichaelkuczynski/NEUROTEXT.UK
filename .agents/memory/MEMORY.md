@@ -1,1 +1,1 @@
-- [Dissertation input roles](dissertation-input-roles.md) — drafts to polish belong with instructions; the source-document box is for supporting reference material.
+- [Dissertation input roles](dissertation-input-roles.md) — separate instructions, optional rough draft, and optional sources; manuscript content must never become task instructions.

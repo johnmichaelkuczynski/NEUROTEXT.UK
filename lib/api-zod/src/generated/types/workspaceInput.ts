@@ -9,6 +9,8 @@ import type { WorkspaceInputStatus } from './workspaceInputStatus';
 
 export interface WorkspaceInput {
   instructions: string;
+  /** Manuscript to transform, stored separately from the user's task. */
+  instructionDraft?: string;
   sourceDocument: string;
   /**
      * @minimum 100

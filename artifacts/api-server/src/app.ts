@@ -47,7 +47,9 @@ app.use(
   }),
 );
 app.use(cors(production ? { origin: new URL(process.env.PUBLIC_BASE_URL!).origin, credentials: true } : {}));
-app.use(express.json());
+// Dissertation drafts exceed Express's default 100 KB JSON body limit.
+// Allow the draft plus instructions, references and JSON escaping overhead.
+app.use(express.json({ limit: "32mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(sessionSecret));
 app.use("/api", (req, res, next) => {

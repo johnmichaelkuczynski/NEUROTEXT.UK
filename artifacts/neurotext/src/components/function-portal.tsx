@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Play, Square, FileText, Download, Copy, Upload, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { appendInstructionDraft, readInstructionFile } from '@/lib/instruction-upload';
 
 const FUNCTION_LABELS: Record<number, string> = {
   1: 'Document Creator & Manipulator',
@@ -75,6 +76,13 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
   const [targetWords, setTargetWords] = useState<number>(FUNCTION_MIN_WORDS[functionId]);
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
   const [thinker, setThinker] = useState('');
+  const [isReadingDraft, setIsReadingDraft] = useState(false);
+  const draftInput = useRef<HTMLInputElement>(null);
+  const activeFunction = useRef<number | null>(functionId);
+  useEffect(() => {
+    activeFunction.current = functionId;
+    return () => { activeFunction.current = null; };
+  }, [functionId]);
   
   const initializedForId = useRef<number | null>(null);
   const lastSaved = useRef({ instructions: '', sourceDocument: '', targetWords: 0, selectedModel: '', thinker: '' });
@@ -273,6 +281,24 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
     toast.success('Document loaded');
   };
 
+  const handleInstructionUpload = async (file?: File) => {
+    if (!file) return;
+    const uploadFunction = functionId;
+    setIsReadingDraft(true);
+    try {
+      const draft = await readInstructionFile(file);
+      if (activeFunction.current !== uploadFunction) return;
+      setInstructions(current => appendInstructionDraft(current, draft));
+      toast.success('Draft added to instructions. Your reference material is unchanged.');
+    } catch (error) {
+      if (activeFunction.current === uploadFunction) {
+        toast.error(error instanceof Error ? error.message : 'Could not read this draft. Please try again.');
+      }
+    } finally {
+      setIsReadingDraft(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <Card className="p-12 flex justify-center border border-border/50 shadow-sm">
@@ -335,7 +361,9 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                   What should NEUROTEXT do?
                 </h4>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Describe the new document you want created from scratch, or explain how NEUROTEXT should modify or use the optional source material below.
+                  {functionId === 9
+                    ? 'Describe what you want written, or upload an existing dissertation or preliminary draft here and explain how it should be polished. Keep reference material in Step 2.'
+                    : 'Describe the new document you want created from scratch, or explain how NEUROTEXT should modify or use the optional source material below.'}
                 </p>
               </div>
               <Textarea 
@@ -344,6 +372,35 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                 className="min-h-[120px] text-sm resize-y"
                 placeholder="Enter instructions..."
               />
+              {functionId === 9 && (
+                <div className="mt-3 space-y-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs font-semibold"
+                    onClick={() => draftInput.current?.click()}
+                    disabled={isReadingDraft || stream.status === 'preparing' || stream.status === 'writing'}
+                  >
+                    {isReadingDraft ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Upload className="w-3 h-3 mr-2" />}
+                    {isReadingDraft ? 'Reading draft...' : 'Upload draft to instructions'}
+                  </Button>
+                  <input
+                    ref={draftInput}
+                    type="file"
+                    className="hidden"
+                    aria-label="Upload dissertation draft to instructions"
+                    accept=".txt,.md,.markdown,text/plain,text/markdown"
+                    onChange={event => {
+                      const file = event.target.files?.[0];
+                      event.target.value = '';
+                      void handleInstructionUpload(file);
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    .txt or .md, up to 10 MB. The draft is appended to your instructions without replacing them or changing your reference material. For Word or PDF, export as plain text first.
+                  </p>
+                </div>
+              )}
               {functionId === 1 && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   <span className="text-[11px] text-muted-foreground mt-1 mr-2">Optional instruction shortcuts:</span>
@@ -358,10 +415,12 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
               <div className="mb-3 flex justify-between items-end">
                 <div>
                   <div className="text-[11px] font-bold text-primary tracking-widest uppercase mb-1">
-                    Step 2 • Source Document • Optional
+                    {functionId === 9 ? 'Step 2 • Reference Material • Optional' : 'Step 2 • Source Document • Optional'}
                   </div>
                    <h4 className="font-bold text-foreground text-sm">
-                     Separate from the prompt — paste or upload source material only
+                     {functionId === 9
+                       ? 'Supporting sources only — upload your dissertation draft in Step 1'
+                       : 'Separate from the prompt — paste or upload source material only'}
                    </h4>
                 </div>
               </div>
@@ -452,7 +511,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                 <Button 
                   onClick={handleRun} 
                   className="w-full font-bold text-sm h-12 shadow-sm"
-                  disabled={!instructions && !sourceDocument}
+                  disabled={isReadingDraft || (!instructions && !sourceDocument)}
                 >
                   <Play className="w-4 h-4 mr-2" />
                   Create or transform document

@@ -25,6 +25,7 @@ export interface WorkspaceInput {
      */
   quotationCount: number;
   output: string;
+  generationError?: string;
   skeleton: string;
   /**
      * @minimum 0

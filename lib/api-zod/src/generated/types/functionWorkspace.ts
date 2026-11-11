@@ -30,6 +30,7 @@ export interface FunctionWorkspace {
      */
   quotationCount: number;
   output: string;
+  generationError?: string;
   skeleton: string;
   /**
      * @minimum 0

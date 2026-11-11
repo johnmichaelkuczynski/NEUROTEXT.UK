@@ -96,6 +96,7 @@ type WorkspacePayload = {
   thinker: string;
   quotationCount: number;
   output: string;
+  generationError: string;
   skeleton: string;
   progress: number;
   status: "idle" | "preparing" | "writing" | "interrupted" | "failed" | "complete";
@@ -112,6 +113,7 @@ function defaultWorkspace(functionId: number): WorkspacePayload {
     thinker: "Standard NEUROTEXT style",
     quotationCount: 0,
     output: "",
+    generationError: "",
     skeleton: "",
     progress: 0,
     status: "idle",
@@ -178,7 +180,7 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
     return;
   }
   const data = separateLegacyDraft(parsed.data);
-  if (data.functionId === 10 && !data.instructions.trim() && !data.sourceDocument.trim()) {
+  if (data.functionId === 10 && !data.instructions.trim()) {
     res.status(400).json({ error: "Paste, type or upload an assignment first." });
     return;
   }

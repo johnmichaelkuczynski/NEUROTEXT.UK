@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { StreamInput } from '@workspace/api-client-react';
 
 type StreamState =
@@ -22,6 +22,16 @@ type StreamEvent =
     }
   | { type: 'error'; message: string; code: string };
 
+export class GenerationFailure extends Error {
+  partialOutput: string;
+  interrupted: boolean;
+  constructor(message: string, partialOutput: string, interrupted = false) {
+    super(message);
+    this.partialOutput = partialOutput;
+    this.interrupted = interrupted;
+  }
+}
+
 export function useFunctionStream() {
   const [status, setStatus] = useState<StreamState>('idle');
   const [output, setOutput] = useState('');
@@ -29,6 +39,7 @@ export function useFunctionStream() {
   const [provider, setProvider] = useState('');
   const [progress, setProgress] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null);
+  useEffect(() => () => abortControllerRef.current?.abort(), []);
 
   const startStream = useCallback(
     async (
@@ -116,13 +127,13 @@ export function useFunctionStream() {
       } catch (caught) {
         if (controller.signal.aborted) {
           setStatus('interrupted');
-          return finalOutput;
+          throw new GenerationFailure('Generation was interrupted. Any partial text has been retained.', finalOutput, true);
         }
         const message =
           caught instanceof Error ? caught.message : 'Generation failed';
         setError(message);
         if (!failureMessage) setStatus('failed');
-        throw caught;
+        throw new GenerationFailure(message, finalOutput);
       }
     },
     [],

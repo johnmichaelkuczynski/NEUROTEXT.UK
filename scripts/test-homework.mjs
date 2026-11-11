@@ -2,9 +2,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { HOMEWORK_SYSTEM_PROMPT, homeworkPrompt } from "../artifacts/api-server/src/services/homework.ts";
 
-const input = { functionId: 10, instructions: "", sourceDocument: String.raw`1. Solve \(2x+4=10\). 2. Explain photosynthesis.`, targetWords: 500, selectedModel: "ZHI 6 · Perplexity Sonar Pro" };
+const input = { functionId: 10, instructions: String.raw`1. Solve \(2x+4=10\). 2. Explain the supplied article.`, sourceDocument: "Article: plant cells use light energy for photosynthesis.", targetWords: 500, selectedModel: "ZHI 6 · Perplexity Sonar Pro" };
 const prompt = homeworkPrompt(input, "");
 assert.ok(prompt.includes(JSON.stringify(input.sourceDocument)));
+assert.ok(prompt.includes(`"assignment":${JSON.stringify(input.instructions)}`));
+assert.ok(prompt.includes(`"supportingMaterials":${JSON.stringify(input.sourceDocument)}`));
+assert.ok(homeworkPrompt({ ...input, sourceDocument: "" }, "").includes('"supportingMaterials":null'));
 assert.ok(prompt.includes("Answer all supplied questions"));
 assert.ok(HOMEWORK_SYSTEM_PROMPT.includes("Do not pad short answers"));
 assert.ok(HOMEWORK_SYSTEM_PROMPT.includes("each question and subpart"));
@@ -14,6 +17,10 @@ assert.ok(homeworkPrompt(input, "Question 1 answer").includes("without repeating
 const portal = readFileSync("artifacts/neurotext/src/components/function-portal.tsx", "utf8");
 const route = readFileSync("artifacts/api-server/src/routes/neurotext.ts", "utf8");
 assert.ok(portal.includes("Upload assignment or screenshot"));
+assert.ok(portal.includes("Upload supporting materials"));
+assert.ok(portal.includes("setInstructions(current => [current, text]"));
+assert.ok(portal.includes('Step 1 • Assignment'));
+assert.ok(portal.includes('Step 2 • Supporting materials • Optional'));
 assert.ok(portal.includes("await readDocumentUpload(file, controller.signal)"));
 assert.ok(portal.includes("10: 'Homework'"));
 assert.ok(route.includes("await generate(HOMEWORK_SYSTEM_PROMPT, homeworkPrompt(data, document)"));

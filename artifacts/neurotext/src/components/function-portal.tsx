@@ -3,9 +3,12 @@ import {
   type FunctionWorkspace, 
   useGetWorkspace, 
   useSaveWorkspace,
-  useTransferDocument
+  useTransferDocument,
+  getGetWorkspaceQueryKey,
+  getListWorkspacesQueryKey
 } from '@workspace/api-client-react';
-import { useFunctionStream } from '@/hooks/use-function-stream';
+import { useQueryClient } from '@tanstack/react-query';
+import { GenerationFailure, useFunctionStream } from '@/hooks/use-function-stream';
 import { useDebounceCallback } from '@/hooks/use-debounce';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -69,11 +72,26 @@ interface FunctionPortalProps {
 }
 
 export default function FunctionPortal({ functionId, workspaces, onClose }: FunctionPortalProps) {
+  const queryClient = useQueryClient();
   const { data: serverWorkspace, isLoading } = useGetWorkspace(functionId);
-  const saveWorkspace = useSaveWorkspace();
+  // Reset must be ordered after any save already in flight.
+  const saveWorkspace = useSaveWorkspace({ mutation: {
+    scope: { id: 'workspace-writes' },
+    onSuccess: workspace => {
+      queryClient.setQueryData(getGetWorkspaceQueryKey(workspace.functionId), workspace);
+      void queryClient.invalidateQueries({ queryKey: getListWorkspacesQueryKey() });
+    },
+  } });
   const transferDoc = useTransferDocument();
   const stream = useFunctionStream();
   const coherenceStream = useFunctionStream(); // Reusing hook for coherence if needed, but endpoint differs
+  const activeStream = functionId === 5 ? coherenceStream : stream;
+  const [runError, setRunError] = useState('');
+  const currentStatus = activeStream.status !== 'idle' ? activeStream.status : (serverWorkspace?.status || 'idle');
+  // A failed request must not hide a previously saved answer.
+  const showingPrevious = activeStream.status !== 'idle' && !activeStream.output && !!serverWorkspace?.output;
+  const currentOutput = activeStream.output || serverWorkspace?.output || '';
+  const currentError = runError || activeStream.error || (activeStream.status === 'idle' ? serverWorkspace?.generationError : '');
 
   const [instructions, setInstructions] = useState('');
   const [instructionDraft, setInstructionDraft] = useState('');
@@ -83,6 +101,12 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
   const [thinker, setThinker] = useState('');
   const [isReadingDraft, setIsReadingDraft] = useState(false);
   const [isReadingSource, setIsReadingSource] = useState(false);
+  const [isReadingAssignment, setIsReadingAssignment] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const resetting = useRef(false);
+  const generationEpoch = useRef(0);
   const uploadControllers = useRef(new Set<AbortController>());
   const draftInput = useRef<HTMLInputElement>(null);
   const activeFunction = useRef<number | null>(functionId);
@@ -90,6 +114,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
     activeFunction.current = functionId;
     setIsReadingDraft(false);
     setIsReadingSource(false);
+    setIsReadingAssignment(false);
     return () => {
       activeFunction.current = null;
       for (const controller of uploadControllers.current) controller.abort();
@@ -103,13 +128,13 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
   // Track words typed roughly
   const sourceWordCount = sourceDocument.trim() ? sourceDocument.trim().split(/\s+/).length : 0;
   const draftWordCount = instructionDraft.trim() ? instructionDraft.trim().split(/\s+/).length : 0;
-  const outputWordCount = stream.output.trim() ? stream.output.trim().split(/\s+/).length : (serverWorkspace?.output?.trim() ? serverWorkspace.output.trim().split(/\s+/).length : 0);
+  const outputWordCount = currentOutput.trim() ? currentOutput.trim().split(/\s+/).length : 0;
 
   useEffect(() => {
     // Reset state when switching functions
     if (serverWorkspace && initializedForId.current !== functionId) {
       initializedForId.current = functionId;
-      setInstructions(serverWorkspace.instructions || (functionId === 1 ? DEFAULT_INSTRUCTION : ''));
+      setInstructions(serverWorkspace.instructions ?? (functionId === 1 ? DEFAULT_INSTRUCTION : ''));
       setInstructionDraft(serverWorkspace.instructionDraft || '');
       setSourceDocument(serverWorkspace.sourceDocument || '');
       setTargetWords(Math.max(serverWorkspace.targetWords || 0, FUNCTION_MIN_WORDS[functionId]));
@@ -137,12 +162,14 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
 
   const debouncedSave = useDebounceCallback(
     (data: any) => {
+      if (resetting.current) return;
       saveWorkspace.mutate({ functionId, data });
     },
     1000
   );
 
   useEffect(() => {
+    if (resetting.current) return;
     if (initializedForId.current !== functionId) return;
     if (targetWords < FUNCTION_MIN_WORDS[functionId]) return;
     
@@ -160,6 +187,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
         ...currentData,
         status: serverWorkspace?.status || 'idle',
         output: serverWorkspace?.output || '',
+        generationError: serverWorkspace?.generationError || '',
         skeleton: serverWorkspace?.skeleton || '',
         progress: serverWorkspace?.progress || 0,
         provider: serverWorkspace?.provider || '',
@@ -170,6 +198,10 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
   }, [instructions, instructionDraft, sourceDocument, targetWords, selectedModel, thinker, functionId, serverWorkspace, debouncedSave]);
 
   const handleRun = async () => {
+    if (resetting.current) return;
+    setRunError('');
+    debouncedSave.cancel();
+    const runEpoch = generationEpoch.current;
     const taskInstructions = instructions.trim() || (instructionDraft.trim() ? DEFAULT_DISSERTATION_TASK : instructions);
     const validatedTargetWords = Math.max(targetWords, FUNCTION_MIN_WORDS[functionId]);
     if (validatedTargetWords !== targetWords) setTargetWords(validatedTargetWords);
@@ -185,6 +217,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
             selectedModel,
             thinker
           }, undefined, '/api/coherence/stream');
+          if (generationEpoch.current !== runEpoch) return;
           await saveWorkspace.mutateAsync({
             functionId,
             data: {
@@ -196,6 +229,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
               thinker,
               quotationCount: 0,
               output,
+              generationError: '',
               skeleton: serverWorkspace?.skeleton || '',
               progress: 100,
               status: 'complete',
@@ -212,6 +246,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
           selectedModel,
           thinker
         });
+        if (generationEpoch.current !== runEpoch) return;
         await saveWorkspace.mutateAsync({
           functionId,
           data: {
@@ -223,6 +258,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
             thinker,
             quotationCount: 0,
             output,
+            generationError: '',
             skeleton: serverWorkspace?.skeleton || '',
             progress: 100,
             status: 'complete',
@@ -231,7 +267,24 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
         });
       }
     } catch (err) {
-      toast.error('Failed to generate document');
+      if (generationEpoch.current !== runEpoch) return;
+      const message = err instanceof Error ? err.message : 'Generation failed.';
+      setRunError(message);
+      // Keep partial work available after reload instead of discarding it.
+      if (err instanceof GenerationFailure && err.partialOutput.trim()) {
+        try {
+          await saveWorkspace.mutateAsync({ functionId, data: {
+            instructions: taskInstructions, instructionDraft, sourceDocument,
+            targetWords: validatedTargetWords, selectedModel, thinker,
+            quotationCount: 0, output: err.partialOutput,
+            generationError: message, skeleton: serverWorkspace?.skeleton || '',
+            progress: 0, status: err.interrupted ? 'interrupted' : 'failed',
+            provider: selectedModel,
+          } });
+        } catch {
+          setRunError(`${message} The partial text is visible below, but could not be saved. Copy or download it before leaving.`);
+        }
+      }
     }
   };
 
@@ -240,12 +293,46 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
     coherenceStream.interrupt();
   };
 
-  const handleClear = () => {
-    window.location.reload();
+  const handleClear = async () => {
+    if (resetting.current) return;
+    resetting.current = true;
+    setIsResetting(true);
+    setResetError('');
+    generationEpoch.current += 1;
+    debouncedSave.cancel();
+    if (stream.status === 'preparing' || stream.status === 'writing') stream.interrupt();
+    if (coherenceStream.status === 'preparing' || coherenceStream.status === 'writing') coherenceStream.interrupt();
+    for (const controller of uploadControllers.current) controller.abort();
+    uploadControllers.current.clear();
+    try {
+      await saveWorkspace.mutateAsync({
+        functionId,
+        data: {
+          instructions: '',
+          instructionDraft: '',
+          sourceDocument: '',
+          targetWords: functionId === 10 ? 500 : functionId === 1 ? 5000 : FUNCTION_MIN_WORDS[functionId],
+          selectedModel: DEFAULT_MODEL,
+          thinker: 'Standard NEUROTEXT style',
+          quotationCount: 0,
+          output: '',
+          generationError: '',
+          skeleton: '',
+          progress: 0,
+          status: 'idle',
+          provider: '',
+        },
+      });
+      window.location.reload();
+    } catch {
+      resetting.current = false;
+      setIsResetting(false);
+      setResetError('Could not reset the saved workspace. Your fields have not been cleared; please try again.');
+    }
   };
 
   const handleCopy = () => {
-    const original = stream.output || serverWorkspace?.output || '';
+    const original = currentOutput;
     const textToCopy = functionId === 8 || functionId === 9 ? normalizeAcademicContents(original) : original;
     if (textToCopy) {
       navigator.clipboard.writeText(textToCopy);
@@ -254,7 +341,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
   };
 
   const handleDownload = () => {
-    const original = stream.output || serverWorkspace?.output || '';
+    const original = currentOutput;
     const textToDownload = functionId === 8 || functionId === 9 ? normalizeAcademicContents(original) : original;
     if (textToDownload) {
       const blob = new Blob([textToDownload], { type: 'text/plain' });
@@ -273,7 +360,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
     const id = parseInt(destId, 10);
     if (isNaN(id)) return;
     
-    const docToTransfer = stream.output || serverWorkspace?.output;
+    const docToTransfer = currentOutput;
     if (!docToTransfer) {
       toast.error("No output to transfer");
       return;
@@ -296,26 +383,55 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
     });
   };
 
-  const handleUpload = async (file?: File) => {
-    if (!file) return;
+  const handleUpload = async (files: File[] = []) => {
+    if (!files.length) return;
     const uploadFunction = functionId;
     const sourceAtStart = sourceDocument;
     const controller = new AbortController();
     uploadControllers.current.add(controller);
     setIsReadingSource(true);
+    setUploadError('');
     try {
-      const text = await readDocumentUpload(file, controller.signal);
-      if (activeFunction.current !== uploadFunction || controller.signal.aborted) return;
-      setSourceDocument(current => current === sourceAtStart ? text : `${current}\n\n${text}`);
+      for (const file of files) {
+        const text = await readDocumentUpload(file, controller.signal);
+        if (activeFunction.current !== uploadFunction || controller.signal.aborted) return;
+        setSourceDocument(current => functionId === 10
+          ? [current, `Supporting material: ${file.name}\n${text}`].filter(Boolean).join('\n\n')
+          : current === sourceAtStart ? text : `${current}\n\n${text}`);
+      }
       toast.success('Source material loaded with mathematical notation preserved.');
     } catch (error) {
       if (!controller.signal.aborted && activeFunction.current === uploadFunction) {
         const apiError = error as { data?: { error?: string } };
-        toast.error(apiError.data?.error || (error instanceof Error ? error.message : 'Could not read this file.'));
+        setUploadError(apiError.data?.error || (error instanceof Error ? error.message : 'Could not read this file.'));
       }
     } finally {
       uploadControllers.current.delete(controller);
       if (activeFunction.current === uploadFunction) setIsReadingSource(false);
+    }
+  };
+
+  const handleAssignmentUpload = async (files: File[]) => {
+    if (!files.length) return;
+    const uploadFunction = functionId;
+    const controller = new AbortController();
+    uploadControllers.current.add(controller);
+    setIsReadingAssignment(true);
+    setUploadError('');
+    try {
+      for (const file of files) {
+        const text = await readDocumentUpload(file, controller.signal);
+        if (activeFunction.current !== uploadFunction || controller.signal.aborted) return;
+        setInstructions(current => [current, text].filter(Boolean).join('\n\n'));
+      }
+    } catch (error) {
+      if (!controller.signal.aborted && activeFunction.current === uploadFunction) {
+        const apiError = error as { data?: { error?: string } };
+        setUploadError(apiError.data?.error || (error instanceof Error ? error.message : 'Could not read the assignment.'));
+      }
+    } finally {
+      uploadControllers.current.delete(controller);
+      if (activeFunction.current === uploadFunction) setIsReadingAssignment(false);
     }
   };
 
@@ -349,9 +465,6 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
       </Card>
     );
   }
-
-  const currentStatus = stream.status !== 'idle' ? stream.status : (serverWorkspace?.status || 'idle');
-  const currentOutput = stream.status !== 'idle' ? stream.output : (serverWorkspace?.output || '');
 
   return (
     <Card className="border border-border/60 shadow-lg bg-card overflow-hidden">
@@ -397,31 +510,52 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
           </div>
         )}
 
-        <div className="grid lg:grid-cols-[1fr_300px] gap-8">
+        <fieldset disabled={isResetting} className="grid min-w-0 lg:grid-cols-[1fr_300px] gap-8">
           <div className="space-y-8">
             
             <section>
               <div className="mb-3">
                 <div className="text-[11px] font-bold text-primary tracking-widest uppercase mb-1">
-                  {functionId === 10 ? 'Step 1 • Additional instructions • Optional' : 'Step 1 • Instructions'}
+                  {functionId === 10 ? 'Step 1 • Assignment' : 'Step 1 • Instructions'}
                 </div>
                 <h4 className="font-bold text-foreground text-sm">
-                  What should NEUROTEXT do?
+                  {functionId === 10 ? 'Enter or upload your assignment' : 'What should NEUROTEXT do?'}
                 </h4>
                 <p className="text-xs text-muted-foreground mt-1">
                   {functionId === 10
-                    ? 'Add any preferences here, or type the assignment itself. Upload or paste an assignment below; no extra instructions are needed.'
+                    ? 'Type or paste the assignment, or upload its screenshot or document below. Put any required articles or other supporting materials in Step 2.'
                     : functionId === 9
                     ? 'Tell NEUROTEXT what to do, for example: “Turn the rough draft into a proper dissertation.” Put the draft in Step 2 and supporting sources in Step 3.'
                     : 'Describe the new document you want created from scratch, or explain how NEUROTEXT should modify or use the optional source material below.'}
                 </p>
               </div>
               <Textarea 
+                aria-label={functionId === 10 ? 'Assignment' : 'Instructions'}
                 value={instructions}
                 onChange={(e) => setInstructions(e.target.value)}
                 className="min-h-[120px] text-sm resize-y"
-                placeholder="Enter instructions..."
+                placeholder={functionId === 10 ? 'Enter the assignment and its questions here, or upload the assignment below...' : 'Enter instructions...'}
               />
+              {functionId === 10 && (
+                <div className="mt-3 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-xs text-muted-foreground">{instructions.trim() ? instructions.trim().split(/\s+/).length.toLocaleString() : 0} words</span>
+                    <Button variant="outline" size="sm" className="h-8 text-xs font-semibold"
+                      disabled={isReadingAssignment || currentStatus === 'preparing' || currentStatus === 'writing'}
+                      onClick={() => document.getElementById(`assignment-upload-${functionId}`)?.click()}>
+                      {isReadingAssignment ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Upload className="w-3 h-3 mr-2" />}
+                      {isReadingAssignment ? 'Reading assignment with Mathpix...' : 'Upload assignment or screenshot'}
+                    </Button>
+                    <input type="file" id={`assignment-upload-${functionId}`} aria-label="Upload assignment or screenshot" className="hidden" accept={DOCUMENT_UPLOAD_ACCEPT} multiple
+                      onChange={event => {
+                        const files = Array.from(event.target.files || []);
+                        event.target.value = '';
+                        void handleAssignmentUpload(files);
+                      }} />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Text/Markdown, PDF or image, up to 10 MB per file. Mathpix reads text and equations from PDFs and screenshots. Additional uploads append to your assignment.</p>
+                </div>
+              )}
               {functionId === 1 && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   <span className="text-[11px] text-muted-foreground mt-1 mr-2">Optional instruction shortcuts:</span>
@@ -467,7 +601,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                       size="sm"
                       className="h-8 text-xs font-semibold"
                       onClick={() => draftInput.current?.click()}
-                      disabled={isReadingDraft || stream.status === 'preparing' || stream.status === 'writing'}
+                      disabled={isReadingDraft || currentStatus === 'preparing' || currentStatus === 'writing'}
                     >
                       {isReadingDraft ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Upload className="w-3 h-3 mr-2" />}
                       {isReadingDraft ? 'Reading draft...' : 'Upload rough draft'}
@@ -496,11 +630,11 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
               <div className="mb-3 flex justify-between items-end">
                 <div>
                   <div className="text-[11px] font-bold text-primary tracking-widest uppercase mb-1">
-                    {functionId === 10 ? 'Step 2 • Assignment' : functionId === 9 ? 'Step 3 • Source Material • Optional' : 'Step 2 • Source Document • Optional'}
+                    {functionId === 10 ? 'Step 2 • Supporting materials • Optional' : functionId === 9 ? 'Step 3 • Source Material • Optional' : 'Step 2 • Source Document • Optional'}
                   </div>
                    <h4 className="font-bold text-foreground text-sm">
                      {functionId === 10
-                       ? 'Type, paste or upload the questions you want answered'
+                       ? 'Articles, readings or other materials needed for the assignment'
                        : functionId === 9
                        ? 'Supporting references — separate from your instructions and rough draft'
                        : 'Separate from the prompt — paste or upload source material only'}
@@ -510,29 +644,32 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
               
               <div className="relative">
                 <Textarea 
+                  aria-label={functionId === 10 ? 'Supporting materials' : 'Source material'}
                   value={sourceDocument}
                   onChange={(e) => setSourceDocument(e.target.value)}
                   className="min-h-[250px] text-sm resize-y font-mono"
-                  placeholder={functionId === 10 ? 'Paste or type your assignment here, or upload a screenshot, PDF or text file below. Mathpix reads text and equations from screenshots and PDFs.' : functionId === 9 ? 'Paste supporting reference material here, or upload text, a PDF or an image with Mathpix OCR.' : 'Paste text here, or upload text, a PDF or an image with Mathpix OCR.'}
+                  placeholder={functionId === 10 ? 'Paste supporting articles or readings here, or upload them below. Leave blank if the assignment needs no supporting materials.' : functionId === 9 ? 'Paste supporting reference material here, or upload text, a PDF or an image with Mathpix OCR.' : 'Paste text here, or upload text, a PDF or an image with Mathpix OCR.'}
                 />
                 
                 <div className="flex items-center justify-between mt-3 px-1">
                   <div className="text-xs font-medium text-muted-foreground">
                     {sourceWordCount.toLocaleString()} words
                   </div>
-                  <Button variant="outline" size="sm" className="h-8 text-xs font-semibold" disabled={isReadingSource || stream.status === 'preparing' || stream.status === 'writing'} onClick={() => document.getElementById(`upload-${functionId}`)?.click()}>
+                  <Button variant="outline" size="sm" className="h-8 text-xs font-semibold" disabled={isReadingSource || currentStatus === 'preparing' || currentStatus === 'writing'} onClick={() => document.getElementById(`upload-${functionId}`)?.click()}>
                     {isReadingSource ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Upload className="w-3 h-3 mr-2" />}
-                    {isReadingSource ? 'Reading with Mathpix...' : functionId === 10 ? 'Upload assignment or screenshot' : 'Upload document'}
+                    {isReadingSource ? 'Reading with Mathpix...' : functionId === 10 ? 'Upload supporting materials' : 'Upload document'}
                   </Button>
                   <input
                     type="file"
                     id={`upload-${functionId}`}
                     className="hidden"
                     accept={DOCUMENT_UPLOAD_ACCEPT}
+                    multiple={functionId === 10}
+                    aria-label={functionId === 10 ? 'Upload supporting materials' : 'Upload document'}
                     onChange={event => {
-                      const file = event.target.files?.[0];
+                      const files = Array.from(event.target.files || []);
                       event.target.value = '';
-                      void handleUpload(file);
+                      void handleUpload(files);
                     }}
                   />
                 </div>
@@ -601,10 +738,10 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                 <Button 
                   onClick={handleRun} 
                   className="w-full font-bold text-sm h-12 shadow-sm"
-                  disabled={isReadingDraft || isReadingSource || (!instructions && !instructionDraft && !sourceDocument)}
+                  disabled={isReadingDraft || isReadingSource || isReadingAssignment || (functionId === 10 ? !instructions.trim() : (!instructions && !instructionDraft && !sourceDocument))}
                 >
                   <Play className="w-4 h-4 mr-2" />
-                  Create or transform document
+                  {functionId === 10 ? 'Complete assignment' : 'Create or transform document'}
                 </Button>
               ) : (
                 <Button 
@@ -622,11 +759,13 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                 variant="outline"
                 className="w-full text-sm font-semibold"
               >
-                Clear all fields & reset
+                {isResetting ? 'Clearing saved workspace...' : 'Clear all fields & reset'}
               </Button>
+              {resetError && <p role="alert" className="text-sm text-destructive">{resetError}</p>}
+              {uploadError && <p role="alert" className="text-sm text-destructive">{uploadError}</p>}
             </div>
           </div>
-        </div>
+        </fieldset>
       </div>
       
       {/* LIVE DOCUMENT AREA */}
@@ -676,6 +815,9 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
               </div>
             </div>
 
+            {currentError && <p role="alert" className="mb-4 text-sm text-destructive whitespace-pre-wrap">{currentError}</p>}
+            {!currentError && currentStatus === 'failed' && <p role="alert" className="mb-4 text-sm text-destructive">This generation failed. The original error was not saved. Any retained text is shown below; retry to receive a new answer.</p>}
+            {showingPrevious && <p className="mb-4 text-sm text-muted-foreground">Previous saved result — this is not output from the current attempt.</p>}
             <Card className="bg-white border border-border shadow-sm overflow-hidden">
               <div className="border-b border-border bg-slate-50/80 px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -729,7 +871,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                     ) : (
                       <div className="text-center">
                         <FileText className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                        <p className="text-sm">Document will appear here</p>
+                        <p className="text-sm">{currentStatus === 'failed' ? 'No new text was received. See the error above.' : currentStatus === 'interrupted' ? 'Generation stopped before any text was received.' : 'Document will appear here'}</p>
                       </div>
                     )}
                   </div>

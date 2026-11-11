@@ -98,6 +98,7 @@ export default function Dashboard() {
         {selectedFunctionId && (
           <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <FunctionPortal 
+              key={selectedFunctionId}
               functionId={selectedFunctionId} 
               workspaces={workspaces || []}
               onClose={() => setSelectedFunctionId(null)}

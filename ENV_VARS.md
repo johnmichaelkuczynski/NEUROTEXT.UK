@@ -22,7 +22,7 @@ error; it is not silently ignored.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `NODE_ENV` | Docker sets `production` | Production enables static frontend serving, secure signed cookies and the existing anonymous usage limit. Use `development` locally with Vite. |
+| `NODE_ENV` | Docker sets `production` | Production enables static frontend serving and secure signed cookies. Generation does not require login or impose an anonymous operation allowance. Use `development` locally with Vite. |
 | `PORT` | `5000` | HTTP listening port on `0.0.0.0`. Match Coolify's exposed port if changed. |
 | `LOG_LEVEL` | `info` | Pino log level: `debug`, `info`, `warn`, or `error`. Production logs are JSON. |
 | `OPENAI_API_KEY` | unset | Enables direct OpenAI generation. |

@@ -2,3 +2,4 @@
 - [Academic document format](academic-document-format.md) — dissertations require five chapters; master's theses require four; both need a title and table of contents.
 - [Homework input roles](homework-input-roles.md) — first box is the assignment with upload; second box is optional supporting articles and materials.
 - [Cognitive profiling input roles](cognitive-profiling-input-roles.md) — first box is the author’s text with upload; second is optional special requirements.
+- [Anonymous generation access](anonymous-generation-access.md) — no Google login requirement or anonymous-operation cap for generation.

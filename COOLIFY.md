@@ -53,9 +53,10 @@ emulation because the runtime stage does not execute build commands.
 
 ## Current product limits, not deployment failures
 
-The production anonymous allowance remains three successful operations. Actual
-user sign-in, owner authorization and subscription billing are not implemented.
-This deployment work does not add or imply those features.
+Generation is available without Google login or any other sign-in. There is no
+anonymous operation allowance; usage counts are informational only
+(`operationsRemaining: -1` means unrestricted). User sign-in, owner authorization
+and subscription billing are not implemented.
 
 ## Verification performed
 

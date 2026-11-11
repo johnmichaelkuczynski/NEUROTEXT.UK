@@ -205,11 +205,6 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
     .from(neurotextUsage)
     .where(eq(neurotextUsage.sessionId, sid))
     .limit(1);
-  if ((usage?.operationsUsed ?? 0) >= 3 && process.env.NODE_ENV === "production") {
-    res.status(429).json({ error: "Anonymous allowance used. Sign in to continue." });
-    return;
-  }
-
   const stream = createLiveDocumentStream(req, res);
   stream.send({ type: "status", status: "preparing", message: "Preparing document" });
 
@@ -485,7 +480,8 @@ router.get("/usage", async (req, res): Promise<void> => {
   res.json({
     accessState: process.env.NODE_ENV === "development" ? "development-owner" : "anonymous",
     operationsUsed: used,
-    operationsRemaining: process.env.NODE_ENV === "development" ? 999999 : Math.max(0, 3 - used),
+    // -1 means unrestricted; usage is recorded for information, not login gating.
+    operationsRemaining: -1,
     visitorCount: visitors?.count ?? 0,
     subscriptionStatus: "not configured",
     signedIn: false,

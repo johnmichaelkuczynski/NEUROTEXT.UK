@@ -8,6 +8,11 @@
 
 export * from './diagnosticResult';
 export * from './diagnosticResultStatus';
+export * from './documentExtractionInput';
+export * from './documentExtractionInputMimeType';
+export * from './documentExtractionResult';
+export * from './documentExtractionResultProvider';
+export * from './documentExtractionResultStatus';
 export * from './functionWorkspace';
 export * from './functionWorkspaceStatus';
 export * from './healthStatus';

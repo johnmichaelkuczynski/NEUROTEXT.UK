@@ -21,6 +21,8 @@ import type {
 
 import type {
   DiagnosticResult,
+  DocumentExtractionInput,
+  DocumentExtractionResult,
   FunctionWorkspace,
   HealthStatus,
   StreamInput,
@@ -58,6 +60,165 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getExtractDocumentUrl = () => {
+
+
+
+
+  return `/api/documents/extract`
+}
+
+/**
+ * @summary Extract text and LaTeX notation from an image or PDF with Mathpix
+ */
+export const extractDocument = async (documentExtractionInput: DocumentExtractionInput, options?: Parameters<typeof customFetch>[1]): Promise<DocumentExtractionResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DocumentExtractionResult>(getExtractDocumentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(documentExtractionInput)
+  }
+);}
+
+
+
+
+
+export const getExtractDocumentMutationKey = () => ['extractDocument'] as const;
+
+export const getExtractDocumentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof extractDocument>>, TError,ExtractDocumentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof extractDocument>>, TError,ExtractDocumentMutationVariables, TContext> => {
+
+const mutationKey = getExtractDocumentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof extractDocument>>, ExtractDocumentMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  extractDocument(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ExtractDocumentMutationResult = NonNullable<Awaited<ReturnType<typeof extractDocument>>>
+    export type ExtractDocumentMutationBody = BodyType<DocumentExtractionInput>
+    export type ExtractDocumentMutationError = ErrorType<unknown>
+    export type ExtractDocumentMutationVariables = {data: BodyType<DocumentExtractionInput>}
+
+    /**
+ * @summary Extract text and LaTeX notation from an image or PDF with Mathpix
+ */
+export const useExtractDocument = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof extractDocument>>, TError,ExtractDocumentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof extractDocument>>,
+        TError,
+        ExtractDocumentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getExtractDocumentMutationOptions(options));
+    }
+
+export const getGetDocumentExtractionUrl = (jobId: string,) => {
+
+
+
+
+  return `/api/documents/extract/${jobId}`
+}
+
+export const getDocumentExtraction = async (jobId: string, options?: Parameters<typeof customFetch>[1]): Promise<DocumentExtractionResult> => {
+
+  return customFetch<DocumentExtractionResult>(getGetDocumentExtractionUrl(jobId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDocumentExtractionQueryKey = (jobId: string,) => {
+    return [
+    `/api/documents/extract/${jobId}`
+    ] as const;
+    }
+
+
+export const getGetDocumentExtractionQueryOptions = <TData = Awaited<ReturnType<typeof getDocumentExtraction>>, TError = ErrorType<unknown>>(jobId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDocumentExtraction>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDocumentExtractionQueryKey(jobId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDocumentExtraction>>> = ({ signal }) => getDocumentExtraction(jobId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: jobId !== null && jobId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDocumentExtraction>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDocumentExtractionQueryResult = NonNullable<Awaited<ReturnType<typeof getDocumentExtraction>>>
+export type GetDocumentExtractionQueryError = ErrorType<unknown>
+
+
+
+export function useGetDocumentExtraction<TData = Awaited<ReturnType<typeof getDocumentExtraction>>, TError = ErrorType<unknown>>(
+ jobId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDocumentExtraction>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDocumentExtractionQueryOptions(jobId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getHealthCheckUrl = () => {
 

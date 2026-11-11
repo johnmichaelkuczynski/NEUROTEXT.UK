@@ -43,6 +43,20 @@ substitution. At least one key is needed for actual AI generation.
 `DATABASE_URL` is also required in development and for database management tools.
 `SESSION_SECRET` and `PUBLIC_BASE_URL` are required only in production.
 
+## Optional Mathpix OCR credentials
+
+| Variable | Required to start? | Expected value |
+| --- | --- | --- |
+| `MATHPIX_API_KEY` | No | Your Mathpix app key, sent as the server-side `app_key` header. Required only for image/PDF OCR. |
+| `MATHPIX_API_ID` | No | Your Mathpix application ID, sent as `app_id`. This is the exact variable name the app reads. |
+
+Equation display uses bundled KaTeX and needs no API key. Text/Markdown uploads
+also work without Mathpix. Image/PDF uploads are sent to Mathpix only when a user
+selects them; the interface discloses this. Files are processed in memory, not
+stored as database blobs. PDF polling jobs are session-scoped and expire after
+30 minutes; a server restart requires re-uploading an unfinished PDF. Configure
+both credentials separately in Coolify; workspace Secrets do not transfer there.
+
 ## Build/development settings
 
 | Variable | Default | Purpose |

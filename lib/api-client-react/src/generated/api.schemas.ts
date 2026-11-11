@@ -5,6 +5,53 @@
  * NEUROTEXT document intelligence API
  * OpenAPI spec version: 0.1.0
  */
+export type DocumentExtractionInputMimeType = typeof DocumentExtractionInputMimeType[keyof typeof DocumentExtractionInputMimeType];
+
+
+export const DocumentExtractionInputMimeType = {
+  'image/png': 'image/png',
+  'image/jpeg': 'image/jpeg',
+  'image/webp': 'image/webp',
+  'image/gif': 'image/gif',
+  'application/pdf': 'application/pdf',
+} as const;
+
+export interface DocumentExtractionInput {
+  /**
+     * @minLength 1
+     * @maxLength 250
+     */
+  fileName: string;
+  mimeType: DocumentExtractionInputMimeType;
+  /**
+     * @minLength 1
+     * @maxLength 13981016
+     */
+  base64: string;
+}
+
+export type DocumentExtractionResultStatus = typeof DocumentExtractionResultStatus[keyof typeof DocumentExtractionResultStatus];
+
+
+export const DocumentExtractionResultStatus = {
+  processing: 'processing',
+  complete: 'complete',
+} as const;
+
+export type DocumentExtractionResultProvider = typeof DocumentExtractionResultProvider[keyof typeof DocumentExtractionResultProvider];
+
+
+export const DocumentExtractionResultProvider = {
+  Mathpix: 'Mathpix',
+} as const;
+
+export interface DocumentExtractionResult {
+  status: DocumentExtractionResultStatus;
+  provider: DocumentExtractionResultProvider;
+  text?: string;
+  jobId?: string;
+}
+
 export interface HealthStatus {
   status: string;
 }

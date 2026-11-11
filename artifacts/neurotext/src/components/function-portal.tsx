@@ -15,7 +15,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Play, Square, FileText, Download, Copy, Upload, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
-import { appendDraft, DEFAULT_DISSERTATION_TASK, readInstructionFile } from '@/lib/instruction-upload';
+import { appendDraft, DEFAULT_DISSERTATION_TASK } from '@/lib/instruction-upload';
+import { DOCUMENT_UPLOAD_ACCEPT, readDocumentUpload } from '@/lib/document-upload';
+import { normalizeAcademicContents } from '@/lib/academic-formatting';
+import { MathText } from '@/components/math-text';
 import { AcademicDocument } from '@/components/academic-document';
 
 const FUNCTION_LABELS: Record<number, string> = {
@@ -79,11 +82,19 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
   const [thinker, setThinker] = useState('');
   const [isReadingDraft, setIsReadingDraft] = useState(false);
+  const [isReadingSource, setIsReadingSource] = useState(false);
+  const uploadControllers = useRef(new Set<AbortController>());
   const draftInput = useRef<HTMLInputElement>(null);
   const activeFunction = useRef<number | null>(functionId);
   useEffect(() => {
     activeFunction.current = functionId;
-    return () => { activeFunction.current = null; };
+    setIsReadingDraft(false);
+    setIsReadingSource(false);
+    return () => {
+      activeFunction.current = null;
+      for (const controller of uploadControllers.current) controller.abort();
+      uploadControllers.current.clear();
+    };
   }, [functionId]);
   
   const initializedForId = useRef<number | null>(null);
@@ -234,7 +245,8 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
   };
 
   const handleCopy = () => {
-    const textToCopy = stream.output || serverWorkspace?.output || '';
+    const original = stream.output || serverWorkspace?.output || '';
+    const textToCopy = functionId === 8 || functionId === 9 ? normalizeAcademicContents(original) : original;
     if (textToCopy) {
       navigator.clipboard.writeText(textToCopy);
       toast.success('Copied to clipboard');
@@ -242,7 +254,8 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
   };
 
   const handleDownload = () => {
-    const textToDownload = stream.output || serverWorkspace?.output || '';
+    const original = stream.output || serverWorkspace?.output || '';
+    const textToDownload = functionId === 8 || functionId === 9 ? normalizeAcademicContents(original) : original;
     if (textToDownload) {
       const blob = new Blob([textToDownload], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
@@ -285,30 +298,47 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
 
   const handleUpload = async (file?: File) => {
     if (!file) return;
-    if (!file.type.startsWith('text/') && !file.name.toLowerCase().endsWith('.txt')) {
-      toast.error('This build currently accepts plain-text uploads. Paste extracted text for other formats.');
-      return;
+    const uploadFunction = functionId;
+    const sourceAtStart = sourceDocument;
+    const controller = new AbortController();
+    uploadControllers.current.add(controller);
+    setIsReadingSource(true);
+    try {
+      const text = await readDocumentUpload(file, controller.signal);
+      if (activeFunction.current !== uploadFunction || controller.signal.aborted) return;
+      setSourceDocument(current => current === sourceAtStart ? text : `${current}\n\n${text}`);
+      toast.success('Source material loaded with mathematical notation preserved.');
+    } catch (error) {
+      if (!controller.signal.aborted && activeFunction.current === uploadFunction) {
+        const apiError = error as { data?: { error?: string } };
+        toast.error(apiError.data?.error || (error instanceof Error ? error.message : 'Could not read this file.'));
+      }
+    } finally {
+      uploadControllers.current.delete(controller);
+      if (activeFunction.current === uploadFunction) setIsReadingSource(false);
     }
-    setSourceDocument(await file.text());
-    toast.success('Document loaded');
   };
 
   const handleDraftUpload = async (file?: File) => {
     if (!file) return;
     const uploadFunction = functionId;
+    const controller = new AbortController();
+    uploadControllers.current.add(controller);
     setIsReadingDraft(true);
     try {
-      const draft = await readInstructionFile(file);
-      if (activeFunction.current !== uploadFunction) return;
+      const draft = await readDocumentUpload(file, controller.signal);
+      if (activeFunction.current !== uploadFunction || controller.signal.aborted) return;
       setInstructionDraft(current => appendDraft(current, draft));
       setInstructions(current => current.trim() ? current : DEFAULT_DISSERTATION_TASK);
       toast.success('Manuscript loaded separately from your instructions and reference material.');
     } catch (error) {
-      if (activeFunction.current === uploadFunction) {
-        toast.error(error instanceof Error ? error.message : 'Could not read this draft. Please try again.');
+      if (!controller.signal.aborted && activeFunction.current === uploadFunction) {
+        const apiError = error as { data?: { error?: string } };
+        toast.error(apiError.data?.error || (error instanceof Error ? error.message : 'Could not read this draft. Please try again.'));
       }
     } finally {
-      setIsReadingDraft(false);
+      uploadControllers.current.delete(controller);
+      if (activeFunction.current === uploadFunction) setIsReadingDraft(false);
     }
   };
 
@@ -446,7 +476,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                     type="file"
                     className="hidden"
                     aria-label="Upload rough draft"
-                    accept=".txt,.md,.markdown,text/plain,text/markdown"
+                    accept={DOCUMENT_UPLOAD_ACCEPT}
                     onChange={event => {
                       const file = event.target.files?.[0];
                       event.target.value = '';
@@ -455,7 +485,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                   />
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  .txt or .md, up to 10 MB. For Word or PDF, export as plain text first. Additional uploads append to the draft, never to your instructions.
+                  Text/Markdown, PDF, PNG, JPEG, WebP or GIF, up to 10 MB. PDFs and images are sent to Mathpix to preserve equations. Additional uploads append to the draft, never to your instructions.
                 </p>
               </section>
             )}
@@ -479,25 +509,32 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                   value={sourceDocument}
                   onChange={(e) => setSourceDocument(e.target.value)}
                   className="min-h-[250px] text-sm resize-y font-mono"
-                  placeholder={functionId === 9 ? 'Paste supporting reference material here, or upload a plain-text source document.' : 'Paste text, drag a file here, or upload a document/screenshot for OCR.'}
+                  placeholder={functionId === 9 ? 'Paste supporting reference material here, or upload text, a PDF or an image with Mathpix OCR.' : 'Paste text here, or upload text, a PDF or an image with Mathpix OCR.'}
                 />
                 
                 <div className="flex items-center justify-between mt-3 px-1">
                   <div className="text-xs font-medium text-muted-foreground">
                     {sourceWordCount.toLocaleString()} words
                   </div>
-                  <Button variant="outline" size="sm" className="h-8 text-xs font-semibold" onClick={() => document.getElementById(`upload-${functionId}`)?.click()}>
-                    <Upload className="w-3 h-3 mr-2" />
-                    Upload document
+                  <Button variant="outline" size="sm" className="h-8 text-xs font-semibold" disabled={isReadingSource || stream.status === 'preparing' || stream.status === 'writing'} onClick={() => document.getElementById(`upload-${functionId}`)?.click()}>
+                    {isReadingSource ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Upload className="w-3 h-3 mr-2" />}
+                    {isReadingSource ? 'Reading with Mathpix...' : 'Upload document'}
                   </Button>
                   <input
                     type="file"
                     id={`upload-${functionId}`}
                     className="hidden"
-                    accept=".txt,text/plain"
-                    onChange={(event) => void handleUpload(event.target.files?.[0])}
+                    accept={DOCUMENT_UPLOAD_ACCEPT}
+                    onChange={event => {
+                      const file = event.target.files?.[0];
+                      event.target.value = '';
+                      void handleUpload(file);
+                    }}
                   />
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Text/Markdown, PDF or image, up to 10 MB. PDFs and images are sent to Mathpix for text and equation recognition.
+                </p>
               </div>
             </section>
 
@@ -560,7 +597,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                 <Button 
                   onClick={handleRun} 
                   className="w-full font-bold text-sm h-12 shadow-sm"
-                  disabled={isReadingDraft || (!instructions && !instructionDraft && !sourceDocument)}
+                  disabled={isReadingDraft || isReadingSource || (!instructions && !instructionDraft && !sourceDocument)}
                 >
                   <Play className="w-4 h-4 mr-2" />
                   Create or transform document
@@ -670,7 +707,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                     {(functionId === 8 || functionId === 9) && currentOutput.includes('\n\nTable of Contents\n\n')
                       ? <AcademicDocument text={currentOutput} />
                       : currentOutput.split('\n\n').map((paragraph, i) => (
-                        <p key={i}>{paragraph}</p>
+                        <p key={i} className="whitespace-pre-line"><MathText text={paragraph} /></p>
                       ))}
                   </div>
                 ) : (

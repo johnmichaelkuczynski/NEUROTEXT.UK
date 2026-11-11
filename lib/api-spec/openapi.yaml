@@ -14,6 +14,38 @@ tags:
   - name: generation
   - name: diagnostics
 paths:
+  /documents/extract:
+    post:
+      operationId: extractDocument
+      summary: Extract text and LaTeX notation from an image or PDF with Mathpix
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentExtractionInput"
+      responses:
+        "200":
+          description: Extracted image text or pending PDF job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentExtractionResult"
+  /documents/extract/{jobId}:
+    get:
+      operationId: getDocumentExtraction
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: PDF processing status or extracted text
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentExtractionResult"
   /healthz:
     get:
       operationId: healthCheck
@@ -177,6 +209,23 @@ components:
         minimum: 1
         maximum: 10
   schemas:
+    DocumentExtractionInput:
+      type: object
+      required: [fileName, mimeType, base64]
+      properties:
+        fileName: { type: string, minLength: 1, maxLength: 250 }
+        mimeType:
+          type: string
+          enum: [image/png, image/jpeg, image/webp, image/gif, application/pdf]
+        base64: { type: string, minLength: 1, maxLength: 13981016 }
+    DocumentExtractionResult:
+      type: object
+      required: [status, provider]
+      properties:
+        status: { type: string, enum: [processing, complete] }
+        provider: { type: string, enum: [Mathpix] }
+        text: { type: string }
+        jobId: { type: string }
     HealthStatus:
       type: object
       required: [status]

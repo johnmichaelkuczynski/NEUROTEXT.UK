@@ -9,6 +9,41 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary Extract text and LaTeX notation from an image or PDF with Mathpix
+ */
+export const extractDocumentBodyFileNameMax = 250;
+
+export const extractDocumentBodyBase64Max = 13981016;
+
+
+
+export const ExtractDocumentBody = zod.object({
+  "fileName": zod.string().min(1).max(extractDocumentBodyFileNameMax),
+  "mimeType": zod.enum(['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'application/pdf']),
+  "base64": zod.string().min(1).max(extractDocumentBodyBase64Max)
+})
+
+export const ExtractDocumentResponse = zod.object({
+  "status": zod.enum(['processing', 'complete']),
+  "provider": zod.enum(['Mathpix']),
+  "text": zod.string().optional(),
+  "jobId": zod.string().optional()
+})
+
+
+export const GetDocumentExtractionParams = zod.object({
+  "jobId": zod.coerce.string()
+})
+
+export const GetDocumentExtractionResponse = zod.object({
+  "status": zod.enum(['processing', 'complete']),
+  "provider": zod.enum(['Mathpix']),
+  "text": zod.string().optional(),
+  "jobId": zod.string().optional()
+})
+
+
+/**
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({

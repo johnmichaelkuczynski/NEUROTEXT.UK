@@ -22,7 +22,7 @@ const rendered = await build({
     contents: `import { createElement } from "react"; import { renderToStaticMarkup } from "react-dom/server"; import { AcademicDocument } from "./src/components/academic-document"; export const render = text => renderToStaticMarkup(createElement(AcademicDocument, {text}));`,
     resolveDir: resolve("artifacts/neurotext"), loader: "tsx",
   },
-  bundle: true, write: false, format: "cjs", platform: "node", jsx: "automatic",
+  bundle: true, write: false, format: "cjs", platform: "node", jsx: "automatic", loader: { ".css": "empty" },
 });
 // CJS needs native Node builtins from the renderer, rather than data-URL imports.
 const module = { exports: {} };

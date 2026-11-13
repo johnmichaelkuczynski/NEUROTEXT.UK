@@ -55,8 +55,25 @@ emulation because the runtime stage does not execute build commands.
 
 Generation is available without Google login or any other sign-in. There is no
 anonymous operation allowance; usage counts are informational only
-(`operationsRemaining: -1` means unrestricted). User sign-in, owner authorization
-and subscription billing are not implemented.
+(`operationsRemaining: -1` means unrestricted). Google sign-in is optional and
+enables private owner-scoped workspaces, saved-output history and a personal text
+library. There is no subscription billing or paywall.
+
+For Google login, configure `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and
+`PUBLIC_BASE_URL` in Coolify. In Google Cloud, register the exact redirect URI:
+`https://YOUR_PUBLIC_HOST/api/auth/google/callback`. All replicas must use the
+same PostgreSQL database and `SESSION_SECRET`. Sessions are stored in the
+external database, not container memory. Traefik must forward HTTPS correctly
+for Secure session cookies.
+
+The initial migration adds account, session, library and history tables without
+deleting prior workspace data. Old anonymous work is not automatically assigned
+to new accounts. Anonymous work is no longer restored from the database.
+
+Library allowance: 10,000 weighted pages or 50 MiB weighted storage. TXT counts
+1×, DOC/DOCX 2× and PDF/images 4×. Only extracted text is retained; original
+binary files are not archived. Supporting fields are limited to 20,000 words
+and 120,000 characters per generation (about 40 pages at 500 words per page).
 
 ## Verification performed
 

@@ -8,6 +8,8 @@ const env = {
   PUBLIC_BASE_URL: "https://localhost",
   SESSION_SECRET: randomBytes(32).toString("hex"),
 };
+delete env.GOOGLE_CLIENT_ID;
+delete env.GOOGLE_CLIENT_SECRET;
 delete env.PORT; // Exercise the production default of port 5000.
 for (const key of Object.keys(env)) {
   if (key.endsWith("_API_KEY") || key.startsWith("AI_INTEGRATIONS_") || key.startsWith("REPLIT_")) {
@@ -45,6 +47,12 @@ try {
   assert(asset, "Built frontend script was not found");
   assert.equal((await fetch(new URL(asset, base))).status, 200);
   assert.equal((await fetch(`${base}/diagnostics`)).status, 200);
+  assert.equal((await fetch(`${base}/library`)).status, 200);
+  assert.equal((await fetch(`${base}/history`)).status, 200);
+  const guestAccount = await fetch(`${base}/api/auth/me`).then(r => r.json());
+  assert.equal(guestAccount.user, null);
+  assert.equal(guestAccount.googleConfigured, false);
+  assert.equal((await fetch(`${base}/api/library`)).status, 401);
   assert.equal((await fetch(`${base}/api/not-a-route`)).status, 404);
   assert.equal((await fetch(`${base}/assets/not-a-file.js`)).status, 404);
 

@@ -5,6 +5,146 @@
  * NEUROTEXT document intelligence API
  * OpenAPI spec version: 0.1.0
  */
+export interface ActionResult {
+  ok: boolean;
+}
+
+export interface AccountUser {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface AccountState {
+  user: AccountUser | null;
+  googleConfigured: boolean;
+  maxReferenceWords: number;
+  maxReferenceCharacters: number;
+  maxLibraryPages: number;
+  maxLibraryBytes: number;
+}
+
+export type LibraryDocumentInputFormat = typeof LibraryDocumentInputFormat[keyof typeof LibraryDocumentInputFormat];
+
+
+export const LibraryDocumentInputFormat = {
+  txt: 'txt',
+  doc: 'doc',
+  pdf: 'pdf',
+} as const;
+
+export interface LibraryDocumentInput {
+  /**
+     * @minLength 1
+     * @maxLength 250
+     */
+  title: string;
+  /**
+     * @minLength 1
+     * @maxLength 30000000
+     */
+  text: string;
+  format: LibraryDocumentInputFormat;
+  /**
+     * @minimum 0
+     * @maximum 10485760
+     */
+  originalBytes: number;
+}
+
+export interface LibraryDocument {
+  id: string;
+  title: string;
+  format: string;
+  wordCount: number;
+  pages: number;
+  chargedPages: number;
+  chargedBytes: number;
+  createdAt: string;
+}
+
+export type LibraryDocumentText = LibraryDocument & {
+  text: string;
+};
+
+export interface LibraryState {
+  documents: LibraryDocument[];
+  usedPages: number;
+  usedBytes: number;
+  maxPages: number;
+  maxBytes: number;
+}
+
+export interface HistoryItem {
+  id: string;
+  functionId: number;
+  title: string;
+  wordCount: number;
+  createdAt: string;
+}
+
+export type FunctionWorkspaceStatus = typeof FunctionWorkspaceStatus[keyof typeof FunctionWorkspaceStatus];
+
+
+export const FunctionWorkspaceStatus = {
+  idle: 'idle',
+  preparing: 'preparing',
+  writing: 'writing',
+  interrupted: 'interrupted',
+  failed: 'failed',
+  complete: 'complete',
+} as const;
+
+export interface FunctionWorkspace {
+  /**
+     * @minimum 1
+     * @maximum 10
+     */
+  functionId: number;
+  instructions: string;
+  /** Manuscript to transform, not instructions or supporting references. */
+  instructionDraft?: string;
+  sourceDocument: string;
+  /**
+     * @minimum 100
+     * @maximum 100000
+     */
+  targetWords: number;
+  selectedModel: string;
+  thinker: string;
+  /**
+     * @minimum 0
+     * @maximum 20
+     */
+  quotationCount: number;
+  output: string;
+  generationError?: string;
+  skeleton: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  progress: number;
+  status: FunctionWorkspaceStatus;
+  provider: string;
+  updatedAt: string;
+}
+
+export type HistoryWork = HistoryItem & {
+  workspace: FunctionWorkspace;
+};
+
+export interface WordDocumentInput {
+  /** @maxLength 250 */
+  fileName: string;
+  /** @maxLength 13981016 */
+  base64: string;
+}
+
+export interface WordDocumentText {
+  text: string;
+}
+
 export type DocumentExtractionInputMimeType = typeof DocumentExtractionInputMimeType[keyof typeof DocumentExtractionInputMimeType];
 
 
@@ -54,53 +194,6 @@ export interface DocumentExtractionResult {
 
 export interface HealthStatus {
   status: string;
-}
-
-export type FunctionWorkspaceStatus = typeof FunctionWorkspaceStatus[keyof typeof FunctionWorkspaceStatus];
-
-
-export const FunctionWorkspaceStatus = {
-  idle: 'idle',
-  preparing: 'preparing',
-  writing: 'writing',
-  interrupted: 'interrupted',
-  failed: 'failed',
-  complete: 'complete',
-} as const;
-
-export interface FunctionWorkspace {
-  /**
-     * @minimum 1
-     * @maximum 10
-     */
-  functionId: number;
-  instructions: string;
-  /** Manuscript to transform, not instructions or supporting references. */
-  instructionDraft?: string;
-  sourceDocument: string;
-  /**
-     * @minimum 100
-     * @maximum 100000
-     */
-  targetWords: number;
-  selectedModel: string;
-  thinker: string;
-  /**
-     * @minimum 0
-     * @maximum 20
-     */
-  quotationCount: number;
-  output: string;
-  generationError?: string;
-  skeleton: string;
-  /**
-     * @minimum 0
-     * @maximum 100
-     */
-  progress: number;
-  status: FunctionWorkspaceStatus;
-  provider: string;
-  updatedAt: string;
 }
 
 export type WorkspaceInputStatus = typeof WorkspaceInputStatus[keyof typeof WorkspaceInputStatus];

@@ -23,6 +23,7 @@ for (const operationsUsed of [0, 3, 1000]) {
     process: { env: { NODE_ENV: "production" } },
     StreamFunctionBody: schema, StreamCoherenceBody: schema,
     separateLegacyDraft: value => value, MINIMUMS: [4000],
+    referenceLimitError: () => null, userId: () => undefined,
     sessionId: () => "isolated-test-session",
     db: {
       select: () => ({ from: () => ({ where: () => ({ limit: async () => [{ operationsUsed }] }) }) }),

@@ -23,6 +23,7 @@ import { DOCUMENT_UPLOAD_ACCEPT, readDocumentUpload } from '@/lib/document-uploa
 import { normalizeAcademicContents } from '@/lib/academic-formatting';
 import { MathText } from '@/components/math-text';
 import { AcademicDocument } from '@/components/academic-document';
+import { LibraryPicker } from '@/components/library-picker';
 
 const FUNCTION_LABELS: Record<number, string> = {
   1: 'Document Creator & Manipulator',
@@ -199,6 +200,10 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
 
   const handleRun = async () => {
     if (resetting.current) return;
+    if (sourceWordCount > 20_000 || sourceDocument.length > 120_000) {
+      setRunError('Use no more than 20,000 words or 120,000 characters of supporting material at a time (about 40 pages). Choose relevant excerpts. Nothing has been truncated.');
+      return;
+    }
     setRunError('');
     debouncedSave.cancel();
     const runEpoch = generationEpoch.current;
@@ -676,8 +681,18 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                   />
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Text/Markdown, PDF or image, up to 10 MB. PDFs and images are sent to Mathpix for text and equation recognition.
+                  TXT/Markdown, DOC/DOCX, PDF or image, up to 10 MB per file. PDFs and images are sent to Mathpix for text and equation recognition.
                 </p>
+                <p className={`text-xs mt-2 ${sourceWordCount > 20_000 || sourceDocument.length > 120_000 ? 'text-destructive' : 'text-muted-foreground'}`} role={sourceWordCount > 20_000 || sourceDocument.length > 120_000 ? 'alert' : undefined}>
+                  Use at most 20,000 words or 120,000 characters here per generation — approximately 40 pages at 500 words per page, not 200 pages. Larger libraries are for storage; insert selected texts or relevant excerpts. Provider context limits may require less when combined with a long draft or output.
+                </p>
+                <div className="mt-3">
+                  <LibraryPicker
+                    currentText={sourceDocument}
+                    disabled={isReadingSource || isResetting || currentStatus === 'preparing' || currentStatus === 'writing'}
+                    onInsert={text => setSourceDocument(previous => previous.trim() ? `${previous.trimEnd()}\n\n${text}` : text)}
+                  />
+                </div>
               </div>
             </section>
 

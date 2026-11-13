@@ -80,6 +80,7 @@ function resolveUrl(input: RequestInfo | URL): string {
 
 function mergeHeaders(...sources: Array<HeadersInit | undefined>): Headers {
   const headers = new Headers();
+  headers.set("X-Neurotext-Request", "1");
 
   for (const source of sources) {
     if (!source) continue;

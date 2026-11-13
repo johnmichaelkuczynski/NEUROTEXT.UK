@@ -53,6 +53,9 @@ export default function Dashboard() {
             <p className="text-muted-foreground text-sm md:text-base max-w-3xl">
               Every function has its own dedicated document portal. Choose a function, provide its document, choose an LLM, then run it.
             </p>
+            <p className="text-muted-foreground text-xs mt-3">
+              No login or payment is required to generate. Anonymous work is not saved after reloading. Sign in with Google for private saved work and your personal research library.
+            </p>
           </div>
         )}
 

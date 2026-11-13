@@ -40,6 +40,37 @@ async function initializeDatabase() {
         cause text NOT NULL DEFAULT '',
         created_at timestamptz NOT NULL DEFAULT now()
       );
+      CREATE TABLE IF NOT EXISTS neurotext_users (
+        id text PRIMARY KEY, google_sub text NOT NULL UNIQUE,
+        email text NOT NULL, name text NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+      CREATE TABLE IF NOT EXISTS neurotext_sessions (
+        sid varchar PRIMARY KEY, sess json NOT NULL, expire timestamp(6) NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS neurotext_sessions_expire ON neurotext_sessions(expire);
+      CREATE TABLE IF NOT EXISTS neurotext_library (
+        id text PRIMARY KEY,
+        user_id text NOT NULL REFERENCES neurotext_users(id) ON DELETE CASCADE,
+        title text NOT NULL, text text NOT NULL,
+        format text NOT NULL CHECK (format IN ('txt', 'doc', 'pdf')),
+        word_count integer NOT NULL CHECK (word_count >= 0),
+        pages integer NOT NULL CHECK (pages > 0),
+        charged_pages integer NOT NULL CHECK (charged_pages > 0),
+        charged_bytes integer NOT NULL CHECK (charged_bytes > 0),
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS neurotext_library_owner ON neurotext_library(user_id, created_at);
+      CREATE TABLE IF NOT EXISTS neurotext_history (
+        id text PRIMARY KEY,
+        user_id text NOT NULL REFERENCES neurotext_users(id) ON DELETE CASCADE,
+        function_id integer NOT NULL, title text NOT NULL,
+        word_count integer NOT NULL, content_hash text NOT NULL,
+        payload jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS neurotext_history_version
+        ON neurotext_history(user_id, function_id, content_hash);
+      CREATE INDEX IF NOT EXISTS neurotext_history_owner ON neurotext_history(user_id, created_at);
     `);
     await client.query("COMMIT");
     logger.info("PostgreSQL schema is ready");

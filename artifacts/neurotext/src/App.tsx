@@ -13,7 +13,10 @@ import {
   Router as WouterRouter,
   Link
 } from 'wouter';
-import { useGetUsage, useRegisterVisitor } from '@workspace/api-client-react';
+import { useGetAccount, getGetAccountQueryKey, useGetUsage, useRegisterVisitor } from '@workspace/api-client-react';
+import { AccountControls } from '@/components/account-controls';
+import Library from '@/pages/Library';
+import History from '@/pages/History';
 
 const queryClient = new QueryClient();
 
@@ -47,13 +50,13 @@ function SharedShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-background font-sans text-foreground">
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 min-h-14 py-3 flex flex-wrap gap-3 items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <span className="font-bold tracking-widest text-[13px] text-foreground">NEUROTEXT</span>
             <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">UK</span>
           </Link>
           
-          <nav className="flex items-center gap-6 text-sm font-semibold">
+          <nav className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm font-semibold">
             <div
               className="text-xs font-semibold tabular-nums text-muted-foreground"
               aria-label={`${visitorCount ?? usage?.visitorCount ?? 0} total visitors`}
@@ -66,6 +69,7 @@ function SharedShell({ children }: { children: ReactNode }) {
                 Workspace
               </span>
             </Link>
+            <AccountControls />
             <Link href="/diagnostics">
               <span className={`cursor-pointer transition-colors hover:text-foreground ${location === '/diagnostics' ? 'text-foreground' : 'text-muted-foreground'}`}>
                 Diagnostics
@@ -95,11 +99,32 @@ function Router() {
         <Switch>
           <Route path="/" component={Dashboard} />
           <Route path="/diagnostics" component={Diagnostics} />
+          <Route path="/library" component={Library} />
+          <Route path="/history" component={History} />
           <Route component={NotFound} />
         </Switch>
       </RoutedErrorBoundary>
     </SharedShell>
   );
+}
+
+// A changed account in another tab must not inherit the previous account's
+// cached workspace or mounted form state. OAuth and logout already reload.
+function AccountScope() {
+  const account = useGetAccount({ query: { queryKey: getGetAccountQueryKey(), staleTime: 0, refetchOnWindowFocus: true } });
+  const initialIdentity = useRef<string | null>(null);
+  const identity = account.data ? account.data.user?.id || 'anonymous' : null;
+  if (identity && initialIdentity.current === null) initialIdentity.current = identity;
+  const changed = identity !== null && initialIdentity.current !== identity;
+  useEffect(() => {
+    if (!changed) return;
+    void queryClient.cancelQueries().then(() => {
+      queryClient.clear();
+      window.location.reload();
+    });
+  }, [changed]);
+  if (changed) return null;
+  return <Router />;
 }
 
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {
@@ -112,7 +137,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <Router />
+          <AccountScope />
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

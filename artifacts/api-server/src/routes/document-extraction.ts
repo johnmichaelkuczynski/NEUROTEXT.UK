@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter } from "express";
+import { userId } from "../services/account-session";
 import {
   ExtractDocumentBody, ExtractDocumentResponse,
   GetDocumentExtractionParams, GetDocumentExtractionResponse,
@@ -21,7 +22,7 @@ router.post("/documents/extract", async (req, res): Promise<void> => {
     const file = decodeOcrFile(base64, mimeType);
     if (mimeType === "application/pdf") {
       prune();
-      const session = req.cookies.neurotext_session as string;
+      const session = userId(req) ? `user:${userId(req)}` : req.cookies.neurotext_session as string;
       if (jobs.size >= 20 || [...jobs.values()].filter(job => job.session === session && !job.text).length >= 2) {
         res.status(429).json({ error: "Wait for the current PDF uploads to finish before uploading another." }); return;
       }
@@ -44,7 +45,8 @@ router.get("/documents/extract/:jobId", async (req, res): Promise<void> => {
   prune();
   const parsed = GetDocumentExtractionParams.safeParse(req.params);
   const job = parsed.success ? jobs.get(parsed.data.jobId) : undefined;
-  if (!job || job.session !== req.cookies.neurotext_session) {
+  const owner = userId(req) ? `user:${userId(req)}` : req.cookies.neurotext_session;
+  if (!job || job.session !== owner) {
     res.status(404).json({ error: "This PDF upload expired or is unavailable. Upload the file again." }); return;
   }
   try {

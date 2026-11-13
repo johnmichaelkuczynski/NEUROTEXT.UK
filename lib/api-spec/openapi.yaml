@@ -14,6 +14,125 @@ tags:
   - name: generation
   - name: diagnostics
 paths:
+  /auth/me:
+    get:
+      operationId: getAccount
+      responses:
+        "200":
+          description: Current optional account and library limits
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccountState" }
+  /auth/google:
+    get:
+      operationId: startGoogleLogin
+      responses:
+        "302": { description: Redirect to Google }
+  /auth/google/callback:
+    get:
+      operationId: finishGoogleLogin
+      responses:
+        "302": { description: Return to the app after verified Google login }
+  /auth/logout:
+    post:
+      operationId: logoutAccount
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ActionResult" }
+  /library:
+    get:
+      operationId: listLibrary
+      responses:
+        "200":
+          description: Private documents and storage usage
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryState" }
+    post:
+      operationId: createLibraryDocument
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LibraryDocumentInput" }
+      responses:
+        "201":
+          description: Stored extracted text
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryDocument" }
+  /library/{documentId}:
+    parameters:
+      - name: documentId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: getLibraryDocument
+      responses:
+        "200":
+          description: Private document text
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryDocumentText" }
+    delete:
+      operationId: deleteLibraryDocument
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ActionResult" }
+  /history:
+    get:
+      operationId: listHistory
+      responses:
+        "200":
+          description: Private past generated works, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/HistoryItem" }
+  /history/{historyId}:
+    parameters:
+      - name: historyId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: getHistoryWork
+      responses:
+        "200":
+          description: Saved work with full workspace
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HistoryWork" }
+    delete:
+      operationId: deleteHistoryWork
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ActionResult" }
+  /documents/word:
+    post:
+      operationId: extractWordDocument
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WordDocumentInput" }
+      responses:
+        "200":
+          description: Extracted DOC or DOCX text
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WordDocumentText" }
   /documents/extract:
     post:
       operationId: extractDocument
@@ -209,6 +328,96 @@ components:
         minimum: 1
         maximum: 10
   schemas:
+    ActionResult:
+      type: object
+      required: [ok]
+      properties:
+        ok: { type: boolean }
+    AccountUser:
+      type: object
+      required: [id, name, email]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+    AccountState:
+      type: object
+      required: [user, googleConfigured, maxReferenceWords, maxReferenceCharacters, maxLibraryPages, maxLibraryBytes]
+      properties:
+        user:
+          anyOf:
+            - { $ref: "#/components/schemas/AccountUser" }
+            - { type: "null" }
+        googleConfigured: { type: boolean }
+        maxReferenceWords: { type: integer }
+        maxReferenceCharacters: { type: integer }
+        maxLibraryPages: { type: integer }
+        maxLibraryBytes: { type: integer }
+    LibraryDocumentInput:
+      type: object
+      required: [title, text, format, originalBytes]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 250 }
+        text: { type: string, minLength: 1, maxLength: 30000000 }
+        format: { type: string, enum: [txt, doc, pdf] }
+        originalBytes: { type: integer, minimum: 0, maximum: 10485760 }
+    LibraryDocument:
+      type: object
+      required: [id, title, format, wordCount, pages, chargedPages, chargedBytes, createdAt]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        format: { type: string }
+        wordCount: { type: integer }
+        pages: { type: integer }
+        chargedPages: { type: integer }
+        chargedBytes: { type: integer }
+        createdAt: { type: string }
+    LibraryDocumentText:
+      allOf:
+        - { $ref: "#/components/schemas/LibraryDocument" }
+        - type: object
+          required: [text]
+          properties:
+            text: { type: string }
+    LibraryState:
+      type: object
+      required: [documents, usedPages, usedBytes, maxPages, maxBytes]
+      properties:
+        documents:
+          type: array
+          items: { $ref: "#/components/schemas/LibraryDocument" }
+        usedPages: { type: integer }
+        usedBytes: { type: integer }
+        maxPages: { type: integer }
+        maxBytes: { type: integer }
+    HistoryItem:
+      type: object
+      required: [id, functionId, title, wordCount, createdAt]
+      properties:
+        id: { type: string }
+        functionId: { type: integer }
+        title: { type: string }
+        wordCount: { type: integer }
+        createdAt: { type: string }
+    HistoryWork:
+      allOf:
+        - { $ref: "#/components/schemas/HistoryItem" }
+        - type: object
+          required: [workspace]
+          properties:
+            workspace: { $ref: "#/components/schemas/FunctionWorkspace" }
+    WordDocumentInput:
+      type: object
+      required: [fileName, base64]
+      properties:
+        fileName: { type: string, maxLength: 250 }
+        base64: { type: string, maxLength: 13981016 }
+    WordDocumentText:
+      type: object
+      required: [text]
+      properties:
+        text: { type: string }
     DocumentExtractionInput:
       type: object
       required: [fileName, mimeType, base64]

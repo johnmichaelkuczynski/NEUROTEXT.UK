@@ -1,13 +1,24 @@
-import { extractDocument, getDocumentExtraction } from '@workspace/api-client-react';
+import { extractDocument, getDocumentExtraction, extractWordDocument } from '@workspace/api-client-react';
 import { readInstructionFile } from './instruction-upload';
 
-export const DOCUMENT_UPLOAD_ACCEPT = '.txt,.md,.markdown,.pdf,.png,.jpg,.jpeg,.webp,.gif,text/plain,text/markdown,application/pdf,image/png,image/jpeg,image/webp,image/gif';
+export const DOCUMENT_UPLOAD_ACCEPT = '.txt,.md,.markdown,.doc,.docx,.pdf,.png,.jpg,.jpeg,.webp,.gif,text/plain,text/markdown,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf,image/png,image/jpeg,image/webp,image/gif';
 const MIME_BY_EXTENSION: Record<string, 'application/pdf' | 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif'> = {
   pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif',
 };
 
 export async function readDocumentUpload(file: File, signal?: AbortSignal): Promise<string> {
   const extension = file.name.split('.').pop()?.toLowerCase() || '';
+  if (!file.size || file.size > 10 * 1024 * 1024) throw new Error('Upload a nonempty file no larger than 10 MB.');
+  if (extension === 'doc' || extension === 'docx') {
+    const data = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1]);
+      reader.onerror = () => reject(new Error('Could not read this file.'));
+      reader.readAsDataURL(file);
+    });
+    signal?.throwIfAborted();
+    return (await extractWordDocument({ fileName: file.name, base64: data }, { signal })).text;
+  }
   const mimeType = MIME_BY_EXTENSION[extension];
   if (!mimeType) return readInstructionFile(file);
   if (!file.size || file.size > 10 * 1024 * 1024) throw new Error('Upload a nonempty file no larger than 10 MB.');

@@ -8,6 +8,183 @@
 import * as zod from 'zod';
 
 
+export const GetAccountResponse = zod.object({
+  "user": zod.union([zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "email": zod.string()
+}),zod.null()]),
+  "googleConfigured": zod.boolean(),
+  "maxReferenceWords": zod.number().int(),
+  "maxReferenceCharacters": zod.number().int(),
+  "maxLibraryPages": zod.number().int(),
+  "maxLibraryBytes": zod.number().int()
+})
+
+
+export const StartGoogleLoginResponse = zod.void()
+
+
+export const FinishGoogleLoginResponse = zod.void()
+
+
+export const LogoutAccountResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+export const ListLibraryResponse = zod.object({
+  "documents": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "format": zod.string(),
+  "wordCount": zod.number().int(),
+  "pages": zod.number().int(),
+  "chargedPages": zod.number().int(),
+  "chargedBytes": zod.number().int(),
+  "createdAt": zod.string()
+})),
+  "usedPages": zod.number().int(),
+  "usedBytes": zod.number().int(),
+  "maxPages": zod.number().int(),
+  "maxBytes": zod.number().int()
+})
+
+
+export const createLibraryDocumentBodyTitleMax = 250;
+
+export const createLibraryDocumentBodyTextMax = 30000000;
+
+export const createLibraryDocumentBodyOriginalBytesMin = 0;
+export const createLibraryDocumentBodyOriginalBytesMax = 10485760;
+
+
+
+export const CreateLibraryDocumentBody = zod.object({
+  "title": zod.string().min(1).max(createLibraryDocumentBodyTitleMax),
+  "text": zod.string().min(1).max(createLibraryDocumentBodyTextMax),
+  "format": zod.enum(['txt', 'doc', 'pdf']),
+  "originalBytes": zod.number().int().min(createLibraryDocumentBodyOriginalBytesMin).max(createLibraryDocumentBodyOriginalBytesMax)
+})
+
+export const CreateLibraryDocumentResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "format": zod.string(),
+  "wordCount": zod.number().int(),
+  "pages": zod.number().int(),
+  "chargedPages": zod.number().int(),
+  "chargedBytes": zod.number().int(),
+  "createdAt": zod.string()
+})
+
+
+export const GetLibraryDocumentParams = zod.object({
+  "documentId": zod.coerce.string()
+})
+
+export const GetLibraryDocumentResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "format": zod.string(),
+  "wordCount": zod.number().int(),
+  "pages": zod.number().int(),
+  "chargedPages": zod.number().int(),
+  "chargedBytes": zod.number().int(),
+  "createdAt": zod.string()
+}).and(zod.object({
+  "text": zod.string()
+}))
+
+
+export const DeleteLibraryDocumentParams = zod.object({
+  "documentId": zod.coerce.string()
+})
+
+export const DeleteLibraryDocumentResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+export const ListHistoryResponseItem = zod.object({
+  "id": zod.string(),
+  "functionId": zod.number().int(),
+  "title": zod.string(),
+  "wordCount": zod.number().int(),
+  "createdAt": zod.string()
+})
+export const ListHistoryResponse = zod.array(ListHistoryResponseItem)
+
+
+export const GetHistoryWorkParams = zod.object({
+  "historyId": zod.coerce.string()
+})
+
+export const getHistoryWorkResponseTwoWorkspaceFunctionIdMax = 10;
+
+export const getHistoryWorkResponseTwoWorkspaceTargetWordsMin = 100;
+export const getHistoryWorkResponseTwoWorkspaceTargetWordsMax = 100000;
+
+export const getHistoryWorkResponseTwoWorkspaceQuotationCountMin = 0;
+export const getHistoryWorkResponseTwoWorkspaceQuotationCountMax = 20;
+
+export const getHistoryWorkResponseTwoWorkspaceProgressMin = 0;
+export const getHistoryWorkResponseTwoWorkspaceProgressMax = 100;
+
+
+
+export const GetHistoryWorkResponse = zod.object({
+  "id": zod.string(),
+  "functionId": zod.number().int(),
+  "title": zod.string(),
+  "wordCount": zod.number().int(),
+  "createdAt": zod.string()
+}).and(zod.object({
+  "workspace": zod.object({
+  "functionId": zod.number().int().min(1).max(getHistoryWorkResponseTwoWorkspaceFunctionIdMax),
+  "instructions": zod.string(),
+  "instructionDraft": zod.string().optional().describe('Manuscript to transform, not instructions or supporting references.'),
+  "sourceDocument": zod.string(),
+  "targetWords": zod.number().int().min(getHistoryWorkResponseTwoWorkspaceTargetWordsMin).max(getHistoryWorkResponseTwoWorkspaceTargetWordsMax),
+  "selectedModel": zod.string(),
+  "thinker": zod.string(),
+  "quotationCount": zod.number().int().min(getHistoryWorkResponseTwoWorkspaceQuotationCountMin).max(getHistoryWorkResponseTwoWorkspaceQuotationCountMax),
+  "output": zod.string(),
+  "generationError": zod.string().optional(),
+  "skeleton": zod.string(),
+  "progress": zod.number().int().min(getHistoryWorkResponseTwoWorkspaceProgressMin).max(getHistoryWorkResponseTwoWorkspaceProgressMax),
+  "status": zod.enum(['idle', 'preparing', 'writing', 'interrupted', 'failed', 'complete']),
+  "provider": zod.string(),
+  "updatedAt": zod.string()
+})
+}))
+
+
+export const DeleteHistoryWorkParams = zod.object({
+  "historyId": zod.coerce.string()
+})
+
+export const DeleteHistoryWorkResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+export const extractWordDocumentBodyFileNameMax = 250;
+
+export const extractWordDocumentBodyBase64Max = 13981016;
+
+
+
+export const ExtractWordDocumentBody = zod.object({
+  "fileName": zod.string().max(extractWordDocumentBodyFileNameMax),
+  "base64": zod.string().max(extractWordDocumentBodyBase64Max)
+})
+
+export const ExtractWordDocumentResponse = zod.object({
+  "text": zod.string()
+})
+
+
 /**
  * @summary Extract text and LaTeX notation from an image or PDF with Mathpix
  */

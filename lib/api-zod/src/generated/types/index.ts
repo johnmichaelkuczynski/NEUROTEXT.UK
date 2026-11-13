@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './accountState';
+export * from './accountUser';
+export * from './actionResult';
 export * from './diagnosticResult';
 export * from './diagnosticResultStatus';
 export * from './documentExtractionInput';
@@ -16,6 +19,13 @@ export * from './documentExtractionResultStatus';
 export * from './functionWorkspace';
 export * from './functionWorkspaceStatus';
 export * from './healthStatus';
+export * from './historyItem';
+export * from './historyWork';
+export * from './libraryDocument';
+export * from './libraryDocumentInput';
+export * from './libraryDocumentInputFormat';
+export * from './libraryDocumentText';
+export * from './libraryState';
 export * from './streamInput';
 export * from './transferInput';
 export * from './transferResult';
@@ -23,5 +33,7 @@ export * from './usageState';
 export * from './usageStateAccessState';
 export * from './visitorInput';
 export * from './visitorState';
+export * from './wordDocumentInput';
+export * from './wordDocumentText';
 export * from './workspaceInput';
 export * from './workspaceInputStatus';

@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { accountSession } from "./services/account-session";
 
 const app: Express = express();
 const production = process.env.NODE_ENV === "production";
@@ -52,6 +53,7 @@ app.use(cors(production ? { origin: new URL(process.env.PUBLIC_BASE_URL!).origin
 app.use(express.json({ limit: "32mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(sessionSecret));
+app.use(accountSession);
 app.use("/api", (req, res, next) => {
   if (req.path === "/healthz") { next(); return; }
   // Production uses signed cookies; never trust a modified or unsigned session ID.

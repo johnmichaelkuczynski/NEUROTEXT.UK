@@ -31,6 +31,9 @@ import { academicChapterCount } from "../services/academic-structure";
 import { generateAcademicDocument } from "../services/academic-generation";
 import { HOMEWORK_SYSTEM_PROMPT, homeworkPrompt } from "../services/homework";
 import { cognitiveProfilePrompt } from "../services/cognitive-profiling";
+import { userId, privateWrite } from "../services/account-session";
+import { referenceLimitError } from "../services/library-limits";
+import { recordWork } from "../services/saved-work";
 
 const router: IRouter = Router();
 
@@ -123,6 +126,7 @@ function defaultWorkspace(functionId: number): WorkspacePayload {
 }
 
 function sessionId(req: Parameters<typeof router.get>[1] extends never ? never : any) {
+  if (userId(req)) return `user:${userId(req)}`;
   const existing = req.cookies?.neurotext_session;
   return typeof existing === "string" && existing.length > 10 ? existing : randomUUID();
 }
@@ -182,6 +186,8 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
     return;
   }
   const data = separateLegacyDraft(parsed.data);
+  const referenceError = referenceLimitError(data.sourceDocument);
+  if (referenceError) { res.status(413).json({ error: referenceError }); return; }
   if (data.functionId === 7 && !data.sourceDocument.trim()) {
     res.status(400).json({ error: "Paste or upload the document whose author you want profiled." });
     return;
@@ -292,6 +298,13 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
     const finalWords = wordCount(document);
     const valid = data.functionId === 10 ? finalWords > 0 : finalWords >= Math.ceil(data.targetWords * 0.9);
     if (!valid) throw new Error(`Generation stopped at ${finalWords} of ${data.targetWords} requested words.`);
+    if (userId(req)) {
+      const payload = {
+        ...defaultWorkspace(data.functionId), ...data, output: document,
+        generationError: "", status: "complete", progress: 100, provider: provider.name,
+      };
+      await recordWork(userId(req), data.functionId, payload);
+    }
 
     await db
       .insert(neurotextUsage)
@@ -339,6 +352,11 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
 }
 
 router.get("/functions/workspaces", async (req, res): Promise<void> => {
+  res.setHeader("Cache-Control", "no-store");
+  if (!userId(req)) {
+    res.json(ListWorkspacesResponse.parse(Array.from({ length: 10 }, (_, index) => normalizeWorkspace(index + 1, {}))));
+    return;
+  }
   const sid = sessionId(req);
   const rows = await db
     .select()
@@ -354,11 +372,13 @@ router.get("/functions/workspaces", async (req, res): Promise<void> => {
 });
 
 router.get("/functions/workspaces/:functionId", async (req, res): Promise<void> => {
+  res.setHeader("Cache-Control", "no-store");
   const params = GetWorkspaceParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
+  if (!userId(req)) { res.json(GetWorkspaceResponse.parse(normalizeWorkspace(params.data.functionId, {}))); return; }
   const sid = sessionId(req);
   const [row] = await db
     .select()
@@ -377,7 +397,8 @@ router.get("/functions/workspaces/:functionId", async (req, res): Promise<void> 
   );
 });
 
-router.put("/functions/workspaces/:functionId", async (req, res): Promise<void> => {
+router.put("/functions/workspaces/:functionId", (req, res, next) => userId(req) ? privateWrite(req, res, next) : next(), async (req, res): Promise<void> => {
+  res.setHeader("Cache-Control", "no-store");
   const params = SaveWorkspaceParams.safeParse(req.params);
   const body = SaveWorkspaceBody.safeParse(req.body);
   if (!params.success) {
@@ -386,6 +407,11 @@ router.put("/functions/workspaces/:functionId", async (req, res): Promise<void> 
   }
   if (!body.success) {
     res.status(400).json({ error: body.error.message });
+    return;
+  }
+  if (!userId(req)) {
+    // Keep the current result usable in the page, but never persist guest work.
+    res.json(SaveWorkspaceResponse.parse(normalizeWorkspace(params.data.functionId, body.data)));
     return;
   }
   const sid = sessionId(req);
@@ -402,6 +428,7 @@ router.put("/functions/workspaces/:functionId", async (req, res): Promise<void> 
       target: [neurotextWorkspaces.sessionId, neurotextWorkspaces.functionId],
       set: { payload: body.data, updatedAt },
     });
+  await recordWork(userId(req), params.data.functionId, body.data);
   res.json(
     SaveWorkspaceResponse.parse(
       normalizeWorkspace(params.data.functionId, body.data, updatedAt),
@@ -409,7 +436,8 @@ router.put("/functions/workspaces/:functionId", async (req, res): Promise<void> 
   );
 });
 
-router.post("/functions/transfer", async (req, res): Promise<void> => {
+router.post("/functions/transfer", (req, res, next) => userId(req) ? privateWrite(req, res, next) : next(), async (req, res): Promise<void> => {
+  res.setHeader("Cache-Control", "no-store");
   const parsed = TransferDocumentBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -417,7 +445,7 @@ router.post("/functions/transfer", async (req, res): Promise<void> => {
   }
   const sid = sessionId(req);
   const destinationId = parsed.data.destinationFunctionId;
-  const [existing] = await db
+  const [existing] = userId(req) ? await db
     .select()
     .from(neurotextWorkspaces)
     .where(
@@ -426,12 +454,12 @@ router.post("/functions/transfer", async (req, res): Promise<void> => {
         eq(neurotextWorkspaces.functionId, destinationId),
       ),
     )
-    .limit(1);
+    .limit(1) : [];
   const current = normalizeWorkspace(destinationId, existing?.payload, existing?.updatedAt);
   const payload = { ...current, sourceDocument: parsed.data.document };
   const { functionId: _functionId, updatedAt: _updatedAt, ...saved } = payload;
   const now = new Date();
-  await db
+  if (userId(req)) await db
     .insert(neurotextWorkspaces)
     .values({ sessionId: sid, functionId: destinationId, payload: saved, updatedAt: now })
     .onConflictDoUpdate({
@@ -469,6 +497,7 @@ router.post("/visitors/register", async (req, res): Promise<void> => {
 });
 
 router.get("/usage", async (req, res): Promise<void> => {
+  res.setHeader("Cache-Control", "no-store");
   const sid = sessionId(req);
   const [usage] = await db
     .select()
@@ -478,13 +507,13 @@ router.get("/usage", async (req, res): Promise<void> => {
   const [visitors] = await db.select({ count: count() }).from(neurotextVisitors);
   const used = usage?.operationsUsed ?? 0;
   res.json({
-    accessState: process.env.NODE_ENV === "development" ? "development-owner" : "anonymous",
+    accessState: userId(req) ? "signed-in" : "anonymous",
     operationsUsed: used,
     // -1 means unrestricted; usage is recorded for information, not login gating.
     operationsRemaining: -1,
     visitorCount: visitors?.count ?? 0,
     subscriptionStatus: "not configured",
-    signedIn: false,
+    signedIn: Boolean(userId(req)),
   });
 });
 

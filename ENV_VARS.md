@@ -9,7 +9,7 @@ OpenRouter credential is needed.
 | Variable | Expected value |
 | --- | --- |
 | `DATABASE_URL` | A reachable PostgreSQL URL: `postgresql://USER:PASSWORD@DATABASE_HOST:5432/neurotext`. Use the database's internal hostname on the Coolify network, not `localhost`. Add `?sslmode=verify-full` if the database requires TLS and has a trusted certificate. Existing PostgreSQL data is not replaced. |
-| `SESSION_SECRET` | A stable, randomly generated secret containing at least 32 characters, used to sign anonymous workspace cookies. Keep unchanged across deployments and replicas. Generate locally with `openssl rand -hex 32`; never commit the result. |
+| `SESSION_SECRET` | A stable, randomly generated secret containing at least 32 characters, used to sign account-session and anonymous OCR cookies. Keep unchanged across deployments and replicas. Generate locally with `openssl rand -hex 32`; never commit the result. |
 | `PUBLIC_BASE_URL` | Your public HTTPS origin, for example `https://research.example.com`, with no path/query/fragment. Traefik must route that hostname to port 5000. |
 
 The normal production start command initializes missing application tables using
@@ -43,6 +43,27 @@ substitution. At least one key is needed for actual AI generation.
 `DATABASE_URL` is also required in development and for database management tools.
 `SESSION_SECRET` and `PUBLIC_BASE_URL` are required only in production.
 
+## Optional direct Google OAuth
+
+| Variable | Required to start? | Expected value |
+| --- | --- | --- |
+| `GOOGLE_CLIENT_ID` | No | A Google OAuth 2.0 **Web application** client ID. Enables optional Google sign-in together with the secret and public origin. |
+| `GOOGLE_CLIENT_SECRET` | No | The matching Google OAuth client secret. Server-only; never a frontend build variable. |
+
+Register `PUBLIC_BASE_URL` followed by `/api/auth/google/callback` as an exact
+authorized redirect URI in the Google Cloud OAuth client's settings. For example,
+`https://research.example.com/api/auth/google/callback`. Register a separate
+callback for the workspace preview if testing there, and set development
+`PUBLIC_BASE_URL` to that preview's HTTPS origin. Do not use a production origin
+for a development login: its cookie belongs to a different host.
+
+Google login is optional, has no payment requirement and never blocks generation.
+Guests' workspace content is not stored in PostgreSQL and is not restored on
+reload. Signed-in workspaces, output history and libraries are owner-scoped.
+OAuth uses state, nonce, PKCE, verified Google identity tokens and regenerated
+PostgreSQL-backed sessions. Tokens are not stored. Existing anonymous workspaces
+are preserved in the database but are not automatically attached to new accounts.
+
 ## Optional Mathpix OCR credentials
 
 | Variable | Required to start? | Expected value |
@@ -75,9 +96,27 @@ Express trusts one proxy hop before processing cookies and requests. Traefik mus
 overwrite/forward `X-Forwarded-Proto: https` and `X-Forwarded-For`. Production
 workspace cookies are signed, `Secure`, `HttpOnly`, and `SameSite=Lax`.
 
-There is no login/OAuth implementation or `express-session` middleware in this
-repo. Stripe and Google OAuth keys are not read and are not required. No callback
-URLs, post-login redirects, or `req.session.save()` calls exist to migrate.
-If OAuth is added later, derive callbacks from `PUBLIC_BASE_URL`, configure session
-middleware with `proxy: true`, save sessions before redirects, and log callback
-errors on the server. Anonymous workspace cookies do not provide owner login.
+Google account sessions use `express-session` with the external PostgreSQL
+session store, `proxy: true`, and Secure/HttpOnly/SameSite=Lax production cookies.
+The Google callback saves the regenerated session before redirecting. Private
+writes require an app-specific request header for CSRF protection. Stripe keys
+are not read or required. No payment system is installed. Google callback errors
+are logged on the server; the browser receives a generic error without tokens.
+Anonymous OCR cookies do not identify a signed-in account.
+
+## Private library limits
+
+Each account has 10,000 weighted pages and 50 MiB of weighted storage, whichever
+is reached first. A page is 500 words, rounded up per document. TXT/Markdown
+counts 1×; DOC/DOCX 2×; PDF/images 4×. Weighted bytes are the larger of the
+extracted UTF-8 text size or original upload size, multiplied by that factor.
+Thus the page ceiling is approximately 10,000 TXT, 5,000 DOC or 2,500 PDF pages,
+subject to the byte allowance. Quotas are enforced in PostgreSQL transactions.
+
+The library stores extracted text and metadata only, not original binary files.
+The server extracts DOC/DOCX locally; Mathpix handles PDFs and images. Each file
+is limited to 10 MiB. Supporting-material fields accept at most 20,000 words AND
+120,000 characters per generation (approximately 40 pages of ordinary prose).
+These are conservative app input limits, not a guarantee of model capacity for
+every combination of draft, references and output. Longer sources must be
+excerpted; the app rejects over-limit input rather than silently truncating it.

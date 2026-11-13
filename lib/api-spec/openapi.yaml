@@ -326,7 +326,7 @@ components:
       schema:
         type: integer
         minimum: 1
-        maximum: 10
+        maximum: 11
   schemas:
     ActionResult:
       type: object
@@ -427,14 +427,25 @@ components:
           type: string
           enum: [image/png, image/jpeg, image/webp, image/gif, application/pdf]
         base64: { type: string, minLength: 1, maxLength: 13981016 }
+        mode:
+          type: string
+          enum: [mathpix, specialist]
+          description: Mathpix for text and equations; direct OpenAI vision for specialist-script image transcription with uncertainty warnings. PDFs require Mathpix.
+        hint:
+          type: string
+          maxLength: 2000
+          description: Optional language, script or notation context; not instructions to invent or translate.
     DocumentExtractionResult:
       type: object
       required: [status, provider]
       properties:
         status: { type: string, enum: [processing, complete] }
-        provider: { type: string, enum: [Mathpix] }
+        provider: { type: string, enum: [Mathpix, OpenAI] }
         text: { type: string }
         jobId: { type: string }
+        warnings:
+          type: array
+          items: { type: string }
     HealthStatus:
       type: object
       required: [status]
@@ -448,7 +459,7 @@ components:
          thinker, quotationCount, output, skeleton, progress, status, provider,
          updatedAt]
       properties:
-        functionId: { type: integer, minimum: 1, maximum: 10 }
+        functionId: { type: integer, minimum: 1, maximum: 11 }
         instructions: { type: string }
         instructionDraft:
           type: string
@@ -494,7 +505,7 @@ components:
       type: object
       required: [sourceFunctionId, destinationFunctionId, document]
       properties:
-        sourceFunctionId: { type: integer, minimum: 1, maximum: 10 }
+        sourceFunctionId: { type: integer, minimum: 1, maximum: 11 }
         destinationFunctionId: { type: integer, minimum: 1, maximum: 10 }
         document: { type: string, minLength: 1 }
     TransferResult:

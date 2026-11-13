@@ -10,7 +10,7 @@ import type { FunctionWorkspaceStatus } from './functionWorkspaceStatus';
 export interface FunctionWorkspace {
   /**
      * @minimum 1
-     * @maximum 10
+     * @maximum 11
      */
   functionId: number;
   instructions: string;

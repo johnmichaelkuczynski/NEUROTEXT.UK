@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { 
   type FunctionWorkspace, 
   useGetWorkspace, 
+  useGetAccount,
   useSaveWorkspace,
   useTransferDocument,
   getGetWorkspaceQueryKey,
@@ -74,7 +75,15 @@ interface FunctionPortalProps {
 
 export default function FunctionPortal({ functionId, workspaces, onClose }: FunctionPortalProps) {
   const queryClient = useQueryClient();
-  const { data: serverWorkspace, isLoading } = useGetWorkspace(functionId);
+  const { data: account } = useGetAccount();
+  const signedIn = Boolean(account?.user);
+  const { data: serverWorkspace, isLoading } = useGetWorkspace(functionId, { query: {
+    queryKey: getGetWorkspaceQueryKey(functionId),
+    // Guest work exists only in this page's cache. A fresh server response is
+    // deliberately blank and must not overwrite that in-memory work on focus.
+    staleTime: signedIn ? 0 : Infinity,
+    refetchOnWindowFocus: signedIn,
+  } });
   // Reset must be ordered after any save already in flight.
   const saveWorkspace = useSaveWorkspace({ mutation: {
     scope: { id: 'workspace-writes' },

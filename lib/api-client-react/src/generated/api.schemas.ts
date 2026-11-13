@@ -98,7 +98,7 @@ export const FunctionWorkspaceStatus = {
 export interface FunctionWorkspace {
   /**
      * @minimum 1
-     * @maximum 10
+     * @maximum 11
      */
   functionId: number;
   instructions: string;
@@ -156,6 +156,17 @@ export const DocumentExtractionInputMimeType = {
   'application/pdf': 'application/pdf',
 } as const;
 
+/**
+ * Mathpix for text and equations; direct OpenAI vision for specialist-script image transcription with uncertainty warnings. PDFs require Mathpix.
+ */
+export type DocumentExtractionInputMode = typeof DocumentExtractionInputMode[keyof typeof DocumentExtractionInputMode];
+
+
+export const DocumentExtractionInputMode = {
+  mathpix: 'mathpix',
+  specialist: 'specialist',
+} as const;
+
 export interface DocumentExtractionInput {
   /**
      * @minLength 1
@@ -168,6 +179,13 @@ export interface DocumentExtractionInput {
      * @maxLength 13981016
      */
   base64: string;
+  /** Mathpix for text and equations; direct OpenAI vision for specialist-script image transcription with uncertainty warnings. PDFs require Mathpix. */
+  mode?: DocumentExtractionInputMode;
+  /**
+     * Optional language, script or notation context; not instructions to invent or translate.
+     * @maxLength 2000
+     */
+  hint?: string;
 }
 
 export type DocumentExtractionResultStatus = typeof DocumentExtractionResultStatus[keyof typeof DocumentExtractionResultStatus];
@@ -183,6 +201,7 @@ export type DocumentExtractionResultProvider = typeof DocumentExtractionResultPr
 
 export const DocumentExtractionResultProvider = {
   Mathpix: 'Mathpix',
+  OpenAI: 'OpenAI',
 } as const;
 
 export interface DocumentExtractionResult {
@@ -190,6 +209,7 @@ export interface DocumentExtractionResult {
   provider: DocumentExtractionResultProvider;
   text?: string;
   jobId?: string;
+  warnings?: string[];
 }
 
 export interface HealthStatus {
@@ -240,7 +260,7 @@ export interface WorkspaceInput {
 export interface TransferInput {
   /**
      * @minimum 1
-     * @maximum 10
+     * @maximum 11
      */
   sourceFunctionId: number;
   /**

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { DocumentExtractionInputMimeType } from './documentExtractionInputMimeType';
+import type { DocumentExtractionInputMode } from './documentExtractionInputMode';
 
 export interface DocumentExtractionInput {
   /**
@@ -19,4 +20,11 @@ export interface DocumentExtractionInput {
      * @maxLength 13981016
      */
   base64: string;
+  /** Mathpix for text and equations; direct OpenAI vision for specialist-script image transcription with uncertainty warnings. PDFs require Mathpix. */
+  mode?: DocumentExtractionInputMode;
+  /**
+     * Optional language, script or notation context; not instructions to invent or translate.
+     * @maxLength 2000
+     */
+  hint?: string;
 }

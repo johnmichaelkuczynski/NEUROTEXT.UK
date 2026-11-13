@@ -48,9 +48,10 @@ const FUNCTION_NAMES = [
   "Master's Thesis Creator",
   "Dissertation Creator",
   "Homework",
+  "OCR",
 ] as const;
 
-const MINIMUMS = [4000, 6500, 4000, 4000, 4000, 8000, 4000, 20000, 45000, 100];
+const MINIMUMS = [4000, 6500, 4000, 4000, 4000, 8000, 4000, 20000, 45000, 100, 100];
 const DEFAULT_INSTRUCTION =
   "Turn the source material into a rigorous 5,000-word scholarly essay, replete with relevant legitimate scholarly studies and evidence. Include supported APA-style in-text citations and a complete APA 7 References bibliography. Do not invent sources, quotations, findings, authors, titles, dates, or publication details.";
 const DEFAULT_MODEL = "ZHI 6 · Perplexity Sonar Pro";
@@ -112,8 +113,8 @@ function defaultWorkspace(functionId: number): WorkspacePayload {
     instructions: functionId === 1 ? DEFAULT_INSTRUCTION : "",
     instructionDraft: "",
     sourceDocument: "",
-    targetWords: functionId === 10 ? 500 : functionId === 1 ? 5000 : MINIMUMS[functionId - 1] ?? 4000,
-    selectedModel: DEFAULT_MODEL,
+    targetWords: functionId === 11 ? 100 : functionId === 10 ? 500 : functionId === 1 ? 5000 : MINIMUMS[functionId - 1] ?? 4000,
+    selectedModel: functionId === 11 ? "mathpix" : DEFAULT_MODEL,
     thinker: "Standard NEUROTEXT style",
     quotationCount: 0,
     output: "",
@@ -354,7 +355,7 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
 router.get("/functions/workspaces", async (req, res): Promise<void> => {
   res.setHeader("Cache-Control", "no-store");
   if (!userId(req)) {
-    res.json(ListWorkspacesResponse.parse(Array.from({ length: 10 }, (_, index) => normalizeWorkspace(index + 1, {}))));
+    res.json(ListWorkspacesResponse.parse(Array.from({ length: 11 }, (_, index) => normalizeWorkspace(index + 1, {}))));
     return;
   }
   const sid = sessionId(req);
@@ -363,7 +364,7 @@ router.get("/functions/workspaces", async (req, res): Promise<void> => {
     .from(neurotextWorkspaces)
     .where(eq(neurotextWorkspaces.sessionId, sid));
   const rowMap = new Map(rows.map((row) => [row.functionId, row]));
-  const workspaces = Array.from({ length: 10 }, (_, index) => {
+  const workspaces = Array.from({ length: 11 }, (_, index) => {
     const functionId = index + 1;
     const row = rowMap.get(functionId);
     return normalizeWorkspace(functionId, row?.payload, row?.updatedAt);
@@ -456,7 +457,15 @@ router.post("/functions/transfer", (req, res, next) => userId(req) ? privateWrit
     )
     .limit(1) : [];
   const current = normalizeWorkspace(destinationId, existing?.payload, existing?.updatedAt);
-  const payload = { ...current, sourceDocument: parsed.data.document };
+  // OCR resources supplement existing references; never replace unrelated work.
+  const sourceDocument = parsed.data.sourceFunctionId === 11 && current.sourceDocument.trim()
+    ? `${current.sourceDocument.trimEnd()}\n\n${parsed.data.document}`
+    : parsed.data.document;
+  if (parsed.data.sourceFunctionId === 11) {
+    const error = referenceLimitError(sourceDocument);
+    if (error) { res.status(413).json({ error }); return; }
+  }
+  const payload = { ...current, sourceDocument };
   const { functionId: _functionId, updatedAt: _updatedAt, ...saved } = payload;
   const now = new Date();
   if (userId(req)) await db

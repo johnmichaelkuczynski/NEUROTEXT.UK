@@ -75,6 +75,12 @@ Library allowance: 10,000 weighted pages or 50 MiB weighted storage. TXT counts
 binary files are not archived. Supporting fields are limited to 20,000 words
 and 120,000 characters per generation (about 40 pages at 500 words per page).
 
+Function 11 OCR uses Mathpix for ordinary text, handwriting, equations and PDFs.
+Its optional specialist-script image reader uses the direct `OPENAI_API_KEY`
+and optional `OCR_VISION_MODEL`. Review transcriptions, especially historical
+scripts, against the original; this is not guaranteed decipherment. OCR images
+are processed transiently; extracted resource text can be saved privately.
+
 ## Verification performed
 
 - A clean source copy passed `pnpm install --frozen-lockfile`, type checks, and

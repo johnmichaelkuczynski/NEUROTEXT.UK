@@ -61,8 +61,9 @@ try {
   });
   assert.equal(workspace.status, 200);
   const workspaces = await workspace.json();
-  assert.equal(workspaces.length, 10);
-  assert(workspaces.every(w => w.selectedModel.includes("Perplexity")));
+  assert.equal(workspaces.length, 11);
+  assert(workspaces.filter(w => w.functionId !== 11).every(w => w.selectedModel.includes("Perplexity")));
+  assert.equal(workspaces.find(w => w.functionId === 11).selectedModel, "mathpix");
   const cookie = workspace.headers.get("set-cookie");
   assert(cookie && /HttpOnly/i.test(cookie) && /Secure/i.test(cookie) && /SameSite=Lax/i.test(cookie));
   assert(cookie.includes("s%3A"), "Session cookie must be signed");

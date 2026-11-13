@@ -95,6 +95,15 @@ try {
     assert.equal((await request(`/history/${works[0].id}`,b,"DELETE")).status,404);
     assert.equal((await request("/functions/workspaces/10",a,"PUT",workspace)).status,200);
     assert.equal((await request("/history",a)).data.length,1,"Duplicate autosaves must not duplicate history");
+    await request("/functions/workspaces/10",a,"PUT",{...workspace,sourceDocument:"Existing private reference"});
+    const ocrTransfer=await request("/functions/transfer",a,"POST",{sourceFunctionId:11,destinationFunctionId:10,document:"New OCR resource"});
+    assert.equal(ocrTransfer.status,200);
+    assert.equal(ocrTransfer.data.destination.instructions,workspace.instructions);
+    assert.equal(ocrTransfer.data.destination.output,workspace.output);
+    assert.equal(ocrTransfer.data.destination.sourceDocument,"Existing private reference\n\nNew OCR resource");
+    const rejectedTransfer=await request("/functions/transfer",a,"POST",{sourceFunctionId:11,destinationFunctionId:10,document:"word ".repeat(20001)});
+    assert.equal(rejectedTransfer.status,413);
+    assert.equal((await request("/functions/workspaces/10",a)).data.sourceDocument,"Existing private reference\n\nNew OCR resource");
     const oversize=await request("/functions/stream",null,"POST",{functionId:10,instructions:"Summarize",sourceDocument:"word ".repeat(20001),targetWords:100,selectedModel:"test"});
     assert.equal(oversize.status,413);
     // Simulate a nearly full quota, using only our isolated owner's row.

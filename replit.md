@@ -1,6 +1,6 @@
 # NEUROTEXT
 
-NEUROTEXT is a persistent, streaming document-intelligence platform with ten specialized long-form writing and analysis functions.
+NEUROTEXT is a streaming document-intelligence platform with ten writing/analysis functions and an eleventh OCR resource function. Persistence and private libraries are optional, account-only features.
 
 ## Run & Operate
 
@@ -22,23 +22,25 @@ NEUROTEXT is a persistent, streaming document-intelligence platform with ten spe
 - PostgreSQL and Drizzle ORM in `lib/db`
 - OpenAPI contract in `lib/api-spec/openapi.yaml`
 - Generated React Query hooks and Zod schemas
-- Server-side OpenAI, Anthropic, OpenRouter, and Venice AI clients
+- Direct server-side OpenAI, Anthropic, Perplexity, xAI, DeepSeek and Venice AI clients; Mathpix for mathematical OCR
 
 ## Architecture
 
 - The browser consumes generation streams directly with `fetch`, `ReadableStream`, and SSE frame parsing.
 - All provider streams are normalized through the same NEUROTEXT SSE event protocol.
-- Each of the ten functions has an independently persisted workspace.
+- Each of the eleven functions has an independent workspace. Signed-in work persists in external PostgreSQL; guest work is not restored after reload.
 - ZHI model labels are stable product-facing aliases; provider model identifiers remain server-side.
 - Generation uses each provider's official API directly, with no Replit AI proxy or OpenRouter dependency at runtime.
 - Server credentials: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `PERPLEXITY_API_KEY`; optional providers use `XAI_API_KEY`, `DEEPSEEK_API_KEY`, and `VENICE_API_KEY`. Missing keys fail explicitly only when that provider is selected.
 - OpenAI defaults to `gpt-5` and Anthropic to `claude-sonnet-4-5`; override with `OPENAI_MODEL` and `ANTHROPIC_MODEL`. Grok and DeepSeek support `XAI_MODEL` and `DEEPSEEK_MODEL`.
 - Coolify uses the root multi-stage Dockerfile; see `COOLIFY.md` and `ENV_VARS.md`. Production requires `DATABASE_URL`, a stable `SESSION_SECRET`, and the HTTPS origin `PUBLIC_BASE_URL`. The old `AI_INTEGRATIONS_*` variables are unused.
-- Production serves the SPA and API on one HTTP listener behind one trusted Traefik proxy hop. Anonymous workspaces use signed, secure cookies; this is not user authentication.
+- Production serves the SPA and API on one HTTP listener behind one trusted Traefik proxy hop. Optional direct Google OAuth uses PostgreSQL-backed sessions and owner-scoped private data. Anonymous OCR cookies do not identify an account.
 
 ## Product
 
 - Functions 01–10 retain independent instructions, sources, output, progress, and model choices.
+- Function 11 converts screenshots, image files and PDFs to editable resource text. Mathpix is the default; explicit specialist-script image mode uses direct OpenAI vision (`OCR_VISION_MODEL`, otherwise `OPENAI_MODEL` or `gpt-5`). Never silently substitute providers or promise authoritative decipherment.
+- OCR transcriptions can be copied, downloaded, used in functions 01–10, or explicitly saved to the signed-in user's private library. Original image bytes are not archived.
 - Long-document generation can continue across multiple provider calls until the requested word target is reached.
 - Generated documents can be interrupted, resumed, copied, downloaded, and transferred between functions.
 - `/diagnostics` records provider, first-word latency, elapsed time, word count, status, and failure evidence.

@@ -11,4 +11,5 @@ export type DocumentExtractionResultProvider = typeof DocumentExtractionResultPr
 
 export const DocumentExtractionResultProvider = {
   Mathpix: 'Mathpix',
+  OpenAI: 'OpenAI',
 } as const;

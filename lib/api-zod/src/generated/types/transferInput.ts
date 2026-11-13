@@ -9,7 +9,7 @@
 export interface TransferInput {
   /**
      * @minimum 1
-     * @maximum 10
+     * @maximum 11
      */
   sourceFunctionId: number;
   /**

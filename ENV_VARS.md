@@ -32,6 +32,7 @@ error; it is not silently ignored.
 | `DEEPSEEK_API_KEY` | unset | Enables direct DeepSeek generation. |
 | `VENICE_API_KEY` | unset | Enables direct Venice generation. |
 | `OPENAI_MODEL` | `gpt-5` | An official model ID available to your OpenAI account. |
+| `OCR_VISION_MODEL` | `OPENAI_MODEL`, otherwise `gpt-5` | A direct OpenAI model supporting image inputs and JSON-schema responses, used only for Function 11's specialist-script image transcription. |
 | `ANTHROPIC_MODEL` | `claude-sonnet-4-5` | An official model ID available to your Anthropic account. |
 | `XAI_MODEL` | `grok-4` | An official model ID available to your xAI account. |
 | `DEEPSEEK_MODEL` | `deepseek-chat` | An official model ID available to your DeepSeek account. |
@@ -77,6 +78,15 @@ selects them; the interface discloses this. Files are processed in memory, not
 stored as database blobs. PDF polling jobs are session-scoped and expire after
 30 minutes; a server restart requires re-uploading an unfinished PDF. Configure
 both credentials separately in Coolify; workspace Secrets do not transfer there.
+
+Function 11 (OCR) uses Mathpix by default for screenshots, handwriting, formulas
+and PDFs. Its explicitly selected specialist-script mode sends image inputs to
+direct OpenAI vision using `OPENAI_API_KEY`; it does not silently substitute one
+provider for another. Specialist mode accepts images, not PDFs. Transcriptions
+are editable, retain LaTeX and Unicode, and may be copied, downloaded, used in
+functions 1–10, or stored as extracted text in the owner's private library.
+Uncertain signs must be marked and checked manually. Specialist OCR is not
+guaranteed decipherment or translation of hieroglyphs or other historical scripts.
 
 ## Build/development settings
 

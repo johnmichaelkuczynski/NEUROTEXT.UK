@@ -13,4 +13,5 @@ export interface DocumentExtractionResult {
   provider: DocumentExtractionResultProvider;
   text?: string;
   jobId?: string;
+  warnings?: string[];
 }

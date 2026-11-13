@@ -6,6 +6,7 @@ import {
   GetDocumentExtractionParams, GetDocumentExtractionResponse,
 } from "@workspace/api-zod";
 import { decodeOcrFile, extractMathpixImage, MathpixError, readMathpixPdf, submitMathpixPdf } from "../services/mathpix";
+import { extractSpecialistImage } from "../services/specialist-ocr";
 
 const router: IRouter = Router();
 type Job = { session: string; providerId: string; expires: number; text?: string };
@@ -15,11 +16,18 @@ function prune() {
 }
 
 router.post("/documents/extract", async (req, res): Promise<void> => {
+  res.setHeader("Cache-Control", "no-store");
   const parsed = ExtractDocumentBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Upload a PNG, JPEG, WebP, GIF or PDF no larger than 10 MB." }); return; }
   try {
     const { fileName, mimeType, base64 } = parsed.data;
     const file = decodeOcrFile(base64, mimeType);
+    if (parsed.data.mode === "specialist") {
+      if (mimeType === "application/pdf") { res.status(400).json({ error: "Specialist-script OCR accepts screenshots and images. Upload a screenshot of the PDF page, or select Mathpix for PDF extraction." }); return; }
+      const result = await extractSpecialistImage(file, mimeType, parsed.data.hint || "");
+      res.json(ExtractDocumentResponse.parse({ status: "complete", provider: "OpenAI", ...result }));
+      return;
+    }
     if (mimeType === "application/pdf") {
       prune();
       const session = userId(req) ? `user:${userId(req)}` : req.cookies.neurotext_session as string;

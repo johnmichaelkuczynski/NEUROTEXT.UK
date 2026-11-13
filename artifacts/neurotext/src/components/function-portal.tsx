@@ -40,6 +40,7 @@ const FUNCTION_LABELS: Record<number, string> = {
   9: 'Dissertation Creator',
   10: 'Homework',
   12: 'Relevance Assessment',
+  13: 'Research Advisor',
 };
 
 const FUNCTION_MIN_WORDS: Record<number, number> = {
@@ -53,6 +54,7 @@ const FUNCTION_MIN_WORDS: Record<number, number> = {
   8: 20000,
   9: 45000,
   10: 100,
+  13: 100,
 };
 
 const DEFAULT_INSTRUCTION = "Turn the source material into a rigorous 5,000-word scholarly essay, replete with relevant legitimate scholarly studies and evidence. Include supported APA-style in-text citations and a complete APA 7 References bibliography. Do not invent sources, quotations, findings, authors, titles, dates, or publication details.";
@@ -109,7 +111,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
   const [instructions, setInstructions] = useState('');
   const [instructionDraft, setInstructionDraft] = useState('');
   const [sourceDocument, setSourceDocument] = useState('');
-  const [targetWords, setTargetWords] = useState<number>(functionId === 10 ? 500 : FUNCTION_MIN_WORDS[functionId]);
+  const [targetWords, setTargetWords] = useState<number>(functionId === 13 ? 1500 : functionId === 10 ? 500 : FUNCTION_MIN_WORDS[functionId]);
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
   const [thinker, setThinker] = useState('');
   const [isReadingDraft, setIsReadingDraft] = useState(false);
@@ -167,7 +169,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
       setInstructions(functionId === 1 ? DEFAULT_INSTRUCTION : '');
       setInstructionDraft('');
       setSourceDocument('');
-      setTargetWords(functionId === 10 ? 500 : FUNCTION_MIN_WORDS[functionId]);
+      setTargetWords(functionId === 13 ? 1500 : functionId === 10 ? 500 : FUNCTION_MIN_WORDS[functionId]);
       setSelectedModel(DEFAULT_MODEL);
       setThinker('');
     }
@@ -213,6 +215,17 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
   const handleRun = async () => {
     if (!isWritingFunctionId(functionId)) return;
     if (resetting.current) return;
+    if (functionId === 13) {
+      const combined = [instructions, instructionDraft, sourceDocument].join('\n\n');
+      if (!instructions.trim() && !instructionDraft.trim()) {
+        setRunError('Enter your research idea or paste/upload a rough draft first.');
+        return;
+      }
+      if (combined.trim().split(/\s+/u).length > 20_000 || combined.length > 120_000) {
+        setRunError('Use at most 20,000 words or 120,000 characters across your idea, draft and supporting materials. Choose relevant excerpts; nothing has been truncated.');
+        return;
+      }
+    }
     if (sourceWordCount > 20_000 || sourceDocument.length > 120_000) {
       setRunError('Use no more than 20,000 words or 120,000 characters of supporting material at a time (about 40 pages). Choose relevant excerpts. Nothing has been truncated.');
       return;
@@ -220,7 +233,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
     setRunError('');
     debouncedSave.cancel();
     const runEpoch = generationEpoch.current;
-    const taskInstructions = instructions.trim() || (instructionDraft.trim() ? DEFAULT_DISSERTATION_TASK : instructions);
+    const taskInstructions = instructions.trim() || (functionId !== 13 && instructionDraft.trim() ? DEFAULT_DISSERTATION_TASK : instructions);
     const validatedTargetWords = Math.max(targetWords, FUNCTION_MIN_WORDS[functionId]);
     if (validatedTargetWords !== targetWords) setTargetWords(validatedTargetWords);
     try {
@@ -329,7 +342,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
           instructions: '',
           instructionDraft: '',
           sourceDocument: '',
-          targetWords: functionId === 10 ? 500 : functionId === 1 ? 5000 : FUNCTION_MIN_WORDS[functionId],
+          targetWords: functionId === 13 ? 1500 : functionId === 10 ? 500 : functionId === 1 ? 5000 : FUNCTION_MIN_WORDS[functionId],
           selectedModel: DEFAULT_MODEL,
           thinker: 'Standard NEUROTEXT style',
           quotationCount: 0,
@@ -383,13 +396,14 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
       toast.error("No output to transfer");
       return;
     }
-    const guestDestination = id === 12 && !signedIn
+    const guestDestination = (id === 12 || id === 13) && !signedIn
       ? queryClient.getQueryData<FunctionWorkspace>(getGetWorkspaceQueryKey(id))
       : undefined;
-    if (guestDestination?.sourceDocument.trim()) {
-      docToTransfer = `${guestDestination.sourceDocument.trimEnd()}\n\n${docToTransfer}`;
+    const existingTransferText = id === 13 ? guestDestination?.instructionDraft : guestDestination?.sourceDocument;
+    if (existingTransferText?.trim()) {
+      docToTransfer = `${existingTransferText.trimEnd()}\n\n${docToTransfer}`;
     }
-    if (id === 12 && (docToTransfer.trim().split(/\s+/u).length > 20000 || docToTransfer.length > 120000)) {
+    if ((id === 12 || id === 13) && (docToTransfer.trim().split(/\s+/u).length > 20000 || docToTransfer.length > 120000)) {
       toast.error('The combined materials exceed 20,000 words or 120,000 characters. Nothing was replaced or truncated.');
       return;
     }
@@ -402,7 +416,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
       }
     }, {
       onSuccess: result => {
-        if (id === 12) {
+        if (id === 12 || id === 13) {
           queryClient.setQueryData(getGetWorkspaceQueryKey(id), mergeOcrDestination(result.destination, guestDestination));
           void queryClient.invalidateQueries({ queryKey: getListWorkspacesQueryKey() });
         }
@@ -477,7 +491,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
       const draft = await readDocumentUpload(file, controller.signal);
       if (activeFunction.current !== uploadFunction || controller.signal.aborted) return;
       setInstructionDraft(current => appendDraft(current, draft));
-      setInstructions(current => current.trim() ? current : DEFAULT_DISSERTATION_TASK);
+      if (functionId === 9) setInstructions(current => current.trim() ? current : DEFAULT_DISSERTATION_TASK);
       toast.success('Manuscript loaded separately from your instructions and reference material.');
     } catch (error) {
       if (!controller.signal.aborted && activeFunction.current === uploadFunction) {
@@ -510,7 +524,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
               {FUNCTION_LABELS[functionId]}
             </h3>
             <p className="text-muted-foreground mt-2 text-sm max-w-2xl">
-              {functionId === 7 ? 'Profile the author’s thinking from their writing. Supply the document first; special requirements are optional.' : functionId === 10 ? 'Paste, type or upload your assignment. NEUROTEXT answers the questions and shows the relevant working, including mathematical notation.' : 'Write a new document from scratch or transform source material into exactly what you need.'}
+              {functionId === 13 ? 'Get canonical books your research should engage with and specific points to address: objections, related arguments, distinctions and more. Start with an idea, a rough draft, or both.' : functionId === 7 ? 'Profile the author’s thinking from their writing. Supply the document first; special requirements are optional.' : functionId === 10 ? 'Paste, type or upload your assignment. NEUROTEXT answers the questions and shows the relevant working, including mathematical notation.' : 'Write a new document from scratch or transform source material into exactly what you need.'}
             </p>
             {(functionId === 8 || functionId === 9) && (
               <p className="text-xs text-muted-foreground mt-2">
@@ -548,13 +562,15 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
             {functionId !== 7 && <section>
               <div className="mb-3">
                 <div className="text-[11px] font-bold text-primary tracking-widest uppercase mb-1">
-                  {functionId === 10 ? 'Step 1 • Assignment' : 'Step 1 • Instructions'}
+                  {functionId === 13 ? 'Step 1 • Research idea' : functionId === 10 ? 'Step 1 • Assignment' : 'Step 1 • Instructions'}
                 </div>
                 <h4 className="font-bold text-foreground text-sm">
-                  {functionId === 10 ? 'Enter or upload your assignment' : 'What should NEUROTEXT do?'}
+                  {functionId === 13 ? 'What is your paper, thesis or dissertation about?' : functionId === 10 ? 'Enter or upload your assignment' : 'What should NEUROTEXT do?'}
                 </h4>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {functionId === 10
+                  {functionId === 13
+                    ? 'Describe your idea, central question or proposed thesis. This box can be left blank if you provide a rough draft in Step 2.'
+                    : functionId === 10
                     ? 'Type or paste the assignment, or upload its screenshot or document below. Put any required articles or other supporting materials in Step 2.'
                     : functionId === 9
                     ? 'Tell NEUROTEXT what to do, for example: “Turn the rough draft into a proper dissertation.” Put the draft in Step 2 and supporting sources in Step 3.'
@@ -562,11 +578,11 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                 </p>
               </div>
               <Textarea 
-                aria-label={functionId === 10 ? 'Assignment' : 'Instructions'}
+                aria-label={functionId === 13 ? 'Research idea' : functionId === 10 ? 'Assignment' : 'Instructions'}
                 value={instructions}
                 onChange={(e) => setInstructions(e.target.value)}
                 className="min-h-[120px] text-sm resize-y"
-                placeholder={functionId === 10 ? 'Enter the assignment and its questions here, or upload the assignment below...' : 'Enter instructions...'}
+                placeholder={functionId === 13 ? 'Describe the argument or research question you want to develop...' : functionId === 10 ? 'Enter the assignment and its questions here, or upload the assignment below...' : 'Enter instructions...'}
               />
               {functionId === 10 && (
                 <div className="mt-3 space-y-2">
@@ -598,17 +614,17 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
               )}
             </section>}
 
-            {functionId === 9 && (
+            {(functionId === 9 || functionId === 13) && (
               <section>
                 <div className="mb-3">
                   <div className="text-[11px] font-bold text-primary tracking-widest uppercase mb-1">
                     Step 2 • Upload Rough Draft • Optional
                   </div>
                   <Label htmlFor={`draft-${functionId}`} className="font-bold text-foreground text-sm">
-                    The manuscript you want rewritten or developed
+                    {functionId === 13 ? 'The draft you want research guidance on' : 'The manuscript you want rewritten or developed'}
                   </Label>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Upload or paste your dissertation or preliminary draft. This is the work to transform, not a set of instructions.
+                    {functionId === 13 ? 'Paste or upload your paper, thesis, dissertation or preliminary draft. NEUROTEXT analyzes its ideas; it does not rewrite the draft. An idea alone is also enough.' : 'Upload or paste your dissertation or preliminary draft. This is the work to transform, not a set of instructions.'}
                   </p>
                 </div>
                 <Textarea
@@ -655,6 +671,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                 <p className="text-xs text-muted-foreground mt-2">
                   Text/Markdown, PDF, PNG, JPEG, WebP or GIF, up to 10 MB. PDFs and images are sent to Mathpix to preserve equations. Additional uploads append to the draft, never to your instructions.
                 </p>
+                {functionId === 13 && <p className="text-xs text-muted-foreground mt-2">Use at most 20,000 words or 120,000 characters in total across your idea, draft and supporting materials. For a longer work, use its introduction, outline or selected chapters. Nothing is silently truncated.</p>}
               </section>
             )}
 
@@ -662,7 +679,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
               <div className="mb-3 flex justify-between items-end">
                 <div>
                   <div className="text-[11px] font-bold text-primary tracking-widest uppercase mb-1">
-                    {functionId === 7 ? 'Step 1 • Document to profile' : functionId === 10 ? 'Step 2 • Supporting materials • Optional' : functionId === 9 ? 'Step 3 • Source Material • Optional' : 'Step 2 • Source Document • Optional'}
+                    {functionId === 7 ? 'Step 1 • Document to profile' : functionId === 10 ? 'Step 2 • Supporting materials • Optional' : functionId === 9 || functionId === 13 ? 'Step 3 • Source Material • Optional' : 'Step 2 • Source Document • Optional'}
                   </div>
                    <h4 className="font-bold text-foreground text-sm">
                      {functionId === 7
@@ -774,7 +791,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
 
             <section>
               <Label className="text-xs font-bold text-foreground mb-2 block">
-                {functionId === 10 ? 'Suggested answer length' : 'Target word length'} <span className="text-muted-foreground font-normal">{functionId === 10 ? '(guidance only)' : `(min ${FUNCTION_MIN_WORDS[functionId]})`}</span>
+                {functionId === 13 ? 'Suggested report length' : functionId === 10 ? 'Suggested answer length' : 'Target word length'} <span className="text-muted-foreground font-normal">{functionId === 10 || functionId === 13 ? '(guidance only)' : `(min ${FUNCTION_MIN_WORDS[functionId]})`}</span>
               </Label>
               <Input 
                 type="number" 
@@ -796,10 +813,10 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                 <Button 
                   onClick={handleRun} 
                   className="w-full font-bold text-sm h-12 shadow-sm"
-                  disabled={isReadingDraft || isReadingSource || isReadingAssignment || (functionId === 7 ? !sourceDocument.trim() : functionId === 10 ? !instructions.trim() : (!instructions && !instructionDraft && !sourceDocument))}
+                  disabled={isReadingDraft || isReadingSource || isReadingAssignment || (functionId === 13 ? !instructions.trim() && !instructionDraft.trim() : functionId === 7 ? !sourceDocument.trim() : functionId === 10 ? !instructions.trim() : (!instructions && !instructionDraft && !sourceDocument))}
                 >
                   <Play className="w-4 h-4 mr-2" />
-                  {functionId === 7 ? 'Profile author' : functionId === 10 ? 'Complete assignment' : 'Create or transform document'}
+                  {functionId === 13 ? 'Find books & points to address' : functionId === 7 ? 'Profile author' : functionId === 10 ? 'Complete assignment' : 'Create or transform document'}
                 </Button>
               ) : (
                 <Button 
@@ -852,7 +869,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                     <SelectValue placeholder="Send to any function..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12].map(id => (
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13].map(id => (
                       id !== functionId ? (
                         <SelectItem key={id} value={id.toString()} className="text-xs">
                           {id.toString().padStart(2, '0')} • {FUNCTION_LABELS[id]}

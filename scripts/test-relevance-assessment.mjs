@@ -36,5 +36,5 @@ assert.match(RELEVANCE_SYSTEM_PROMPT,/Shared vocabulary alone is not relevance/)
 const route=readFileSync("artifacts/api-server/src/routes/neurotext.ts","utf8");
 assert.match(route,/data\.functionId === 12/);
 assert.match(route,/onContent\(validateAndRenderRelevance/);
-assert.match(route,/length: 12/);
+assert.match(route,/length: 13/);
 console.log("PASS: separate draft/material roles, relevant/partial/irrelevant verdicts, nested quotation bullets, exact-excerpt checks, invented-source rejection and incomplete-report rejection.");

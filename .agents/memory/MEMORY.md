@@ -7,3 +7,4 @@
 - [OCR resource workflow](ocr-resource-workflow.md) — Function 11 converts screenshots and handwriting into editable, reusable texts; uncertain signs require review.
 - [Relevance assessment roles](relevance-assessment-input-roles.md) — Function 12 compares draft A with candidate materials B and reports relevance with bulleted supporting quotations.
 - [Coolify public domain](coolify-public-domain.md) — the user specified https://neurotext.uk as NEUROTEXT's live Coolify URL.
+- [Research advisor purpose](research-advisor-purpose.md) — ideas or rough drafts lead to canonical books and substantive issues, including objections and related non-objections.

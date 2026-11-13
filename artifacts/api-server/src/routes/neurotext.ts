@@ -35,6 +35,7 @@ import { userId, privateWrite } from "../services/account-session";
 import { referenceLimitError } from "../services/library-limits";
 import { recordWork } from "../services/saved-work";
 import { RELEVANCE_SYSTEM_PROMPT, relevancePrompt, validateAndRenderRelevance } from "../services/relevance-assessment";
+import { RESEARCH_ADVISOR_SYSTEM_PROMPT, researchAdvisorPrompt, validateAndRenderResearchAdvisor } from "../services/research-advisor";
 
 const router: IRouter = Router();
 
@@ -51,9 +52,10 @@ const FUNCTION_NAMES = [
   "Homework",
   "OCR",
   "Relevance Assessment",
+  "Research Advisor",
 ] as const;
 
-const MINIMUMS = [4000, 6500, 4000, 4000, 4000, 8000, 4000, 20000, 45000, 100, 100, 100];
+const MINIMUMS = [4000, 6500, 4000, 4000, 4000, 8000, 4000, 20000, 45000, 100, 100, 100, 100];
 const DEFAULT_INSTRUCTION =
   "Turn the source material into a rigorous 5,000-word scholarly essay, replete with relevant legitimate scholarly studies and evidence. Include supported APA-style in-text citations and a complete APA 7 References bibliography. Do not invent sources, quotations, findings, authors, titles, dates, or publication details.";
 const DEFAULT_MODEL = "ZHI 6 · Perplexity Sonar Pro";
@@ -115,7 +117,7 @@ function defaultWorkspace(functionId: number): WorkspacePayload {
     instructions: functionId === 1 ? DEFAULT_INSTRUCTION : "",
     instructionDraft: "",
     sourceDocument: "",
-    targetWords: functionId === 11 ? 100 : functionId === 10 || functionId === 12 ? 500 : functionId === 1 ? 5000 : MINIMUMS[functionId - 1] ?? 4000,
+    targetWords: functionId === 13 ? 1500 : functionId === 11 ? 100 : functionId === 10 || functionId === 12 ? 500 : functionId === 1 ? 5000 : MINIMUMS[functionId - 1] ?? 4000,
     selectedModel: functionId === 11 ? "mathpix" : DEFAULT_MODEL,
     thinker: "Standard NEUROTEXT style",
     quotationCount: 0,
@@ -189,6 +191,16 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
     return;
   }
   const data = separateLegacyDraft(parsed.data);
+  if (data.functionId === 13) {
+    if (!data.instructions.trim() && !data.instructionDraft.trim()) {
+      res.status(400).json({ error: "Enter your research idea or paste/upload a rough draft first." }); return;
+    }
+    const inputError = referenceLimitError([data.instructions, data.instructionDraft, data.sourceDocument].join("\n\n"));
+    if (inputError) { res.status(413).json({ error: `Your research inputs are too large. ${inputError}` }); return; }
+    if (data.resumeFrom?.trim()) {
+      res.status(400).json({ error: "Run a fresh research report rather than resuming an old one." }); return;
+    }
+  }
   if (data.functionId === 12) {
     if (!data.instructionDraft?.trim() || !data.sourceDocument.trim()) {
       res.status(400).json({ error: "Provide your current draft in Box A and the materials to assess in Box B." });
@@ -231,6 +243,7 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
   const started = Date.now();
   let firstWordMs = 0;
   const provider = selectedProvider(data.selectedModel);
+  let researchSources: string[] = [];
 
   try {
     const onContent = (content: string) => {
@@ -274,12 +287,22 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
         });
         for await (const chunk of completion) {
           if (stream.isClosed()) { completion.controller.abort(); break; }
+          const citations = (chunk as unknown as { citations?: unknown }).citations;
+          if (data.functionId === 13 && Array.isArray(citations) && citations.length && citations.every(value => typeof value === "string")) {
+            researchSources = citations;
+          }
           consume(chunk.choices[0]?.delta?.content ?? "");
         }
       }
     };
 
-    if (data.functionId === 12) {
+    if (data.functionId === 13) {
+      stream.send({ type: "status", status: "writing", message: "Identifying canonical books and points your research should address" });
+      let candidate = "";
+      await generate(RESEARCH_ADVISOR_SYSTEM_PROMPT, researchAdvisorPrompt(data), text => { candidate += text; }, 8192);
+      if (stream.isClosed()) return;
+      onContent(validateAndRenderResearchAdvisor(candidate, researchSources));
+    } else if (data.functionId === 12) {
       stream.send({ type: "status", status: "writing", message: "Assessing relevance and checking supporting quotations" });
       let candidate = "";
       await generate(RELEVANCE_SYSTEM_PROMPT, relevancePrompt(data), text => { candidate += text; }, 8192);
@@ -314,7 +337,7 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
     if (stream.isClosed()) return;
 
     const finalWords = wordCount(document);
-    const valid = data.functionId === 12 ? finalWords > 0 : data.functionId === 10 ? finalWords > 0 : finalWords >= Math.ceil(data.targetWords * 0.9);
+    const valid = [10, 12, 13].includes(data.functionId) ? finalWords > 0 : finalWords >= Math.ceil(data.targetWords * 0.9);
     if (!valid) throw new Error(`Generation stopped at ${finalWords} of ${data.targetWords} requested words.`);
     if (userId(req)) {
       const payload = {
@@ -372,7 +395,7 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
 router.get("/functions/workspaces", async (req, res): Promise<void> => {
   res.setHeader("Cache-Control", "no-store");
   if (!userId(req)) {
-    res.json(ListWorkspacesResponse.parse(Array.from({ length: 12 }, (_, index) => normalizeWorkspace(index + 1, {}))));
+    res.json(ListWorkspacesResponse.parse(Array.from({ length: 13 }, (_, index) => normalizeWorkspace(index + 1, {}))));
     return;
   }
   const sid = sessionId(req);
@@ -381,7 +404,7 @@ router.get("/functions/workspaces", async (req, res): Promise<void> => {
     .from(neurotextWorkspaces)
     .where(eq(neurotextWorkspaces.sessionId, sid));
   const rowMap = new Map(rows.map((row) => [row.functionId, row]));
-  const workspaces = Array.from({ length: 12 }, (_, index) => {
+  const workspaces = Array.from({ length: 13 }, (_, index) => {
     const functionId = index + 1;
     const row = rowMap.get(functionId);
     return normalizeWorkspace(functionId, row?.payload, row?.updatedAt);
@@ -483,7 +506,13 @@ router.post("/functions/transfer", (req, res, next) => userId(req) ? privateWrit
     const error = referenceLimitError(sourceDocument);
     if (error) { res.status(413).json({ error }); return; }
   }
-  const payload = { ...current, sourceDocument };
+  const payload = destinationId === 13
+    ? { ...current, instructionDraft: [current.instructionDraft, parsed.data.document].filter(Boolean).join("\n\n") }
+    : { ...current, sourceDocument };
+  if (destinationId === 13) {
+    const error = referenceLimitError([payload.instructions, payload.instructionDraft, payload.sourceDocument].join("\n\n"));
+    if (error) { res.status(413).json({ error }); return; }
+  }
   const { functionId: _functionId, updatedAt: _updatedAt, ...saved } = payload;
   const now = new Date();
   if (userId(req)) await db

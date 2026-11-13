@@ -36,6 +36,7 @@ const DESTINATIONS: [number, string][] = [
   [4, 'Dialogue Generation'], [5, 'Coherence Evaluator'], [6, 'Maximum Intelligence Rewriter'],
   [7, 'Cognitive Profiling'], [8, "Master's Thesis Creator"], [9, 'Dissertation Creator'], [10, 'Homework'],
   [12, 'Relevance Assessment'],
+  [13, 'Research Advisor'],
 ];
 
 interface OcrPortalProps {
@@ -273,8 +274,9 @@ export default function OcrPortal({ onClose, onUse }: OcrPortalProps) {
     setTransferError('');
     // Guest work lives only in React Query memory, not on the server.
     const guestDestination = !signedIn ? queryClient.getQueryData<FunctionWorkspace>(getGetWorkspaceQueryKey(id)) : undefined;
-    const document = guestDestination?.sourceDocument.trim()
-      ? `${guestDestination.sourceDocument.trimEnd()}\n\n${text}`
+    const existingText = id === 13 ? guestDestination?.instructionDraft : guestDestination?.sourceDocument;
+    const document = existingText?.trim()
+      ? `${existingText.trimEnd()}\n\n${text}`
       : text;
     if (countWords(document) > MAX_TRANSFER_WORDS || document.length > MAX_TRANSFER_CHARS) {
       setTransferError('The destination already has supporting material. Together with this OCR text it would exceed 20,000 words or 120,000 characters. Shorten the materials first; nothing has been replaced or truncated.');

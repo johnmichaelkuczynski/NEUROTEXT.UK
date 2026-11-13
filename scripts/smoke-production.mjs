@@ -61,7 +61,7 @@ try {
   });
   assert.equal(workspace.status, 200);
   const workspaces = await workspace.json();
-  assert.equal(workspaces.length, 12);
+  assert.equal(workspaces.length, 13);
   assert(workspaces.filter(w => w.functionId !== 11).every(w => w.selectedModel.includes("Perplexity")));
   assert.equal(workspaces.find(w => w.functionId === 11).selectedModel, "mathpix");
   const cookie = workspace.headers.get("set-cookie");

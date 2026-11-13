@@ -20,6 +20,7 @@ const FUNCTION_LABELS: Record<number, string> = {
   10: 'Homework',
   11: 'OCR',
   12: 'Relevance Assessment',
+  13: 'Research Advisor',
 };
 
 export default function Dashboard() {
@@ -69,7 +70,7 @@ export default function Dashboard() {
             ? "grid-cols-2 sm:grid-cols-5 opacity-70 hover:opacity-100 transition-opacity" 
             : "grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
         )}>
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((id) => {
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map((id) => {
             const workspace = workspaceMap.get(id);
             const isSelected = selectedFunctionId === id;
             const hasData = workspace && (workspace.output || workspace.sourceDocument || workspace.status !== 'idle');

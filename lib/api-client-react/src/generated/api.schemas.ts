@@ -98,7 +98,7 @@ export const FunctionWorkspaceStatus = {
 export interface FunctionWorkspace {
   /**
      * @minimum 1
-     * @maximum 12
+     * @maximum 13
      */
   functionId: number;
   instructions: string;
@@ -272,12 +272,13 @@ export const TransferInputDestinationFunctionId = {
   NUMBER_9: 9,
   NUMBER_10: 10,
   NUMBER_12: 12,
+  NUMBER_13: 13,
 } as const;
 
 export interface TransferInput {
   /**
      * @minimum 1
-     * @maximum 12
+     * @maximum 13
      */
   sourceFunctionId: number;
   destinationFunctionId: TransferInputDestinationFunctionId;
@@ -335,6 +336,7 @@ export const StreamInputFunctionId = {
   NUMBER_9: 9,
   NUMBER_10: 10,
   NUMBER_12: 12,
+  NUMBER_13: 13,
 } as const;
 
 export interface StreamInput {

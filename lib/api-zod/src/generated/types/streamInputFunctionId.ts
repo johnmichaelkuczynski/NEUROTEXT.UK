@@ -21,4 +21,5 @@ export const StreamInputFunctionId = {
   NUMBER_9: 9,
   NUMBER_10: 10,
   NUMBER_12: 12,
+  NUMBER_13: 13,
 } as const;

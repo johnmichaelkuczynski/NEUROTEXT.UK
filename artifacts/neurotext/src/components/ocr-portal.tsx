@@ -25,6 +25,7 @@ import { MathText } from '@/components/math-text';
 import { errorMessage, countWords, downloadText } from '@/lib/private-utils';
 import { OCR_UPLOAD_ACCEPT, extractOcrUpload, type OcrMode } from '@/lib/ocr-upload';
 import { mergeOcrDestination } from '@/lib/ocr-state';
+import { isWritingFunctionId } from '@/lib/function-ids';
 
 const FUNCTION_ID = 11;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -34,6 +35,7 @@ const DESTINATIONS: [number, string][] = [
   [1, 'Document Creator & Manipulator'], [2, 'Objections & Bullet-Proof Rewrite'], [3, 'Screenplay Generator'],
   [4, 'Dialogue Generation'], [5, 'Coherence Evaluator'], [6, 'Maximum Intelligence Rewriter'],
   [7, 'Cognitive Profiling'], [8, "Master's Thesis Creator"], [9, 'Dissertation Creator'], [10, 'Homework'],
+  [12, 'Relevance Assessment'],
 ];
 
 interface OcrPortalProps {
@@ -263,7 +265,7 @@ export default function OcrPortal({ onClose, onUse }: OcrPortalProps) {
 
   const handleTransfer = () => {
     const id = parseInt(destination, 10);
-    if (isNaN(id) || !text.trim()) return;
+    if (!isWritingFunctionId(id) || !text.trim()) return;
     if (overTransfer) {
       setTransferError('Use no more than 20,000 words or 120,000 characters of source material at a time (about 40 pages). Choose relevant excerpts. Nothing has been truncated.');
       return;

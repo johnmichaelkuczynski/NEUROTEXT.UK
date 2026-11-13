@@ -5,18 +5,15 @@
  * NEUROTEXT document intelligence API
  * OpenAPI spec version: 0.1.0
  */
+import type { TransferInputDestinationFunctionId } from './transferInputDestinationFunctionId';
 
 export interface TransferInput {
   /**
      * @minimum 1
-     * @maximum 11
+     * @maximum 12
      */
   sourceFunctionId: number;
-  /**
-     * @minimum 1
-     * @maximum 10
-     */
-  destinationFunctionId: number;
+  destinationFunctionId: TransferInputDestinationFunctionId;
   /** @minLength 1 */
   document: string;
 }

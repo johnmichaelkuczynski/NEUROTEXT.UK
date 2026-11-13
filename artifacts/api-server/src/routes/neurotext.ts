@@ -34,6 +34,7 @@ import { cognitiveProfilePrompt } from "../services/cognitive-profiling";
 import { userId, privateWrite } from "../services/account-session";
 import { referenceLimitError } from "../services/library-limits";
 import { recordWork } from "../services/saved-work";
+import { RELEVANCE_SYSTEM_PROMPT, relevancePrompt, validateAndRenderRelevance } from "../services/relevance-assessment";
 
 const router: IRouter = Router();
 
@@ -49,9 +50,10 @@ const FUNCTION_NAMES = [
   "Dissertation Creator",
   "Homework",
   "OCR",
+  "Relevance Assessment",
 ] as const;
 
-const MINIMUMS = [4000, 6500, 4000, 4000, 4000, 8000, 4000, 20000, 45000, 100, 100];
+const MINIMUMS = [4000, 6500, 4000, 4000, 4000, 8000, 4000, 20000, 45000, 100, 100, 100];
 const DEFAULT_INSTRUCTION =
   "Turn the source material into a rigorous 5,000-word scholarly essay, replete with relevant legitimate scholarly studies and evidence. Include supported APA-style in-text citations and a complete APA 7 References bibliography. Do not invent sources, quotations, findings, authors, titles, dates, or publication details.";
 const DEFAULT_MODEL = "ZHI 6 · Perplexity Sonar Pro";
@@ -113,7 +115,7 @@ function defaultWorkspace(functionId: number): WorkspacePayload {
     instructions: functionId === 1 ? DEFAULT_INSTRUCTION : "",
     instructionDraft: "",
     sourceDocument: "",
-    targetWords: functionId === 11 ? 100 : functionId === 10 ? 500 : functionId === 1 ? 5000 : MINIMUMS[functionId - 1] ?? 4000,
+    targetWords: functionId === 11 ? 100 : functionId === 10 || functionId === 12 ? 500 : functionId === 1 ? 5000 : MINIMUMS[functionId - 1] ?? 4000,
     selectedModel: functionId === 11 ? "mathpix" : DEFAULT_MODEL,
     thinker: "Standard NEUROTEXT style",
     quotationCount: 0,
@@ -187,6 +189,15 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
     return;
   }
   const data = separateLegacyDraft(parsed.data);
+  if (data.functionId === 12) {
+    if (!data.instructionDraft?.trim() || !data.sourceDocument.trim()) {
+      res.status(400).json({ error: "Provide your current draft in Box A and the materials to assess in Box B." });
+      return;
+    }
+    const draftError = referenceLimitError(data.instructionDraft);
+    if (draftError) { res.status(413).json({ error: `Box A is too large. ${draftError} For a longer draft, assess a chapter or excerpt.` }); return; }
+    if (data.resumeFrom?.trim()) { res.status(400).json({ error: "Run a fresh relevance assessment rather than resuming an old report." }); return; }
+  }
   const referenceError = referenceLimitError(data.sourceDocument);
   if (referenceError) { res.status(413).json({ error: referenceError }); return; }
   if (data.functionId === 7 && !data.sourceDocument.trim()) {
@@ -268,7 +279,13 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
       }
     };
 
-    if (data.functionId === 10) {
+    if (data.functionId === 12) {
+      stream.send({ type: "status", status: "writing", message: "Assessing relevance and checking supporting quotations" });
+      let candidate = "";
+      await generate(RELEVANCE_SYSTEM_PROMPT, relevancePrompt(data), text => { candidate += text; }, 8192);
+      if (stream.isClosed()) return;
+      onContent(validateAndRenderRelevance(candidate, data.instructionDraft, data.sourceDocument));
+    } else if (data.functionId === 10) {
       await generate(HOMEWORK_SYSTEM_PROMPT, homeworkPrompt(data, document), onContent, 16384);
       if (!document.trim()) throw new Error("The selected provider returned no homework answer.");
     } else if (academicChapterCount(data.functionId)) {
@@ -297,7 +314,7 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
     if (stream.isClosed()) return;
 
     const finalWords = wordCount(document);
-    const valid = data.functionId === 10 ? finalWords > 0 : finalWords >= Math.ceil(data.targetWords * 0.9);
+    const valid = data.functionId === 12 ? finalWords > 0 : data.functionId === 10 ? finalWords > 0 : finalWords >= Math.ceil(data.targetWords * 0.9);
     if (!valid) throw new Error(`Generation stopped at ${finalWords} of ${data.targetWords} requested words.`);
     if (userId(req)) {
       const payload = {
@@ -355,7 +372,7 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
 router.get("/functions/workspaces", async (req, res): Promise<void> => {
   res.setHeader("Cache-Control", "no-store");
   if (!userId(req)) {
-    res.json(ListWorkspacesResponse.parse(Array.from({ length: 11 }, (_, index) => normalizeWorkspace(index + 1, {}))));
+    res.json(ListWorkspacesResponse.parse(Array.from({ length: 12 }, (_, index) => normalizeWorkspace(index + 1, {}))));
     return;
   }
   const sid = sessionId(req);
@@ -364,7 +381,7 @@ router.get("/functions/workspaces", async (req, res): Promise<void> => {
     .from(neurotextWorkspaces)
     .where(eq(neurotextWorkspaces.sessionId, sid));
   const rowMap = new Map(rows.map((row) => [row.functionId, row]));
-  const workspaces = Array.from({ length: 11 }, (_, index) => {
+  const workspaces = Array.from({ length: 12 }, (_, index) => {
     const functionId = index + 1;
     const row = rowMap.get(functionId);
     return normalizeWorkspace(functionId, row?.payload, row?.updatedAt);
@@ -457,11 +474,12 @@ router.post("/functions/transfer", (req, res, next) => userId(req) ? privateWrit
     )
     .limit(1) : [];
   const current = normalizeWorkspace(destinationId, existing?.payload, existing?.updatedAt);
-  // OCR resources supplement existing references; never replace unrelated work.
-  const sourceDocument = parsed.data.sourceFunctionId === 11 && current.sourceDocument.trim()
+  // OCR and relevance-assessment resources supplement existing references.
+  const appendReferences = parsed.data.sourceFunctionId === 11 || destinationId === 12;
+  const sourceDocument = appendReferences && current.sourceDocument.trim()
     ? `${current.sourceDocument.trimEnd()}\n\n${parsed.data.document}`
     : parsed.data.document;
-  if (parsed.data.sourceFunctionId === 11) {
+  if (appendReferences) {
     const error = referenceLimitError(sourceDocument);
     if (error) { res.status(413).json({ error }); return; }
   }

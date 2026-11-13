@@ -326,7 +326,7 @@ components:
       schema:
         type: integer
         minimum: 1
-        maximum: 11
+        maximum: 12
   schemas:
     ActionResult:
       type: object
@@ -459,7 +459,7 @@ components:
          thinker, quotationCount, output, skeleton, progress, status, provider,
          updatedAt]
       properties:
-        functionId: { type: integer, minimum: 1, maximum: 11 }
+        functionId: { type: integer, minimum: 1, maximum: 12 }
         instructions: { type: string }
         instructionDraft:
           type: string
@@ -505,8 +505,8 @@ components:
       type: object
       required: [sourceFunctionId, destinationFunctionId, document]
       properties:
-        sourceFunctionId: { type: integer, minimum: 1, maximum: 11 }
-        destinationFunctionId: { type: integer, minimum: 1, maximum: 10 }
+        sourceFunctionId: { type: integer, minimum: 1, maximum: 12 }
+        destinationFunctionId: { type: integer, enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12] }
         document: { type: string, minLength: 1 }
     TransferResult:
       type: object
@@ -544,7 +544,7 @@ components:
       type: object
       required: [functionId, instructions, sourceDocument, targetWords, selectedModel]
       properties:
-        functionId: { type: integer, minimum: 1, maximum: 10 }
+        functionId: { type: integer, enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12] }
         instructions: { type: string }
         instructionDraft:
           type: string

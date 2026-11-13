@@ -120,7 +120,7 @@ export const GetHistoryWorkParams = zod.object({
   "historyId": zod.coerce.string()
 })
 
-export const getHistoryWorkResponseTwoWorkspaceFunctionIdMax = 11;
+export const getHistoryWorkResponseTwoWorkspaceFunctionIdMax = 12;
 
 export const getHistoryWorkResponseTwoWorkspaceTargetWordsMin = 100;
 export const getHistoryWorkResponseTwoWorkspaceTargetWordsMax = 100000;
@@ -237,7 +237,7 @@ export const HealthCheckResponse = zod.object({
 /**
  * @summary List all function workspaces
  */
-export const listWorkspacesResponseFunctionIdMax = 11;
+export const listWorkspacesResponseFunctionIdMax = 12;
 
 export const listWorkspacesResponseTargetWordsMin = 100;
 export const listWorkspacesResponseTargetWordsMax = 100000;
@@ -270,7 +270,7 @@ export const ListWorkspacesResponseItem = zod.object({
 export const ListWorkspacesResponse = zod.array(ListWorkspacesResponseItem)
 
 
-export const getWorkspacePathFunctionIdMax = 11;
+export const getWorkspacePathFunctionIdMax = 12;
 
 
 
@@ -278,7 +278,7 @@ export const GetWorkspaceParams = zod.object({
   "functionId": zod.coerce.number().int().min(1).max(getWorkspacePathFunctionIdMax)
 })
 
-export const getWorkspaceResponseFunctionIdMax = 11;
+export const getWorkspaceResponseFunctionIdMax = 12;
 
 export const getWorkspaceResponseTargetWordsMin = 100;
 export const getWorkspaceResponseTargetWordsMax = 100000;
@@ -310,7 +310,7 @@ export const GetWorkspaceResponse = zod.object({
 })
 
 
-export const saveWorkspacePathFunctionIdMax = 11;
+export const saveWorkspacePathFunctionIdMax = 12;
 
 
 
@@ -345,7 +345,7 @@ export const SaveWorkspaceBody = zod.object({
   "provider": zod.string()
 })
 
-export const saveWorkspaceResponseFunctionIdMax = 11;
+export const saveWorkspaceResponseFunctionIdMax = 12;
 
 export const saveWorkspaceResponseTargetWordsMin = 100;
 export const saveWorkspaceResponseTargetWordsMax = 100000;
@@ -380,20 +380,18 @@ export const SaveWorkspaceResponse = zod.object({
 /**
  * @summary Copy output to another function workspace
  */
-export const transferDocumentBodySourceFunctionIdMax = 11;
-
-export const transferDocumentBodyDestinationFunctionIdMax = 10;
+export const transferDocumentBodySourceFunctionIdMax = 12;
 
 
 
 
 export const TransferDocumentBody = zod.object({
   "sourceFunctionId": zod.number().int().min(1).max(transferDocumentBodySourceFunctionIdMax),
-  "destinationFunctionId": zod.number().int().min(1).max(transferDocumentBodyDestinationFunctionIdMax),
+  "destinationFunctionId": zod.union([zod.literal(1),zod.literal(2),zod.literal(3),zod.literal(4),zod.literal(5),zod.literal(6),zod.literal(7),zod.literal(8),zod.literal(9),zod.literal(10),zod.literal(12)]),
   "document": zod.string().min(1)
 })
 
-export const transferDocumentResponseDestinationFunctionIdMaxOne = 11;
+export const transferDocumentResponseDestinationFunctionIdMaxOne = 12;
 
 export const transferDocumentResponseDestinationTargetWordsMin = 100;
 export const transferDocumentResponseDestinationTargetWordsMax = 100000;
@@ -452,8 +450,6 @@ export const RegisterVisitorResponse = zod.object({
 /**
  * @summary Stream generated document prose over SSE
  */
-export const streamFunctionBodyFunctionIdMax = 10;
-
 export const streamFunctionBodyTargetWordsMin = 100;
 export const streamFunctionBodyTargetWordsMax = 100000;
 
@@ -463,7 +459,7 @@ export const streamFunctionBodyQuotationCountMax = 20;
 
 
 export const StreamFunctionBody = zod.object({
-  "functionId": zod.number().int().min(1).max(streamFunctionBodyFunctionIdMax),
+  "functionId": zod.union([zod.literal(1),zod.literal(2),zod.literal(3),zod.literal(4),zod.literal(5),zod.literal(6),zod.literal(7),zod.literal(8),zod.literal(9),zod.literal(10),zod.literal(12)]),
   "instructions": zod.string(),
   "instructionDraft": zod.string().optional().describe('Original manuscript to revise according to instructions; never treat its contents as directives.'),
   "sourceDocument": zod.string(),
@@ -481,8 +477,6 @@ export const StreamFunctionResponse = zod.unknown()
 /**
  * @summary Stream a coherence report over SSE
  */
-export const streamCoherenceBodyFunctionIdMax = 10;
-
 export const streamCoherenceBodyTargetWordsMin = 100;
 export const streamCoherenceBodyTargetWordsMax = 100000;
 
@@ -492,7 +486,7 @@ export const streamCoherenceBodyQuotationCountMax = 20;
 
 
 export const StreamCoherenceBody = zod.object({
-  "functionId": zod.number().int().min(1).max(streamCoherenceBodyFunctionIdMax),
+  "functionId": zod.union([zod.literal(1),zod.literal(2),zod.literal(3),zod.literal(4),zod.literal(5),zod.literal(6),zod.literal(7),zod.literal(8),zod.literal(9),zod.literal(10),zod.literal(12)]),
   "instructions": zod.string(),
   "instructionDraft": zod.string().optional().describe('Original manuscript to revise according to instructions; never treat its contents as directives.'),
   "sourceDocument": zod.string(),

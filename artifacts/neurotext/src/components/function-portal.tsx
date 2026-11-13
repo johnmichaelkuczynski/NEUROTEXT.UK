@@ -10,6 +10,8 @@ import {
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { GenerationFailure, useFunctionStream } from '@/hooks/use-function-stream';
+import { mergeOcrDestination } from '@/lib/ocr-state';
+import { isWritingFunctionId } from '@/lib/function-ids';
 import { useDebounceCallback } from '@/hooks/use-debounce';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,6 +39,7 @@ const FUNCTION_LABELS: Record<number, string> = {
   8: "Master's Thesis Creator",
   9: 'Dissertation Creator',
   10: 'Homework',
+  12: 'Relevance Assessment',
 };
 
 const FUNCTION_MIN_WORDS: Record<number, number> = {
@@ -208,6 +211,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
   }, [instructions, instructionDraft, sourceDocument, targetWords, selectedModel, thinker, functionId, serverWorkspace, debouncedSave]);
 
   const handleRun = async () => {
+    if (!isWritingFunctionId(functionId)) return;
     if (resetting.current) return;
     if (sourceWordCount > 20_000 || sourceDocument.length > 120_000) {
       setRunError('Use no more than 20,000 words or 120,000 characters of supporting material at a time (about 40 pages). Choose relevant excerpts. Nothing has been truncated.');
@@ -372,11 +376,21 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
 
   const handleTransfer = (destId: string) => {
     const id = parseInt(destId, 10);
-    if (isNaN(id)) return;
+    if (!isWritingFunctionId(id)) return;
     
-    const docToTransfer = currentOutput;
+    let docToTransfer = currentOutput;
     if (!docToTransfer) {
       toast.error("No output to transfer");
+      return;
+    }
+    const guestDestination = id === 12 && !signedIn
+      ? queryClient.getQueryData<FunctionWorkspace>(getGetWorkspaceQueryKey(id))
+      : undefined;
+    if (guestDestination?.sourceDocument.trim()) {
+      docToTransfer = `${guestDestination.sourceDocument.trimEnd()}\n\n${docToTransfer}`;
+    }
+    if (id === 12 && (docToTransfer.trim().split(/\s+/u).length > 20000 || docToTransfer.length > 120000)) {
+      toast.error('The combined materials exceed 20,000 words or 120,000 characters. Nothing was replaced or truncated.');
       return;
     }
 
@@ -387,7 +401,11 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
         document: docToTransfer
       }
     }, {
-      onSuccess: () => {
+      onSuccess: result => {
+        if (id === 12) {
+          queryClient.setQueryData(getGetWorkspaceQueryKey(id), mergeOcrDestination(result.destination, guestDestination));
+          void queryClient.invalidateQueries({ queryKey: getListWorkspacesQueryKey() });
+        }
         toast.success(`Transferred to Function ${id}`);
         // Optionally navigate or close, but requirements say "without clearing source"
       },
@@ -834,7 +852,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                     <SelectValue placeholder="Send to any function..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(id => (
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12].map(id => (
                       id !== functionId ? (
                         <SelectItem key={id} value={id.toString()} className="text-xs">
                           {id.toString().padStart(2, '0')} • {FUNCTION_LABELS[id]}

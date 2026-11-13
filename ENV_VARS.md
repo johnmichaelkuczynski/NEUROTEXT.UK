@@ -65,6 +65,15 @@ OAuth uses state, nonce, PKCE, verified Google identity tokens and regenerated
 PostgreSQL-backed sessions. Tokens are not stored. Existing anonymous workspaces
 are preserved in the database but are not automatically attached to new accounts.
 
+## Relevance assessment
+
+Function 12 (Relevance Assessment) uses the selected existing LLM provider and
+needs no new credentials. Its default is Perplexity Sonar Pro
+(`PERPLEXITY_API_KEY`). Files in either document box use the same Word extraction
+and Mathpix image/PDF readers as other functions. Both documents are limited to
+20,000 words / 120,000 characters per box; select chapters or excerpts for longer
+work. Provider-generated quotations are checked against the submitted texts.
+
 ## Optional Mathpix OCR credentials
 
 | Variable | Required to start? | Expected value |

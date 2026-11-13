@@ -49,7 +49,7 @@ try {
 } finally { globalThis.fetch = originalFetch; }
 const api = readFileSync("artifacts/api-server/src/routes/neurotext.ts","utf8");
 assert.ok(api.includes('"OCR"'));
-assert.match(api,/length: 11/g);
+assert.match(api,/length: 12/g);
 const dashboard=readFileSync("artifacts/neurotext/src/pages/Dashboard.tsx","utf8");
 assert.ok(dashboard.includes("11: 'OCR'"));
 assert.ok(dashboard.includes("selectedFunctionId === 11"));

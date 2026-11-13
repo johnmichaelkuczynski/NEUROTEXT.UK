@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 import FunctionPortal from '@/components/function-portal';
 import OcrPortal from '@/components/ocr-portal';
+import RelevancePortal from '@/components/relevance-portal';
 
 const FUNCTION_LABELS: Record<number, string> = {
   1: 'Document Creator & Manipulator',
@@ -18,6 +19,7 @@ const FUNCTION_LABELS: Record<number, string> = {
   9: 'Dissertation Creator',
   10: 'Homework',
   11: 'OCR',
+  12: 'Relevance Assessment',
 };
 
 export default function Dashboard() {
@@ -67,7 +69,7 @@ export default function Dashboard() {
             ? "grid-cols-2 sm:grid-cols-5 opacity-70 hover:opacity-100 transition-opacity" 
             : "grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
         )}>
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((id) => {
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((id) => {
             const workspace = workspaceMap.get(id);
             const isSelected = selectedFunctionId === id;
             const hasData = workspace && (workspace.output || workspace.sourceDocument || workspace.status !== 'idle');
@@ -102,7 +104,7 @@ export default function Dashboard() {
 
         {selectedFunctionId && (
           <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {selectedFunctionId === 11 ? <OcrPortal onClose={() => setSelectedFunctionId(null)} onUse={id => setSelectedFunctionId(id)} /> : <FunctionPortal
+            {selectedFunctionId === 12 ? <RelevancePortal onClose={() => setSelectedFunctionId(null)} /> : selectedFunctionId === 11 ? <OcrPortal onClose={() => setSelectedFunctionId(null)} onUse={id => setSelectedFunctionId(id)} /> : <FunctionPortal
               key={selectedFunctionId}
               functionId={selectedFunctionId} 
               workspaces={workspaces || []}

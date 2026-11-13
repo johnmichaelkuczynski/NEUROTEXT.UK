@@ -5,3 +5,4 @@
 - [Anonymous generation access](anonymous-generation-access.md) — no Google login requirement or anonymous-operation cap for generation.
 - [Private library access](private-library-access.md) — optional Google login enables private memory and a weighted 10,000-page library; guests have no saved work.
 - [OCR resource workflow](ocr-resource-workflow.md) — Function 11 converts screenshots and handwriting into editable, reusable texts; uncertain signs require review.
+- [Relevance assessment roles](relevance-assessment-input-roles.md) — Function 12 compares draft A with candidate materials B and reports relevance with bulleted supporting quotations.

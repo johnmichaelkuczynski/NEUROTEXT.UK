@@ -1,6 +1,6 @@
 # NEUROTEXT
 
-NEUROTEXT is a streaming document-intelligence platform with ten writing/analysis functions and an eleventh OCR resource function. Persistence and private libraries are optional, account-only features.
+NEUROTEXT is a streaming document-intelligence platform with ten writing/analysis functions, Function 11 OCR, and Function 12 Relevance Assessment. Persistence and private libraries are optional, account-only features.
 
 ## Run & Operate
 
@@ -28,7 +28,7 @@ NEUROTEXT is a streaming document-intelligence platform with ten writing/analysi
 
 - The browser consumes generation streams directly with `fetch`, `ReadableStream`, and SSE frame parsing.
 - All provider streams are normalized through the same NEUROTEXT SSE event protocol.
-- Each of the eleven functions has an independent workspace. Signed-in work persists in external PostgreSQL; guest work is not restored after reload.
+- Each of the twelve functions has an independent workspace. Signed-in work persists in external PostgreSQL; guest work is not restored after reload.
 - ZHI model labels are stable product-facing aliases; provider model identifiers remain server-side.
 - Generation uses each provider's official API directly, with no Replit AI proxy or OpenRouter dependency at runtime.
 - Server credentials: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `PERPLEXITY_API_KEY`; optional providers use `XAI_API_KEY`, `DEEPSEEK_API_KEY`, and `VENICE_API_KEY`. Missing keys fail explicitly only when that provider is selected.
@@ -40,7 +40,8 @@ NEUROTEXT is a streaming document-intelligence platform with ten writing/analysi
 
 - Functions 01–10 retain independent instructions, sources, output, progress, and model choices.
 - Function 11 converts screenshots, image files and PDFs to editable resource text. Mathpix is the default; explicit specialist-script image mode uses direct OpenAI vision (`OCR_VISION_MODEL`, otherwise `OPENAI_MODEL` or `gpt-5`). Never silently substitute providers or promise authoritative decipherment.
-- OCR transcriptions can be copied, downloaded, used in functions 01–10, or explicitly saved to the signed-in user's private library. Original image bytes are not archived.
+- OCR transcriptions can be copied, downloaded, used in functions 01–10 and 12, or explicitly saved to the signed-in user's private library. Original image bytes are not archived.
+- Function 12 compares a current draft (Box A, `instructionDraft`) with candidate material (Box B, `sourceDocument`). Neither box supplies instructions. It returns one brief relevance verdict and bulleted connections with supporting quotations; exact excerpts are verified against both inputs before the report is released. Irrelevant material is not forced into a connection, and short reports are never padded to a word target.
 - Long-document generation can continue across multiple provider calls until the requested word target is reached.
 - Generated documents can be interrupted, resumed, copied, downloaded, and transferred between functions.
 - `/diagnostics` records provider, first-word latency, elapsed time, word count, status, and failure evidence.

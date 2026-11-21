@@ -10,6 +10,7 @@ export type StreamEvent =
       target: number;
       provider: string;
       validated: boolean;
+      preview?: boolean;
     }
   | { type: "error"; message: string; code: string };
 

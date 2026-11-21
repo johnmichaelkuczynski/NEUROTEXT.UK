@@ -5,6 +5,83 @@
  * NEUROTEXT document intelligence API
  * OpenAPI spec version: 0.1.0
  */
+export interface BillingPrice {
+  amount: number;
+  currency: string;
+  /** @nullable */
+  interval: string | null;
+  intervalCount: number;
+}
+
+export interface BillingState {
+  signedIn: boolean;
+  fullAccess: boolean;
+  checkoutConfigured: boolean;
+  price: BillingPrice | null;
+}
+
+export interface BillingLink {
+  url: string;
+}
+
+export interface BillingConfirmationInput {
+  sessionId?: string;
+}
+
+export interface BillingConfirmation {
+  fullAccess: boolean;
+}
+
+export type WorkspaceInputStatus = typeof WorkspaceInputStatus[keyof typeof WorkspaceInputStatus];
+
+
+export const WorkspaceInputStatus = {
+  idle: 'idle',
+  preparing: 'preparing',
+  writing: 'writing',
+  interrupted: 'interrupted',
+  failed: 'failed',
+  complete: 'complete',
+} as const;
+
+export interface WorkspaceInput {
+  instructions: string;
+  /** Manuscript to transform, stored separately from the user's task. */
+  instructionDraft?: string;
+  sourceDocument: string;
+  /**
+     * @minimum 100
+     * @maximum 100000
+     */
+  targetWords: number;
+  selectedModel: string;
+  thinker: string;
+  /**
+     * @minimum 0
+     * @maximum 20
+     */
+  quotationCount: number;
+  output: string;
+  generationError?: string;
+  skeleton: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  progress: number;
+  status: WorkspaceInputStatus;
+  provider: string;
+}
+
+export interface PaymentDraftInput {
+  /**
+     * @minimum 1
+     * @maximum 13
+     */
+  functionId: number;
+  workspace: WorkspaceInput;
+}
+
 export interface ActionResult {
   ok: boolean;
 }
@@ -18,6 +95,8 @@ export interface AccountUser {
 export interface AccountState {
   user: AccountUser | null;
   googleConfigured: boolean;
+  developmentOwner?: boolean;
+  owner?: boolean;
   maxReferenceWords: number;
   maxReferenceCharacters: number;
   maxLibraryPages: number;
@@ -214,47 +293,6 @@ export interface DocumentExtractionResult {
 
 export interface HealthStatus {
   status: string;
-}
-
-export type WorkspaceInputStatus = typeof WorkspaceInputStatus[keyof typeof WorkspaceInputStatus];
-
-
-export const WorkspaceInputStatus = {
-  idle: 'idle',
-  preparing: 'preparing',
-  writing: 'writing',
-  interrupted: 'interrupted',
-  failed: 'failed',
-  complete: 'complete',
-} as const;
-
-export interface WorkspaceInput {
-  instructions: string;
-  /** Manuscript to transform, stored separately from the user's task. */
-  instructionDraft?: string;
-  sourceDocument: string;
-  /**
-     * @minimum 100
-     * @maximum 100000
-     */
-  targetWords: number;
-  selectedModel: string;
-  thinker: string;
-  /**
-     * @minimum 0
-     * @maximum 20
-     */
-  quotationCount: number;
-  output: string;
-  generationError?: string;
-  skeleton: string;
-  /**
-     * @minimum 0
-     * @maximum 100
-     */
-  progress: number;
-  status: WorkspaceInputStatus;
-  provider: string;
 }
 
 export type TransferInputDestinationFunctionId = typeof TransferInputDestinationFunctionId[keyof typeof TransferInputDestinationFunctionId];

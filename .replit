@@ -38,3 +38,6 @@ externalPort = 80
 
 [userenv.development]
 PUBLIC_BASE_URL = "https://6783c699-c6fc-4d2b-8171-1c5755990192-00-1acljwp808ke7.spock.replit.dev"
+
+[userenv.shared]
+OWNER_EMAIL = "johnmichaelkuczynski@gmail.com"

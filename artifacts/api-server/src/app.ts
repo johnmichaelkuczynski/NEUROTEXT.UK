@@ -8,7 +8,9 @@ import { fileURLToPath } from "node:url";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
-import { accountSession } from "./services/account-session";
+import { accountSession, developmentOwnerAccount } from "./services/account-session";
+import { stripeWebhook } from "./routes/billing";
+import { answerAccess } from "./services/output-access";
 
 const app: Express = express();
 const production = process.env.NODE_ENV === "production";
@@ -48,12 +50,14 @@ app.use(
   }),
 );
 app.use(cors(production ? { origin: new URL(process.env.PUBLIC_BASE_URL!).origin, credentials: true } : {}));
+app.post("/api/stripe/webhook", express.raw({ type: "application/json", limit: "2mb" }), stripeWebhook);
 // Dissertation drafts exceed Express's default 100 KB JSON body limit.
 // Allow the draft plus instructions, references and JSON escaping overhead.
 app.use(express.json({ limit: "32mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(sessionSecret));
 app.use(accountSession);
+app.use(developmentOwnerAccount);
 app.use("/api", (req, res, next) => {
   if (req.path === "/healthz") { next(); return; }
   // Production uses signed cookies; never trust a modified or unsigned session ID.
@@ -73,6 +77,7 @@ app.use("/api", (req, res, next) => {
   next();
 });
 
+app.use(["/api/functions", "/api/coherence", "/api/history", "/api/documents/extract"], answerAccess);
 app.use("/api", router);
 app.use("/api", (_req, res) => { res.status(404).json({ error: "API route not found" }); });
 

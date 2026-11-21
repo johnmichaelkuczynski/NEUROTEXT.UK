@@ -14,6 +14,61 @@ tags:
   - name: generation
   - name: diagnostics
 paths:
+  /billing/status:
+    get:
+      operationId: getBilling
+      responses:
+        "200":
+          description: Signed-in account payment access and configured price
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BillingState" }
+  /billing/checkout:
+    post:
+      operationId: createCheckout
+      responses:
+        "200":
+          description: Stripe-hosted checkout
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BillingLink" }
+  /billing/confirm:
+    post:
+      operationId: confirmBilling
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BillingConfirmationInput" }
+      responses:
+        "200":
+          description: Server-verified payment access
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BillingConfirmation" }
+  /billing/portal:
+    post:
+      operationId: openBillingPortal
+      responses:
+        "200":
+          description: Stripe-hosted billing management
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BillingLink" }
+  /billing/preserve:
+    post:
+      operationId: preservePaymentDraft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PaymentDraftInput" }
+      responses:
+        "200":
+          description: Workspace preserved before Google or Stripe navigation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ActionResult" }
   /auth/me:
     get:
       operationId: getAccount
@@ -328,6 +383,45 @@ components:
         minimum: 1
         maximum: 13
   schemas:
+    BillingState:
+      type: object
+      required: [signedIn, fullAccess, checkoutConfigured, price]
+      properties:
+        signedIn: { type: boolean }
+        fullAccess: { type: boolean }
+        checkoutConfigured: { type: boolean }
+        price:
+          anyOf:
+            - { $ref: "#/components/schemas/BillingPrice" }
+            - { type: "null" }
+    BillingPrice:
+      type: object
+      required: [amount, currency, interval, intervalCount]
+      properties:
+        amount: { type: integer }
+        currency: { type: string }
+        interval: { type: ["string", "null"] }
+        intervalCount: { type: integer }
+    BillingLink:
+      type: object
+      required: [url]
+      properties:
+        url: { type: string }
+    BillingConfirmationInput:
+      type: object
+      properties:
+        sessionId: { type: string }
+    BillingConfirmation:
+      type: object
+      required: [fullAccess]
+      properties:
+        fullAccess: { type: boolean }
+    PaymentDraftInput:
+      type: object
+      required: [functionId, workspace]
+      properties:
+        functionId: { type: integer, minimum: 1, maximum: 13 }
+        workspace: { $ref: "#/components/schemas/WorkspaceInput" }
     ActionResult:
       type: object
       required: [ok]
@@ -349,6 +443,8 @@ components:
             - { $ref: "#/components/schemas/AccountUser" }
             - { type: "null" }
         googleConfigured: { type: boolean }
+        developmentOwner: { type: boolean }
+        owner: { type: boolean }
         maxReferenceWords: { type: integer }
         maxReferenceCharacters: { type: integer }
         maxLibraryPages: { type: integer }

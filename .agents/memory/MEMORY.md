@@ -2,9 +2,11 @@
 - [Academic document format](academic-document-format.md) — dissertations require five chapters; master's theses require four; both need a title and table of contents.
 - [Homework input roles](homework-input-roles.md) — first box is the assignment with upload; second box is optional supporting articles and materials.
 - [Cognitive profiling input roles](cognitive-profiling-input-roles.md) — first box is the author’s text with upload; second is optional special requirements.
-- [Anonymous generation access](anonymous-generation-access.md) — no Google login requirement or anonymous-operation cap for generation.
+- [Production previews and paid answers](anonymous-generation-access.md) — public previews are partial; complete answers require Google login and payment, with owner exceptions.
 - [Private library access](private-library-access.md) — optional Google login enables private memory and a weighted 10,000-page library; guests have no saved work.
 - [OCR resource workflow](ocr-resource-workflow.md) — Function 11 converts screenshots and handwriting into editable, reusable texts; uncertain signs require review.
 - [Relevance assessment roles](relevance-assessment-input-roles.md) — Function 12 compares draft A with candidate materials B and reports relevance with bulleted supporting quotations.
 - [Coolify public domain](coolify-public-domain.md) — the user specified https://neurotext.uk as NEUROTEXT's live Coolify URL.
 - [Research advisor purpose](research-advisor-purpose.md) — ideas or rough drafts lead to canonical books and substantive issues, including objections and related non-objections.
+- [Owner access](owner-access.md) — development always has full access without sign-in/payment; the designated verified production owner also receives full access.
+- [Portable Coolify billing](coolify-billing.md) — direct Stripe SDK and standard environment variables; never introduce a Replit-only billing runtime.

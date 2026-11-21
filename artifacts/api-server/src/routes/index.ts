@@ -5,11 +5,13 @@ import documentExtractionRouter from "./document-extraction";
 import accountsRouter from "./accounts";
 import libraryRouter from "./library";
 import wordRouter from "./word-extraction";
+import billingRouter from "./billing";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(accountsRouter);
+router.use(billingRouter);
 router.use(libraryRouter);
 router.use(wordRouter);
 router.use(neurotextRouter);

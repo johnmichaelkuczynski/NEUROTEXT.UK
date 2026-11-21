@@ -4,8 +4,10 @@ import { OAuth2Client, CodeChallengeMethod } from "google-auth-library";
 import { db, neurotextUsers } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { GetAccountResponse } from "@workspace/api-zod";
-import { privateWrite, userId } from "../services/account-session";
+import { privateWrite, userId, developmentOwnerMode } from "../services/account-session";
+import { isOwner } from "../services/stripe-billing";
 import { MAX_LIBRARY_PAGES, MAX_LIBRARY_BYTES, MAX_REFERENCE_WORDS, MAX_REFERENCE_CHARACTERS } from "../services/library-limits";
+import { persistPaymentDraft } from "./billing";
 
 const router: IRouter = Router();
 const GOOGLE_CALLBACK_PATH = "/api/auth/google/callback";
@@ -29,7 +31,7 @@ router.get("/auth/me", async (req, res): Promise<void> => {
   const id = userId(req);
   const [user] = id ? await db.select({ id: neurotextUsers.id, name: neurotextUsers.name, email: neurotextUsers.email }).from(neurotextUsers).where(eq(neurotextUsers.id, id)).limit(1) : [];
   res.json(GetAccountResponse.parse({
-    user: user || null, googleConfigured: configured(), maxReferenceWords: MAX_REFERENCE_WORDS,
+    user: user || null, googleConfigured: configured(), developmentOwner: developmentOwnerMode(), owner: await isOwner(id), maxReferenceWords: MAX_REFERENCE_WORDS,
     maxReferenceCharacters: MAX_REFERENCE_CHARACTERS, maxLibraryPages: MAX_LIBRARY_PAGES, maxLibraryBytes: MAX_LIBRARY_BYTES,
   }));
 });
@@ -88,6 +90,10 @@ router.get("/auth/google/callback", async (req, res): Promise<void> => {
     const [account] = await db.insert(neurotextUsers).values({
       id: randomUUID(), googleSub: identity.sub, email: identity.email, name: identity.name || identity.email,
     }).onConflictDoUpdate({ target: neurotextUsers.googleSub, set: { email: identity.email, name: identity.name || identity.email } }).returning({ id: neurotextUsers.id });
+    if (req.session.paymentDraft) {
+      await persistPaymentDraft(account.id, req.session.paymentDraft);
+      delete req.session.paymentDraft;
+    }
     await new Promise<void>((resolve, reject) => req.session.regenerate(error => error ? reject(error) : resolve()));
     req.session.userId = account.id;
     await new Promise<void>((resolve, reject) => req.session.save(error => error ? reject(error) : resolve()));

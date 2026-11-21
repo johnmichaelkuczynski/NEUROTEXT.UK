@@ -2,9 +2,9 @@
 name: Private library and account access
 description: Optional direct Google OAuth, private account memory, and weighted library/reference limits.
 ---
-Users can generate anonymously without a login wall or paywall. Anonymous work must not be retained across reloads. Login is required only for private past work and the personal library.
+Users can try generation anonymously without an entry login wall. Anonymous work must not be retained across reloads, except for an explicit payment/login handoff that preserves the current draft. Login is required for private past work and the personal library. Complete-answer access follows the separate paid-answer policy and owner exceptions.
 
-**Why:** Dr. Kuczynski explicitly requested an app with no memory for anonymous users, and private memory and uploaded research texts for signed-in users.
+**Why:** Dr. Kuczynski explicitly requested an app with no persistent memory for anonymous users, and private memory and uploaded research texts for signed-in users; he later required payment and Google login for complete answers.
 
 **How to apply:** Use direct Google OAuth and the existing external, non-Replit Neon PostgreSQL database. Enforce server-side ownership on every private read/write; never attach old anonymous work to an account automatically.
 

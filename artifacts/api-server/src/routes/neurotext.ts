@@ -31,11 +31,13 @@ import { academicChapterCount } from "../services/academic-structure";
 import { generateAcademicDocument } from "../services/academic-generation";
 import { HOMEWORK_SYSTEM_PROMPT, homeworkPrompt } from "../services/homework";
 import { cognitiveProfilePrompt } from "../services/cognitive-profiling";
-import { userId, privateWrite } from "../services/account-session";
+import { userId, privateWrite, developmentOwnerMode } from "../services/account-session";
 import { referenceLimitError } from "../services/library-limits";
 import { recordWork } from "../services/saved-work";
 import { RELEVANCE_SYSTEM_PROMPT, relevancePrompt, validateAndRenderRelevance } from "../services/relevance-assessment";
 import { RESEARCH_ADVISOR_SYSTEM_PROMPT, researchAdvisorPrompt, validateAndRenderResearchAdvisor } from "../services/research-advisor";
+import { previewAnswer } from "../services/output-access";
+import { hasPaidAccess, isOwner } from "../services/stripe-billing";
 
 const router: IRouter = Router();
 
@@ -191,6 +193,10 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
     return;
   }
   const data = separateLegacyDraft(parsed.data);
+  const paid = req.fullAnswerAccess === true;
+  if (!paid && data.resumeFrom?.trim()) {
+    res.status(402).json({ error: "Continuing beyond a preview requires Google sign-in and payment. Start a fresh preview or upgrade." }); return;
+  }
   if (data.functionId === 13) {
     if (!data.instructions.trim() && !data.instructionDraft.trim()) {
       res.status(400).json({ error: "Enter your research idea or paste/upload a rough draft first." }); return;
@@ -251,8 +257,8 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
       if (!firstWordMs && /\S/.test(content)) firstWordMs = Date.now() - started;
       document += content;
       words = wordCount(document);
-      stream.send({ type: "token", content });
-      stream.send({
+      if (paid) stream.send({ type: "token", content });
+      if (paid) stream.send({
         type: "progress",
         words,
         target: data.targetWords,
@@ -296,7 +302,11 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
       }
     };
 
-    if (data.functionId === 13) {
+    if (!paid && data.targetWords > 4000 && ![10, 12, 13].includes(data.functionId)) {
+      stream.send({ type: "status", status: "writing", message: "Preparing a limited preview; sign in and pay for the complete work" });
+      await generate(DOCUMENT_SYSTEM_PROMPT,
+        `${promptFor(data, "", data.targetWords)}\nWrite ONLY the opening fragment of this work, not a summary, conclusion or condensed complete answer. Stop after at most 1,000 words.`, onContent, 2200);
+    } else if (data.functionId === 13) {
       stream.send({ type: "status", status: "writing", message: "Identifying canonical books and points your research should address" });
       let candidate = "";
       await generate(RESEARCH_ADVISOR_SYSTEM_PROMPT, researchAdvisorPrompt(data), text => { candidate += text; }, 8192);
@@ -337,8 +347,16 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
     if (stream.isClosed()) return;
 
     const finalWords = wordCount(document);
-    const valid = [10, 12, 13].includes(data.functionId) ? finalWords > 0 : finalWords >= Math.ceil(data.targetWords * 0.9);
+    const valid = !paid || [10, 12, 13].includes(data.functionId) ? finalWords > 0 : finalWords >= Math.ceil(data.targetWords * 0.9);
     if (!valid) throw new Error(`Generation stopped at ${finalWords} of ${data.targetWords} requested words.`);
+    if (!paid) {
+      // The full provider response never enters the browser stream, autosave,
+      // saved work, copy/download buffer or a hidden DOM element.
+      document = previewAnswer(document, data.targetWords);
+      words = wordCount(document);
+      stream.send({ type: "token", content: document });
+      stream.send({ type: "status", status: "complete", message: "Preview only — Google sign-in and payment are required for complete answers" });
+    }
     if (userId(req)) {
       const payload = {
         ...defaultWorkspace(data.functionId), ...data, output: document,
@@ -375,10 +393,11 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
 
     stream.send({
       type: "complete",
-      words: finalWords,
+      words: paid ? finalWords : words,
       target: data.targetWords,
       provider: provider.name,
       validated: true,
+      preview: !paid,
     });
     stream.finish();
   } catch (error) {
@@ -562,13 +581,14 @@ router.get("/usage", async (req, res): Promise<void> => {
     .limit(1);
   const [visitors] = await db.select({ count: count() }).from(neurotextVisitors);
   const used = usage?.operationsUsed ?? 0;
+  const paid = await hasPaidAccess(userId(req));
   res.json({
-    accessState: userId(req) ? "signed-in" : "anonymous",
+    accessState: developmentOwnerMode() ? "development-owner" : await isOwner(userId(req)) ? "owner" : paid ? "paid" : userId(req) ? "signed-in" : "anonymous",
     operationsUsed: used,
     // -1 means unrestricted; usage is recorded for information, not login gating.
     operationsRemaining: -1,
     visitorCount: visitors?.count ?? 0,
-    subscriptionStatus: "not configured",
+    subscriptionStatus: paid ? "paid" : "preview only",
     signedIn: Boolean(userId(req)),
   });
 });

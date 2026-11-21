@@ -15,6 +15,7 @@ import {
 } from 'wouter';
 import { useGetAccount, getGetAccountQueryKey, useGetUsage, useRegisterVisitor } from '@workspace/api-client-react';
 import { AccountControls } from '@/components/account-controls';
+import { BillingControls } from '@/components/billing-controls';
 import Library from '@/pages/Library';
 import History from '@/pages/History';
 
@@ -85,6 +86,7 @@ function SharedShell({ children }: { children: ReactNode }) {
         </div>
       </header>
       
+      <BillingControls />
       <div className="flex-1 flex flex-col">
         {children}
       </div>

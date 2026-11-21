@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { usePaymentDraft } from '@/hooks/use-payment-draft';
 import {
   type WorkspaceInput,
   type FunctionWorkspace,
@@ -84,6 +85,8 @@ export default function RelevancePortal({ onClose }: { onClose: () => void }) {
   const [saveError, setSaveError] = useState('');
   const [fieldError, setFieldError] = useState<Record<FieldKey, string>>({ a: '', b: '' });
   const [uploading, setUploading] = useState<Record<FieldKey, string>>({ a: '', b: '' });
+  usePaymentDraft(FUNCTION_ID, { instructions: '', instructionDraft: a, sourceDocument: b, targetWords: 500,
+    selectedModel: model, output: report, status: running || Object.values(uploading).some(Boolean) ? 'writing' : report ? 'complete' : 'idle', provider });
   const [dragging, setDragging] = useState<FieldKey | null>(null);
   const [isResetting, setIsResetting] = useState(false);
 

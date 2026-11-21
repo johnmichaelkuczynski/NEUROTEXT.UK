@@ -27,6 +27,7 @@ import { normalizeAcademicContents } from '@/lib/academic-formatting';
 import { MathText } from '@/components/math-text';
 import { AcademicDocument } from '@/components/academic-document';
 import { LibraryPicker } from '@/components/library-picker';
+import { usePaymentDraft } from '@/hooks/use-payment-draft';
 
 const FUNCTION_LABELS: Record<number, string> = {
   1: 'Document Creator & Manipulator',
@@ -117,6 +118,9 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
   const [isReadingDraft, setIsReadingDraft] = useState(false);
   const [isReadingSource, setIsReadingSource] = useState(false);
   const [isReadingAssignment, setIsReadingAssignment] = useState(false);
+  usePaymentDraft(functionId, { instructions, instructionDraft, sourceDocument, targetWords, selectedModel, thinker,
+    output: currentOutput, generationError: currentError,
+    status: isReadingDraft || isReadingSource || isReadingAssignment ? 'preparing' : currentStatus, provider: serverWorkspace?.provider || '' });
   const [uploadError, setUploadError] = useState('');
   const [isResetting, setIsResetting] = useState(false);
   const [resetError, setResetError] = useState('');

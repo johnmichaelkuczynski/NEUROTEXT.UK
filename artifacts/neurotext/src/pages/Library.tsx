@@ -22,7 +22,7 @@ export function SignedOutNotice({ what }: { what: string }) {
   return (
     <div className="max-w-xl mx-auto my-16 rounded-lg border border-border bg-card p-6 text-sm" data-testid="text-signed-out">
       <h1 className="text-lg font-bold mb-2">{what} requires an optional account</h1>
-      <p className="text-muted-foreground mb-4">Generation works without signing in. Sign in with Google only if you want a private {what.toLowerCase()} that persists across sessions.</p>
+      <p className="text-muted-foreground mb-4">Limited previews are available without signing in. Sign in with Google for your private {what.toLowerCase()}; complete generated answers also require payment.</p>
       <a href={import.meta.env.BASE_URL + 'api/auth/google'} className="inline-block rounded bg-primary px-3 py-1.5 font-semibold text-primary-foreground" data-testid="link-signin">Sign in with Google</a>
     </div>
   );

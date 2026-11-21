@@ -71,6 +71,15 @@ async function initializeDatabase() {
       CREATE UNIQUE INDEX IF NOT EXISTS neurotext_history_version
         ON neurotext_history(user_id, function_id, content_hash);
       CREATE INDEX IF NOT EXISTS neurotext_history_owner ON neurotext_history(user_id, created_at);
+      CREATE TABLE IF NOT EXISTS neurotext_billing (
+        user_id text PRIMARY KEY REFERENCES neurotext_users(id) ON DELETE CASCADE,
+        stripe_customer_id text UNIQUE,
+        stripe_subscription_id text,
+        stripe_checkout_id text,
+        access_status text NOT NULL DEFAULT 'unpaid' CHECK(access_status IN ('paid','unpaid')),
+        access_until timestamptz,
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
     `);
     await client.query("COMMIT");
     logger.info("PostgreSQL schema is ready");

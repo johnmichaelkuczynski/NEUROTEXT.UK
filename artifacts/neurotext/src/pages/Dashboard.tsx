@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useListWorkspaces, useGetUsage, type FunctionWorkspace } from '@workspace/api-client-react';
+import { useListWorkspaces, useGetUsage, useGetAccount, useGetBilling, type FunctionWorkspace } from '@workspace/api-client-react';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
@@ -26,8 +26,14 @@ const FUNCTION_LABELS: Record<number, string> = {
 export default function Dashboard() {
   const { data: workspaces, isLoading } = useListWorkspaces();
   const { data: usage } = useGetUsage();
+  const { data: account } = useGetAccount();
+  const { data: billing } = useGetBilling();
   
-  const [selectedFunctionId, setSelectedFunctionId] = useState<number | null>(null);
+  const [selectedFunctionId, setSelectedFunctionId] = useState<number | null>(() => {
+    const id = Number(sessionStorage.getItem('neurotext-payment-function'));
+    sessionStorage.removeItem('neurotext-payment-function');
+    return Number.isInteger(id) && id >= 1 && id <= 13 ? id : null;
+  });
 
   if (isLoading) {
     return (
@@ -59,7 +65,7 @@ export default function Dashboard() {
               Every function has its own dedicated document portal. Choose a function, provide its document, choose an LLM, then run it.
             </p>
             <p className="text-muted-foreground text-xs mt-3">
-              No login or payment is required to generate. Anonymous work is not saved after reloading. Sign in with Google for private saved work and your personal research library.
+              {account?.developmentOwner ? 'Development owner: unrestricted full access. No Google sign-in or payment is required in this development workspace.' : account?.owner ? 'Owner account: unrestricted full access, with no payment required.' : billing?.fullAccess ? 'Your paid full access is active. Your private saved work and personal library are available.' : 'Try any function with a limited preview. Complete answers require both Google sign-in and payment. Signing in also provides private saved work and your research library.'}
             </p>
           </div>
         )}

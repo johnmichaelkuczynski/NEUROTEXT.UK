@@ -10,6 +10,8 @@ import type { AccountUser } from './accountUser';
 export interface AccountState {
   user: AccountUser | null;
   googleConfigured: boolean;
+  developmentOwner?: boolean;
+  owner?: boolean;
   maxReferenceWords: number;
   maxReferenceCharacters: number;
   maxLibraryPages: number;

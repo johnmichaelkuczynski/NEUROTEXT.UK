@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useGetAccount, useLogoutAccount } from '@workspace/api-client-react';
 import { LogIn, LogOut, X } from 'lucide-react';
 import { errorMessage } from '@/lib/private-utils';
+import { prepareBillingNavigation } from '@/hooks/use-payment-draft';
 
 const AUTH_ERRORS: Record<string, string> = {
   google_login_failed: 'Google sign-in failed. Please try again. If it continues, check that this site’s callback URL is registered with Google.',
@@ -46,10 +47,17 @@ export function AccountControls() {
     <div className="relative flex items-center gap-3 text-xs" data-testid="account-controls">
       {isLoading ? (
         <span className="h-4 w-16 rounded bg-muted animate-pulse" />
+      ) : account?.developmentOwner ? (
+        <>
+          <Link href="/library" className="text-muted-foreground hover:text-foreground font-semibold">Library</Link>
+          <Link href="/history" className="text-muted-foreground hover:text-foreground font-semibold">Past work</Link>
+          <span className="font-semibold text-primary" data-testid="text-development-owner">Development owner · Full access</span>
+        </>
       ) : user ? (
         <>
           <Link href="/library" className="text-muted-foreground hover:text-foreground font-semibold" data-testid="link-library">Library</Link>
           <Link href="/history" className="text-muted-foreground hover:text-foreground font-semibold" data-testid="link-history">Past work</Link>
+          {account.owner && <span className="font-semibold text-primary" data-testid="text-owner-access">Owner · Full access</span>}
           <span className="hidden md:inline text-muted-foreground max-w-[160px] truncate" title={user.email} data-testid="text-account-email">{user.email}</span>
           <button
             type="button"
@@ -69,7 +77,11 @@ export function AccountControls() {
           {account?.googleConfigured === false ? (
             <span className="text-muted-foreground" data-testid="text-google-unavailable">Sign-in unavailable</span>
           ) : (
-            <a href={loginHref} className="inline-flex items-center gap-1 rounded bg-primary px-2 py-1 font-semibold text-primary-foreground hover:bg-primary/90" data-testid="link-google-login">
+            <a href={loginHref} onClick={async event => {
+              event.preventDefault();
+              try { await prepareBillingNavigation(); window.location.assign(loginHref); }
+              catch (error) { setLogoutError(errorMessage(error, 'Could not preserve your work before sign-in.')); }
+            }} className="inline-flex items-center gap-1 rounded bg-primary px-2 py-1 font-semibold text-primary-foreground hover:bg-primary/90" data-testid="link-google-login">
               <LogIn className="h-3 w-3" /> Sign in with Google
             </a>
           )}
@@ -78,7 +90,7 @@ export function AccountControls() {
       {showInfo && !user ? (
         <div className="absolute right-0 top-8 z-50 w-72 rounded-lg border border-border bg-popover p-3 text-xs leading-relaxed text-popover-foreground shadow-lg" data-testid="text-anonymous-info">
           <div className="flex justify-between gap-2">
-            <p>You are working anonymously. Generation works fully, but nothing is saved after you reload the page. Signing in is optional and only needed for a private library of extracted texts and a record of past work.</p>
+            <p>You are working anonymously and can receive limited previews. Complete answers require both Google sign-in and payment. Signing in also enables your private library and saved work.</p>
             <button type="button" onClick={() => setShowInfo(false)} aria-label="Close" data-testid="button-close-info"><X className="h-3 w-3" /></button>
           </div>
         </div>

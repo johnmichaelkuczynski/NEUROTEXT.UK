@@ -26,6 +26,7 @@ import { errorMessage, countWords, downloadText } from '@/lib/private-utils';
 import { OCR_UPLOAD_ACCEPT, extractOcrUpload, type OcrMode } from '@/lib/ocr-upload';
 import { mergeOcrDestination } from '@/lib/ocr-state';
 import { isWritingFunctionId } from '@/lib/function-ids';
+import { usePaymentDraft } from '@/hooks/use-payment-draft';
 
 const FUNCTION_ID = 11;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -77,6 +78,8 @@ export default function OcrPortal({ onClose, onUse }: OcrPortalProps) {
   const [error, setError] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  usePaymentDraft(FUNCTION_ID, { instructions: hint, sourceDocument: title, targetWords: 100,
+    selectedModel: mode, output: text, status: busy ? 'writing' : text ? 'complete' : 'idle', provider });
   const [dragging, setDragging] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
   const [showPreview, setShowPreview] = useState(true);

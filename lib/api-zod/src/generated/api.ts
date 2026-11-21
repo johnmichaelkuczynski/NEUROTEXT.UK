@@ -8,6 +8,75 @@
 import * as zod from 'zod';
 
 
+export const GetBillingResponse = zod.object({
+  "signedIn": zod.boolean(),
+  "fullAccess": zod.boolean(),
+  "checkoutConfigured": zod.boolean(),
+  "price": zod.union([zod.object({
+  "amount": zod.number().int(),
+  "currency": zod.string(),
+  "interval": zod.string().nullable(),
+  "intervalCount": zod.number().int()
+}),zod.null()])
+})
+
+
+export const CreateCheckoutResponse = zod.object({
+  "url": zod.string()
+})
+
+
+export const ConfirmBillingBody = zod.object({
+  "sessionId": zod.string().optional()
+})
+
+export const ConfirmBillingResponse = zod.object({
+  "fullAccess": zod.boolean()
+})
+
+
+export const OpenBillingPortalResponse = zod.object({
+  "url": zod.string()
+})
+
+
+export const preservePaymentDraftBodyFunctionIdMax = 13;
+
+export const preservePaymentDraftBodyWorkspaceTargetWordsMin = 100;
+export const preservePaymentDraftBodyWorkspaceTargetWordsMax = 100000;
+
+export const preservePaymentDraftBodyWorkspaceQuotationCountMin = 0;
+export const preservePaymentDraftBodyWorkspaceQuotationCountMax = 20;
+
+export const preservePaymentDraftBodyWorkspaceProgressMin = 0;
+export const preservePaymentDraftBodyWorkspaceProgressMax = 100;
+
+
+
+export const PreservePaymentDraftBody = zod.object({
+  "functionId": zod.number().int().min(1).max(preservePaymentDraftBodyFunctionIdMax),
+  "workspace": zod.object({
+  "instructions": zod.string(),
+  "instructionDraft": zod.string().optional().describe('Manuscript to transform, stored separately from the user\'s task.'),
+  "sourceDocument": zod.string(),
+  "targetWords": zod.number().int().min(preservePaymentDraftBodyWorkspaceTargetWordsMin).max(preservePaymentDraftBodyWorkspaceTargetWordsMax),
+  "selectedModel": zod.string(),
+  "thinker": zod.string(),
+  "quotationCount": zod.number().int().min(preservePaymentDraftBodyWorkspaceQuotationCountMin).max(preservePaymentDraftBodyWorkspaceQuotationCountMax),
+  "output": zod.string(),
+  "generationError": zod.string().optional(),
+  "skeleton": zod.string(),
+  "progress": zod.number().int().min(preservePaymentDraftBodyWorkspaceProgressMin).max(preservePaymentDraftBodyWorkspaceProgressMax),
+  "status": zod.enum(['idle', 'preparing', 'writing', 'interrupted', 'failed', 'complete']),
+  "provider": zod.string()
+})
+})
+
+export const PreservePaymentDraftResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
 export const GetAccountResponse = zod.object({
   "user": zod.union([zod.object({
   "id": zod.string(),
@@ -15,6 +84,8 @@ export const GetAccountResponse = zod.object({
   "email": zod.string()
 }),zod.null()]),
   "googleConfigured": zod.boolean(),
+  "developmentOwner": zod.boolean().optional(),
+  "owner": zod.boolean().optional(),
   "maxReferenceWords": zod.number().int(),
   "maxReferenceCharacters": zod.number().int(),
   "maxLibraryPages": zod.number().int(),

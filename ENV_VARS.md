@@ -58,7 +58,9 @@ callback for the workspace preview if testing there, and set development
 `PUBLIC_BASE_URL` to that preview's HTTPS origin. Do not use a production origin
 for a development login: its cookie belongs to a different host.
 
-Google login is optional, has no payment requirement and never blocks generation.
+Google login is optional for public previews and has no charge of its own.
+Production complete answers require both Google login and payment, with the
+development and designated-owner exceptions described below.
 Guests' workspace content is not stored in PostgreSQL and is not restored on
 reload. Signed-in workspaces, output history and libraries are owner-scoped.
 OAuth uses state, nonce, PKCE, verified Google identity tokens and regenerated
@@ -119,7 +121,7 @@ Google account sessions use `express-session` with the external PostgreSQL
 session store, `proxy: true`, and Secure/HttpOnly/SameSite=Lax production cookies.
 The Google callback saves the regenerated session before redirecting. Private
 writes require an app-specific request header for CSRF protection. Stripe keys
-are not read or required. No payment system is installed. Google callback errors
+are optional at startup but required to accept payments. Google callback errors
 are logged on the server; the browser receives a generic error without tokens.
 Anonymous OCR cookies do not identify a signed-in account.
 
@@ -139,3 +141,51 @@ is limited to 10 MiB. Supporting-material fields accept at most 20,000 words AND
 These are conservative app input limits, not a guarantee of model capacity for
 every combination of draft, references and output. Longer sources must be
 excerpted; the app rejects over-limit input rather than silently truncating it.
+
+## Complete-answer access and Stripe (Coolify-compatible)
+
+The public production app provides partial previews. Complete answers require a
+verified Google session and a server-confirmed paid account, except for the
+designated owner. Short answers show half; long answers show at most 5%, capped
+at 500 words. This is enforced before sending generation output, not with CSS.
+
+| Variable | Required to start? | Expected value |
+| --- | --- | --- |
+| `STRIPE_SECRET_KEY` | No | Stripe secret API key for the account owning the configured price. Required to accept payments. |
+| `STRIPE_PRICE_ID` | No | Existing active positive fixed Stripe price. Recurring prices use subscription Checkout; one-time prices use payment Checkout. |
+| `STRIPE_WEBHOOK_SECRET` | No | Signing secret for `https://neurotext.uk/api/stripe/webhook`. Required to verify payment lifecycle events. |
+| `OWNER_EMAIL` | No | Optional additional Google-verified owner email. The explicitly designated owner remains recognized without this override. |
+
+`STRIPE_PUBLISHABLE_KEY` is not needed or read by the hosted Checkout flow: the
+server creates Checkout Sessions and the browser navigates to Stripe. No API key
+is sent to the browser. Missing Stripe configuration disables checkout but never
+grants unpaid full access or prevents the server from starting.
+
+Keep `NODE_ENV=production` on Coolify. Only an actual `NODE_ENV=development`
+server supplies automatic development-owner access, including a persistent
+development library/workspace identity. Development never requires Google
+login or payment and has no sign-out control. Development-owner identity is
+never written into a browser authentication session. Production verifies the
+Google account before applying the owner exemption; changing a hostname,
+header, URL parameter or typed email cannot activate it.
+
+Stripe success/cancel URLs use `PUBLIC_BASE_URL`. Success URLs alone do not grant
+access. Subscription access requires an active subscription for the configured
+price, a paid invoice and settled, non-refunded/non-disputed payment. Expired,
+failed or cancelled access is removed. Cancelling at period end retains access
+only through the paid period. Duplicate Checkout clicks reuse an open session.
+
+Enable these webhook events on the endpoint corresponding to the signing secret:
+`checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+`checkout.session.async_payment_failed`, `customer.subscription.created`,
+`customer.subscription.updated`, `customer.subscription.deleted`,
+`invoice.paid`, `invoice.payment_failed`, `charge.refunded`,
+`charge.dispute.created`, `charge.dispute.closed`, `refund.updated`.
+Enable subscription cancellation in the Stripe customer portal. The frontend
+shows the configured amount/currency and renewal interval before checkout and
+provides Manage billing.
+
+Billing uses the standard Stripe SDK and the external `DATABASE_URL`, not
+Replit-managed credential discovery. The startup migration adds only the
+application's account-to-Stripe/access mapping and does not replace the database
+or create a duplicate product catalogue. Existing documents are preserved.

@@ -17,7 +17,16 @@ try {
   const rendered = f.renderFinderReport(report, draft, source);
   assert(rendered.includes("How to use it:"));
   assert.throws(() => f.renderFinderReport(report.replace("Direct awareness is not an inference", "A completely invented passage"), draft, source), /quotation/i);
-  assert.throws(() => f.renderFinderReport(report.replace("Book.txt", "Missing book"), draft, source), /label/i);
+  for (const sourceLabel of ["Missing book", "box b", "", null, 42, "x".repeat(251), undefined]) {
+    const value = JSON.parse(report);
+    value.points[0].sourceLabel = sourceLabel;
+    const corrected = f.renderFinderReport(JSON.stringify(value), draft, source);
+    assert(corrected.includes("Source (Box B):"), "Unverified metadata must use the actual input label, not discard verified findings");
+    assert(!corrected.includes("Missing book"));
+  }
+  const noTitleSource = source.replace("=== Book.txt ===\n", "");
+  assert(f.renderFinderReport(report, draft, noTitleSource).includes("Source (Box B):"), "Pasted text need not contain a title");
+  assert.throws(() => f.renderFinderReport(report.replace("Knowledge need not always depend on inference.", "An invented draft quotation."), draft, source), /quotation/i);
   const input = { instructionDraft: draft, sourceDocument: source, instructions: "Focus on logical dependence." };
   const proof = f.reportProof(input, rendered, "owner");
   assert(f.validReportProof(input, rendered, proof, "owner"));
@@ -41,6 +50,26 @@ try {
   const whole = await f.generateFinderReport({ ...input, sourceDocument: longSource }, generate, () => {}, () => false);
   assert(whole.includes(late), "Relevant material near the end of a long source must not be skipped");
   assert(calls >= 3);
+  let labelCalls = 0;
+  const recovered = await f.generateFinderReport(input, async (_system, _prompt, consume) => {
+    labelCalls++;
+    consume(report.replace("Book.txt", "A descriptive title not embedded in the source"));
+  }, () => {}, () => false);
+  assert.equal(labelCalls, 1, "Source-label recovery must not require another paid model call");
+  assert(recovered.includes("Source (Box B):"));
+  const recoveredProof = f.reportProof(input, recovered, "owner");
+  assert(f.validReportProof(input, recovered, recoveredProof, "owner"));
+  const consolidated = await f.generateFinderReport({ ...input, sourceDocument: longSource }, async (_system, prompt, consume) => {
+    const p = JSON.parse(prompt);
+    const relevant = (p.relevantText || JSON.stringify(p.verifiedSectionReports)).includes(late);
+    consume(JSON.stringify({ summary: "Section findings.", points: relevant ? [{
+      connection: "Clarifies direct knowledge.", draftQuote: "Knowledge need not always depend on inference.",
+      materialQuote: late, sourceLabel: "Unverified book title", application: "Clarify the distinction.",
+    }] : [] }));
+  }, () => {}, () => false);
+  assert(consolidated.includes(late));
+  assert(consolidated.includes("Source (Box B):"));
+  assert(!consolidated.includes("Unverified book title"));
   let rewritten = "", segments = 0;
   const original = draft + "\n\n" + "First argument establishes the distinction. ".repeat(600) + "\n\nFinal distinctive original conclusion.";
   await f.rewriteWithFindings({ ...input, instructionDraft: original }, rendered,

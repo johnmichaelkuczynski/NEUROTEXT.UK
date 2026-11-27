@@ -15,3 +15,9 @@ Validate source attribution in the rewrite rather than relying only on a prompt.
 **Why:** A live provider check initially produced a fluent rewrite that presented imported claims without attribution despite being told to attribute them. Checking only quotations in the report does not prevent this.
 
 **How to apply:** Require source-derived additions to have explicit in-text attribution and verifiable supporting evidence; verbatim borrowing must be quoted. Reject or correct unsupported additions before displaying a rewritten section.
+
+Do not reject otherwise verified relevance findings because a model supplied an unverified document title or source label. Use the neutral input identifier “Box B” instead; continue to reject unsupported quotations.
+
+**Why:** Uploaded or pasted text need not contain its filename or title. Treating model-generated metadata as a mandatory exact textual match blocked a user's entire report.
+
+**How to apply:** Keep bibliographic metadata separate from evidence validation. Never display an invented title, and do not require another model call just to repair a source label.

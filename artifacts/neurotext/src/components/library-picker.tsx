@@ -6,7 +6,7 @@ import { errorMessage, countWords } from '@/lib/private-utils';
 const MAX_WORDS = 20000;
 const MAX_CHARS = 120000;
 
-export function LibraryPicker({ onInsert, disabled, currentText = '' }: { onInsert: (text: string) => void; disabled?: boolean; currentText?: string }) {
+export function LibraryPicker({ onInsert, disabled, currentText = '', wordLimit = MAX_WORDS, charLimit = MAX_CHARS }: { onInsert: (text: string) => void; disabled?: boolean; currentText?: string; wordLimit?: number; charLimit?: number }) {
   const { data: account } = useGetAccount();
   const signedIn = !!account?.user;
   const lib = useListLibrary({ query: { enabled: signedIn, queryKey: getListLibraryQueryKey() } });
@@ -27,8 +27,8 @@ export function LibraryPicker({ onInsert, disabled, currentText = '' }: { onInse
       const block = docs.map((d) => '=== ' + d.title + ' ===\n\n' + d.text.trim()).join('\n\n');
       const combined = currentText.trim() ? currentText.replace(/\s+$/, '') + '\n\n' + block : block;
       const words = countWords(combined);
-      if (words > MAX_WORDS || combined.length > MAX_CHARS) {
-        setError('Not inserted: the field would contain ' + words.toLocaleString() + ' words / ' + combined.length.toLocaleString() + ' characters. The limit is 20,000 words or 120,000 characters (about 40 pages at 500 words per page). Select fewer documents or shorten the field. Nothing was truncated.');
+      if (words > wordLimit || combined.length > charLimit) {
+        setError('Not inserted: the field would contain ' + words.toLocaleString() + ' words / ' + combined.length.toLocaleString() + ' characters. The limit is ' + wordLimit.toLocaleString() + ' words or ' + charLimit.toLocaleString() + ' characters. Select fewer documents or shorten the field. Nothing was truncated.');
       } else {
         onInsert(block);
         setSelected([]); setOpen(false);
@@ -46,7 +46,7 @@ export function LibraryPicker({ onInsert, disabled, currentText = '' }: { onInse
       </button>
       {open ? (
         <div className="mt-2 rounded-lg border border-border bg-card p-3 space-y-2">
-          <p className="text-muted-foreground">Inserted text is appended. A field may hold up to 20,000 words or 120,000 characters, about 40 pages at 500 words per page.</p>
+          <p className="text-muted-foreground">Inserted text is appended. This field may hold up to {wordLimit.toLocaleString()} words or {charLimit.toLocaleString()} characters, about {(wordLimit / 500).toLocaleString()} pages at 500 words per page.</p>
           {lib.isLoading ? <div className="h-8 rounded bg-muted animate-pulse" />
             : lib.isError ? <p className="text-destructive">{errorMessage(lib.error, 'Could not load library.')} <button type="button" className="underline" onClick={() => lib.refetch()} data-testid="button-retry-picker">Retry</button></p>
             : !docs.length ? <p className="text-muted-foreground">Your library is empty.</p>

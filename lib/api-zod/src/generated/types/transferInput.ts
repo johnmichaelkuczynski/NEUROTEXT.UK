@@ -10,7 +10,7 @@ import type { TransferInputDestinationFunctionId } from './transferInputDestinat
 export interface TransferInput {
   /**
      * @minimum 1
-     * @maximum 13
+     * @maximum 14
      */
   sourceFunctionId: number;
   destinationFunctionId: TransferInputDestinationFunctionId;

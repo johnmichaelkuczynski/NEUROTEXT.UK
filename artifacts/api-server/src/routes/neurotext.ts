@@ -38,6 +38,7 @@ import { RELEVANCE_SYSTEM_PROMPT, relevancePrompt, validateAndRenderRelevance } 
 import { RESEARCH_ADVISOR_SYSTEM_PROMPT, researchAdvisorPrompt, validateAndRenderResearchAdvisor } from "../services/research-advisor";
 import { previewAnswer } from "../services/output-access";
 import { hasPaidAccess, isOwner } from "../services/stripe-billing";
+import { finderSourceError, generateFinderReport, rewriteWithFindings, reportProof, validReportProof } from "../services/relevance-finder";
 
 const router: IRouter = Router();
 
@@ -55,9 +56,10 @@ const FUNCTION_NAMES = [
   "OCR",
   "Relevance Assessment",
   "Research Advisor",
+  "Relevance Finder",
 ] as const;
 
-const MINIMUMS = [4000, 6500, 4000, 4000, 4000, 8000, 4000, 20000, 45000, 100, 100, 100, 100];
+const MINIMUMS = [4000, 6500, 4000, 4000, 4000, 8000, 4000, 20000, 45000, 100, 100, 100, 100, 100];
 const DEFAULT_INSTRUCTION =
   "Turn the source material into a rigorous 5,000-word scholarly essay, replete with relevant legitimate scholarly studies and evidence. Include supported APA-style in-text citations and a complete APA 7 References bibliography. Do not invent sources, quotations, findings, authors, titles, dates, or publication details.";
 const DEFAULT_MODEL = "ZHI 6 · Perplexity Sonar Pro";
@@ -119,7 +121,7 @@ function defaultWorkspace(functionId: number): WorkspacePayload {
     instructions: functionId === 1 ? DEFAULT_INSTRUCTION : "",
     instructionDraft: "",
     sourceDocument: "",
-    targetWords: functionId === 13 ? 1500 : functionId === 11 ? 100 : functionId === 10 || functionId === 12 ? 500 : functionId === 1 ? 5000 : MINIMUMS[functionId - 1] ?? 4000,
+    targetWords: functionId === 13 ? 1500 : functionId === 11 ? 100 : [10, 12, 14].includes(functionId) ? 500 : functionId === 1 ? 5000 : MINIMUMS[functionId - 1] ?? 4000,
     selectedModel: functionId === 11 ? "mathpix" : DEFAULT_MODEL,
     thinker: "Standard NEUROTEXT style",
     quotationCount: 0,
@@ -194,6 +196,7 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
   }
   const data = separateLegacyDraft(parsed.data);
   const paid = req.fullAnswerAccess === true;
+  let completedReportProof = "";
   if (!paid && data.resumeFrom?.trim()) {
     res.status(402).json({ error: "Continuing beyond a preview requires Google sign-in and payment. Start a fresh preview or upgrade." }); return;
   }
@@ -207,7 +210,7 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
       res.status(400).json({ error: "Run a fresh research report rather than resuming an old one." }); return;
     }
   }
-  if (data.functionId === 12) {
+  if (data.functionId === 12 || data.functionId === 14) {
     if (!data.instructionDraft?.trim() || !data.sourceDocument.trim()) {
       res.status(400).json({ error: "Provide your current draft in Box A and the materials to assess in Box B." });
       return;
@@ -216,7 +219,16 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
     if (draftError) { res.status(413).json({ error: `Box A is too large. ${draftError} For a longer draft, assess a chapter or excerpt.` }); return; }
     if (data.resumeFrom?.trim()) { res.status(400).json({ error: "Run a fresh relevance assessment rather than resuming an old report." }); return; }
   }
-  const referenceError = referenceLimitError(data.sourceDocument);
+  if (data.functionId === 14) {
+    if (data.instructions.length > 10000) { res.status(413).json({ error: "Keep optional custom instructions below 10,000 characters." }); return; }
+    if (data.relevanceAction === "rewrite") {
+      if (!paid) { res.status(402).json({ error: "A complete relevance report and Google sign-in plus payment are required for rewriting." }); return; }
+      if (!data.relevanceReport || !data.reportProof || !validReportProof(data, data.relevanceReport, data.reportProof, userId(req) || "")) {
+        res.status(400).json({ error: "Generate a fresh relevance report for these exact documents and instructions before rewriting." }); return;
+      }
+    }
+  }
+  const referenceError = data.functionId === 14 ? finderSourceError(data.sourceDocument) : referenceLimitError(data.sourceDocument);
   if (referenceError) { res.status(413).json({ error: referenceError }); return; }
   if (data.functionId === 7 && !data.sourceDocument.trim()) {
     res.status(400).json({ error: "Paste or upload the document whose author you want profiled." });
@@ -302,7 +314,17 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
       }
     };
 
-    if (!paid && data.targetWords > 4000 && ![10, 12, 13].includes(data.functionId)) {
+    if (data.functionId === 14) {
+      const status = (message: string) => { stream.send({ type: "status", status: "writing", message }); };
+      if (data.relevanceAction === "rewrite") {
+        await rewriteWithFindings(data, data.relevanceReport!, generate, onContent, status, stream.isClosed);
+      } else {
+        const report = await generateFinderReport(data, generate, status, stream.isClosed);
+        if (stream.isClosed()) return;
+        if (paid && report.includes("Specific connections and how to use them")) completedReportProof = reportProof(data, report, userId(req) || "");
+        onContent(report);
+      }
+    } else if (!paid && data.targetWords > 4000 && ![10, 12, 13].includes(data.functionId)) {
       stream.send({ type: "status", status: "writing", message: "Preparing a limited preview; sign in and pay for the complete work" });
       await generate(DOCUMENT_SYSTEM_PROMPT,
         `${promptFor(data, "", data.targetWords)}\nWrite ONLY the opening fragment of this work, not a summary, conclusion or condensed complete answer. Stop after at most 1,000 words.`, onContent, 2200);
@@ -347,7 +369,7 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
     if (stream.isClosed()) return;
 
     const finalWords = wordCount(document);
-    const valid = !paid || [10, 12, 13].includes(data.functionId) ? finalWords > 0 : finalWords >= Math.ceil(data.targetWords * 0.9);
+    const valid = !paid || [10, 12, 13, 14].includes(data.functionId) ? finalWords > 0 : finalWords >= Math.ceil(data.targetWords * 0.9);
     if (!valid) throw new Error(`Generation stopped at ${finalWords} of ${data.targetWords} requested words.`);
     if (!paid) {
       // The full provider response never enters the browser stream, autosave,
@@ -361,6 +383,9 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
       const payload = {
         ...defaultWorkspace(data.functionId), ...data, output: document,
         generationError: "", status: "complete", progress: 100, provider: provider.name,
+        ...(data.functionId === 14 ? data.relevanceAction === "rewrite"
+          ? { relevanceReport: data.relevanceReport, rewrittenDraft: document }
+          : { relevanceReport: document, reportProof: completedReportProof } : {}),
       };
       await recordWork(userId(req), data.functionId, payload);
     }
@@ -398,6 +423,7 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
       provider: provider.name,
       validated: true,
       preview: !paid,
+      ...(completedReportProof ? { reportProof: completedReportProof } : {}),
     });
     stream.finish();
   } catch (error) {
@@ -414,7 +440,7 @@ async function streamGeneration(req: any, res: any, coherence = false): Promise<
 router.get("/functions/workspaces", async (req, res): Promise<void> => {
   res.setHeader("Cache-Control", "no-store");
   if (!userId(req)) {
-    res.json(ListWorkspacesResponse.parse(Array.from({ length: 13 }, (_, index) => normalizeWorkspace(index + 1, {}))));
+    res.json(ListWorkspacesResponse.parse(Array.from({ length: 14 }, (_, index) => normalizeWorkspace(index + 1, {}))));
     return;
   }
   const sid = sessionId(req);
@@ -423,7 +449,7 @@ router.get("/functions/workspaces", async (req, res): Promise<void> => {
     .from(neurotextWorkspaces)
     .where(eq(neurotextWorkspaces.sessionId, sid));
   const rowMap = new Map(rows.map((row) => [row.functionId, row]));
-  const workspaces = Array.from({ length: 13 }, (_, index) => {
+  const workspaces = Array.from({ length: 14 }, (_, index) => {
     const functionId = index + 1;
     const row = rowMap.get(functionId);
     return normalizeWorkspace(functionId, row?.payload, row?.updatedAt);
@@ -517,17 +543,17 @@ router.post("/functions/transfer", (req, res, next) => userId(req) ? privateWrit
     .limit(1) : [];
   const current = normalizeWorkspace(destinationId, existing?.payload, existing?.updatedAt);
   // OCR and relevance-assessment resources supplement existing references.
-  const appendReferences = parsed.data.sourceFunctionId === 11 || destinationId === 12;
+  const appendReferences = parsed.data.sourceFunctionId === 11 || destinationId === 12 || destinationId === 14;
   const sourceDocument = appendReferences && current.sourceDocument.trim()
     ? `${current.sourceDocument.trimEnd()}\n\n${parsed.data.document}`
     : parsed.data.document;
   if (appendReferences) {
-    const error = referenceLimitError(sourceDocument);
+    const error = destinationId === 14 ? finderSourceError(sourceDocument) : referenceLimitError(sourceDocument);
     if (error) { res.status(413).json({ error }); return; }
   }
   const payload = destinationId === 13
     ? { ...current, instructionDraft: [current.instructionDraft, parsed.data.document].filter(Boolean).join("\n\n") }
-    : { ...current, sourceDocument };
+    : { ...current, sourceDocument, ...(destinationId === 14 ? { reportProof: "", rewrittenDraft: "" } : {}) };
   if (destinationId === 13) {
     const error = referenceLimitError([payload.instructions, payload.instructionDraft, payload.sourceDocument].join("\n\n"));
     if (error) { res.status(413).json({ error }); return; }

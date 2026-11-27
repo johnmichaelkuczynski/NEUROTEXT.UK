@@ -10,5 +10,6 @@ export function mergeOcrDestination(destination: FunctionWorkspace, guestSnapsho
       ? { instructionDraft: destination.instructionDraft }
       : { sourceDocument: destination.sourceDocument }),
     updatedAt: destination.updatedAt,
+    ...(destination.functionId === 14 ? { reportProof: '', rewrittenDraft: '' } : {}),
   } : destination;
 }

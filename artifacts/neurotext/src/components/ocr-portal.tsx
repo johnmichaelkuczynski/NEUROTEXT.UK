@@ -38,6 +38,7 @@ const DESTINATIONS: [number, string][] = [
   [7, 'Cognitive Profiling'], [8, "Master's Thesis Creator"], [9, 'Dissertation Creator'], [10, 'Homework'],
   [12, 'Relevance Assessment'],
   [13, 'Research Advisor'],
+  [14, 'Relevance Finder'],
 ];
 
 interface OcrPortalProps {
@@ -240,7 +241,9 @@ export default function OcrPortal({ onClose, onUse }: OcrPortalProps) {
   }, []);
 
   const wordCount = countWords(text);
-  const overTransfer = wordCount > MAX_TRANSFER_WORDS || text.length > MAX_TRANSFER_CHARS;
+  const transferWordLimit = destination === '14' ? 200000 : MAX_TRANSFER_WORDS;
+  const transferCharLimit = destination === '14' ? 1200000 : MAX_TRANSFER_CHARS;
+  const overTransfer = wordCount > transferWordLimit || text.length > transferCharLimit;
 
   const handleCopy = async () => {
     if (!text) return;
@@ -271,7 +274,7 @@ export default function OcrPortal({ onClose, onUse }: OcrPortalProps) {
     const id = parseInt(destination, 10);
     if (!isWritingFunctionId(id) || !text.trim()) return;
     if (overTransfer) {
-      setTransferError('Use no more than 20,000 words or 120,000 characters of source material at a time (about 40 pages). Choose relevant excerpts. Nothing has been truncated.');
+      setTransferError(`Use no more than ${transferWordLimit.toLocaleString()} words or ${transferCharLimit.toLocaleString()} characters for this destination. Choose relevant excerpts. Nothing has been truncated.`);
       return;
     }
     setTransferError('');
@@ -281,8 +284,8 @@ export default function OcrPortal({ onClose, onUse }: OcrPortalProps) {
     const document = existingText?.trim()
       ? `${existingText.trimEnd()}\n\n${text}`
       : text;
-    if (countWords(document) > MAX_TRANSFER_WORDS || document.length > MAX_TRANSFER_CHARS) {
-      setTransferError('The destination already has supporting material. Together with this OCR text it would exceed 20,000 words or 120,000 characters. Shorten the materials first; nothing has been replaced or truncated.');
+    if (countWords(document) > transferWordLimit || document.length > transferCharLimit) {
+      setTransferError(`The combined material would exceed ${transferWordLimit.toLocaleString()} words or ${transferCharLimit.toLocaleString()} characters. Shorten the materials first; nothing has been replaced or truncated.`);
       return;
     }
     transferDoc.mutate({ data: { sourceFunctionId: FUNCTION_ID, destinationFunctionId: id, document } }, {
@@ -468,7 +471,7 @@ export default function OcrPortal({ onClose, onUse }: OcrPortalProps) {
               <Button className="w-full h-9 text-xs font-semibold" disabled={!destination || !text.trim() || transferDoc.isPending || busy} onClick={handleTransfer} data-testid="button-ocr-transfer">
                 {transferDoc.isPending ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <ArrowRight className="w-3 h-3 mr-2" />}Send and open
               </Button>
-              {overTransfer && !transferError && <p className="text-xs text-muted-foreground">Over the 20,000-word / 120,000-character transfer limit. Edit down to relevant excerpts first.</p>}
+              {overTransfer && !transferError && <p className="text-xs text-muted-foreground">Over the {transferWordLimit.toLocaleString()}-word / {transferCharLimit.toLocaleString()}-character transfer limit. Edit down to relevant excerpts first.</p>}
               {transferError && <p className="text-xs text-destructive" role="alert" data-testid="error-ocr-transfer">{transferError}</p>}
             </div>
 

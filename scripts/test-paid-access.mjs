@@ -41,6 +41,7 @@ try {
       const {default:app} = await import("./artifacts/api-server/src/app.ts");
       app.post("/__billing_fixture", (req,res) => { Object.assign(fixture,req.body);res.json(fixture); });
       const server=app.listen(0,"127.0.0.1",()=>console.log("BILLING_TEST_PORT="+server.address().port));
+      app.post("/__billing_fixture_stop",(_req,res)=>{res.json({ok:true});setTimeout(()=>server.close(()=>process.exit(0)),30);});
       process.on("SIGTERM",()=>server.close(()=>process.exit(0)));
     ` },
     outfile: entry, bundle: true, format: "esm", platform: "node", external: ["pg-native"],
@@ -102,6 +103,16 @@ try {
   assert(!long.text.includes("FULL_ANSWER_TAIL"));
   assert.equal((await request("/api/functions/stream", userCookie, { ...input, resumeFrom: preview.text })).status, 402);
   assert((await generate(ownerCookie)).text.includes("FULL_ANSWER_TAIL"), "Owner must receive 100% of the answer");
+  const finderInput = { functionId: 14, instructionDraft: "Knowledge need not always depend on inference. Perception supplies knowledge directly.",
+    sourceDocument: "Direct awareness is not an inference from prior beliefs. Inferential knowledge depends on other propositions.", instructions: "Focus on direct versus inferential knowledge.", targetWords: 500 };
+  const found = await generate(ownerCookie, finderInput);
+  assert(found.text.includes("How to use it:"));
+  assert(found.done.reportProof);
+  const rewritten = await generate(ownerCookie, { ...finderInput, relevanceAction: "rewrite", relevanceReport: found.text, reportProof: found.done.reportProof });
+  assert(rewritten.text.includes(finderInput.instructionDraft));
+  assert(rewritten.text.includes("The supplied source (Box B)"));
+  assert.equal((await request("/api/functions/stream", ownerCookie, { ...input, ...finderInput, instructions: "Changed instructions", relevanceAction: "rewrite", relevanceReport: found.text, reportProof: found.done.reportProof })).status, 400);
+  assert.equal((await request("/api/functions/stream", userCookie, { ...input, ...finderInput, relevanceAction: "rewrite", relevanceReport: found.text, reportProof: found.done.reportProof })).status, 402);
   const checkout = await request("/api/billing/checkout", userCookie, {});
   assert.equal(checkout.status, 200);
   assert.match((await checkout.json()).url, /^https:\/\/checkout\.stripe\.com\//u);
@@ -128,7 +139,7 @@ try {
   if (process.argv.includes("--serve")) {
     await writeFile("/tmp/neurotext-billing-browser-fixture.json", JSON.stringify({ base, ownerCookie, userCookie }), { mode: 0o600 });
     console.log("BILLING_BROWSER_FIXTURE_READY");
-    await new Promise(resolve => process.once("SIGTERM", resolve));
+    await new Promise(resolve => { process.once("SIGTERM", resolve); child.once("exit", resolve); });
   }
 } finally {
   if (child && child.exitCode === null) {

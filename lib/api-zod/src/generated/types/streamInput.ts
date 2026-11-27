@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { StreamInputFunctionId } from './streamInputFunctionId';
+import type { StreamInputRelevanceAction } from './streamInputRelevanceAction';
 
 export interface StreamInput {
   functionId: StreamInputFunctionId;
@@ -27,4 +28,9 @@ export interface StreamInput {
   quotationCount?: number;
   resumeFrom?: string;
   diagnostic?: boolean;
+  relevanceAction?: StreamInputRelevanceAction;
+  /** @maxLength 40000 */
+  relevanceReport?: string;
+  /** @maxLength 128 */
+  reportProof?: string;
 }

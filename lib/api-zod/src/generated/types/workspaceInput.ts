@@ -25,6 +25,12 @@ export interface WorkspaceInput {
      */
   quotationCount: number;
   output: string;
+  /** @maxLength 40000 */
+  relevanceReport?: string;
+  /** @maxLength 750000 */
+  rewrittenDraft?: string;
+  /** @maxLength 128 */
+  reportProof?: string;
   generationError?: string;
   skeleton: string;
   /**

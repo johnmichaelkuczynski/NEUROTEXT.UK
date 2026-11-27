@@ -19,6 +19,7 @@ type StreamEvent =
       target: number;
       provider: string;
       validated: boolean;
+      reportProof?: string;
     }
   | { type: 'error'; message: string; code: string };
 
@@ -38,6 +39,7 @@ export function useFunctionStream() {
   const [error, setError] = useState<string | null>(null);
   const [provider, setProvider] = useState('');
   const [progress, setProgress] = useState(0);
+  const [message, setMessage] = useState('');
   const abortControllerRef = useRef<AbortController | null>(null);
   useEffect(() => () => abortControllerRef.current?.abort(), []);
 
@@ -46,6 +48,7 @@ export function useFunctionStream() {
       input: StreamInput,
       onChunk?: (chunk: string) => void,
       endpoint = '/api/functions/stream',
+      onComplete?: (event: Extract<StreamEvent, { type: 'complete' }>) => void,
     ) => {
       abortControllerRef.current?.abort();
       const controller = new AbortController();
@@ -55,6 +58,7 @@ export function useFunctionStream() {
       setError(null);
       setProvider('');
       setProgress(0);
+      setMessage('');
 
       let finalOutput = input.resumeFrom ?? '';
       let receivedCompletion = false;
@@ -97,6 +101,7 @@ export function useFunctionStream() {
             const event = JSON.parse(dataLine.slice(6)) as StreamEvent;
             if (event.type === 'status') {
               setStatus(event.status);
+              setMessage(event.message || '');
             } else if (event.type === 'token') {
               finalOutput += event.content;
               setOutput((previous) => previous + event.content);
@@ -104,6 +109,7 @@ export function useFunctionStream() {
             } else if (event.type === 'progress') {
               setProgress(event.percent);
             } else if (event.type === 'complete') {
+              onComplete?.(event);
               receivedCompletion = event.validated;
               setProvider(event.provider);
               setProgress(100);
@@ -152,6 +158,7 @@ export function useFunctionStream() {
     error,
     provider,
     progress,
+    message,
     setOutput,
     setStatus,
   };

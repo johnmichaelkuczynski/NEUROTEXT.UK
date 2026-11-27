@@ -21,6 +21,7 @@ const FUNCTION_LABELS: Record<number, string> = {
   11: 'OCR',
   12: 'Relevance Assessment',
   13: 'Research Advisor',
+  14: 'Relevance Finder',
 };
 
 export default function Dashboard() {
@@ -32,7 +33,7 @@ export default function Dashboard() {
   const [selectedFunctionId, setSelectedFunctionId] = useState<number | null>(() => {
     const id = Number(sessionStorage.getItem('neurotext-payment-function'));
     sessionStorage.removeItem('neurotext-payment-function');
-    return Number.isInteger(id) && id >= 1 && id <= 13 ? id : null;
+    return Number.isInteger(id) && id >= 1 && id <= 14 ? id : null;
   });
 
   if (isLoading) {
@@ -76,7 +77,7 @@ export default function Dashboard() {
             ? "grid-cols-2 sm:grid-cols-5 opacity-70 hover:opacity-100 transition-opacity" 
             : "grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
         )}>
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map((id) => {
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map((id) => {
             const workspace = workspaceMap.get(id);
             const isSelected = selectedFunctionId === id;
             const hasData = workspace && (workspace.output || workspace.sourceDocument || workspace.status !== 'idle');
@@ -111,7 +112,7 @@ export default function Dashboard() {
 
         {selectedFunctionId && (
           <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {selectedFunctionId === 12 ? <RelevancePortal onClose={() => setSelectedFunctionId(null)} /> : selectedFunctionId === 11 ? <OcrPortal onClose={() => setSelectedFunctionId(null)} onUse={id => setSelectedFunctionId(id)} /> : <FunctionPortal
+            {selectedFunctionId === 12 || selectedFunctionId === 14 ? <RelevancePortal key={selectedFunctionId} functionId={selectedFunctionId} onClose={() => setSelectedFunctionId(null)} /> : selectedFunctionId === 11 ? <OcrPortal onClose={() => setSelectedFunctionId(null)} onUse={id => setSelectedFunctionId(id)} /> : <FunctionPortal
               key={selectedFunctionId}
               functionId={selectedFunctionId} 
               workspaces={workspaces || []}

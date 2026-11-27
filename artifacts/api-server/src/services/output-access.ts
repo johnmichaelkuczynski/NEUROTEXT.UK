@@ -25,7 +25,8 @@ export function maskAnswerJson(value: any): any {
   if (!value || typeof value !== "object") return value;
   const result = { ...value };
   for (const [key, item] of Object.entries(result)) {
-    if ((key === "output" || key === "text") && typeof item === "string") result[key] = visibleStoredAnswer(item, Number(result.targetWords) || 0);
+    if (["output", "text", "relevanceReport", "rewrittenDraft"].includes(key) && typeof item === "string") result[key] = visibleStoredAnswer(item, Number(result.targetWords) || 0);
+    else if (key === "reportProof") result[key] = "";
     else if (key === "skeleton") result[key] = "";
     else if (item && typeof item === "object") result[key] = maskAnswerJson(item);
   }

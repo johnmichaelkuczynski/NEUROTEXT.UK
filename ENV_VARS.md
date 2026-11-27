@@ -189,3 +189,24 @@ Billing uses the standard Stripe SDK and the external `DATABASE_URL`, not
 Replit-managed credential discovery. The startup migration adds only the
 application's account-to-Stripe/access mapping and does not replace the database
 or create a duplicate product catalogue. Existing documents are preserved.
+
+## Function 14: Relevance Finder
+
+No additional provider keys are required. It uses the existing model selector
+and defaults to Perplexity. `SESSION_SECRET` also signs report proofs so a
+rewrite cannot use forged findings or a report for different inputs/accounts.
+Rotating that secret requires generating a fresh report before rewriting.
+
+The draft accepts up to 20,000 words / 120,000 characters. The relevant text
+accepts up to 200,000 words / 1,200,000 characters (about 400 pages), scanned
+in bounded sections and consolidated from quotation-verified findings.
+File uploads remain limited to 10 MiB each. Custom instructions are optional
+and limited to 10,000 characters. These larger source limits apply only to
+Function 14, including its library picker and transfers; other functions retain
+their existing limits. Nothing is silently truncated.
+
+The report and optional rewritten draft are stored separately from the original
+draft in existing private workspace/history storage. No database replacement
+or destructive migration is required. Rewriting requires a complete, verified
+report and existing full-answer access; development and designated production
+owner exemptions are unchanged.

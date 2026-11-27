@@ -8,5 +8,6 @@
 - [Relevance assessment roles](relevance-assessment-input-roles.md) — Function 12 compares draft A with candidate materials B and reports relevance with bulleted supporting quotations.
 - [Coolify public domain](coolify-public-domain.md) — the user specified https://neurotext.uk as NEUROTEXT's live Coolify URL.
 - [Research advisor purpose](research-advisor-purpose.md) — ideas or rough drafts lead to canonical books and substantive issues, including objections and related non-objections.
+- [Relevance Finder purpose](relevance-finder-purpose.md) — Function 14 explains known relevance with quotations, then optionally rewrites the draft; keep it separate from Function 12.
 - [Owner access](owner-access.md) — development always has full access without sign-in/payment; the designated verified production owner also receives full access.
 - [Portable Coolify billing](coolify-billing.md) — direct Stripe SDK and standard environment variables; never introduce a Replit-only billing runtime.

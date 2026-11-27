@@ -381,7 +381,7 @@ components:
       schema:
         type: integer
         minimum: 1
-        maximum: 13
+        maximum: 14
   schemas:
     BillingState:
       type: object
@@ -420,7 +420,7 @@ components:
       type: object
       required: [functionId, workspace]
       properties:
-        functionId: { type: integer, minimum: 1, maximum: 13 }
+        functionId: { type: integer, minimum: 1, maximum: 14 }
         workspace: { $ref: "#/components/schemas/WorkspaceInput" }
     ActionResult:
       type: object
@@ -555,7 +555,7 @@ components:
          thinker, quotationCount, output, skeleton, progress, status, provider,
          updatedAt]
       properties:
-        functionId: { type: integer, minimum: 1, maximum: 13 }
+        functionId: { type: integer, minimum: 1, maximum: 14 }
         instructions: { type: string }
         instructionDraft:
           type: string
@@ -566,6 +566,9 @@ components:
         thinker: { type: string }
         quotationCount: { type: integer, minimum: 0, maximum: 20 }
         output: { type: string }
+        relevanceReport: { type: string }
+        rewrittenDraft: { type: string }
+        reportProof: { type: string }
         generationError: { type: string }
         skeleton: { type: string }
         progress: { type: integer, minimum: 0, maximum: 100 }
@@ -590,6 +593,9 @@ components:
         thinker: { type: string }
         quotationCount: { type: integer, minimum: 0, maximum: 20 }
         output: { type: string }
+        relevanceReport: { type: string, maxLength: 40000 }
+        rewrittenDraft: { type: string, maxLength: 750000 }
+        reportProof: { type: string, maxLength: 128 }
         generationError: { type: string }
         skeleton: { type: string }
         progress: { type: integer, minimum: 0, maximum: 100 }
@@ -601,8 +607,8 @@ components:
       type: object
       required: [sourceFunctionId, destinationFunctionId, document]
       properties:
-        sourceFunctionId: { type: integer, minimum: 1, maximum: 13 }
-        destinationFunctionId: { type: integer, enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13] }
+        sourceFunctionId: { type: integer, minimum: 1, maximum: 14 }
+        destinationFunctionId: { type: integer, enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14] }
         document: { type: string, minLength: 1 }
     TransferResult:
       type: object
@@ -640,7 +646,7 @@ components:
       type: object
       required: [functionId, instructions, sourceDocument, targetWords, selectedModel]
       properties:
-        functionId: { type: integer, enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13] }
+        functionId: { type: integer, enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14] }
         instructions: { type: string }
         instructionDraft:
           type: string
@@ -652,6 +658,9 @@ components:
         quotationCount: { type: integer, minimum: 0, maximum: 20 }
         resumeFrom: { type: string }
         diagnostic: { type: boolean }
+        relevanceAction: { type: string, enum: [report, rewrite] }
+        relevanceReport: { type: string, maxLength: 40000 }
+        reportProof: { type: string, maxLength: 128 }
     DiagnosticResult:
       type: object
       required: [id, functionId, functionName, status, elapsedMs, firstWordMs, wordCount, createdAt]

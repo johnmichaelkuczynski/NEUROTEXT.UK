@@ -23,7 +23,6 @@ import { errorMessage, countWords, downloadText } from '@/lib/private-utils';
 import { DOCUMENT_UPLOAD_ACCEPT, readDocumentUpload } from '@/lib/document-upload';
 import { useFunctionStream, GenerationFailure } from '@/hooks/use-function-stream';
 
-const FUNCTION_ID = 12;
 const MAX_WORDS = 20_000;
 const MAX_CHARS = 120_000;
 const TARGET_WORDS = 500;
@@ -32,17 +31,19 @@ const THINKER = 'Standard NEUROTEXT style';
 const SAVE_DELAY = 1000;
 
 type FieldKey = 'a' | 'b';
-type Local = { a: string; b: string; model: string; report: string; error: string; provider: string };
+type Local = { a: string; b: string; model: string; report: string; error: string; provider: string;
+  instructions: string; rewrite: string; proof: string };
+const emptyLocal = (): Local => ({ a: '', b: '', model: DEFAULT_MODEL, report: '', error: '', provider: '', instructions: '', rewrite: '', proof: '' });
 
-const overLimit = (t: string) => countWords(t) > MAX_WORDS || t.length > MAX_CHARS;
-const limitMessage = (t: string) =>
-  `Not added: the field would contain ${countWords(t).toLocaleString()} words / ${t.length.toLocaleString()} characters. The limit is 20,000 words or 120,000 characters. For long drafts, use individual chapters or excerpts. Existing content was kept; nothing was truncated.`;
+const overLimit = (t: string, large = false) => countWords(t) > (large ? 200000 : MAX_WORDS) || t.length > (large ? 1200000 : MAX_CHARS);
+const limitMessage = (t: string, large = false) =>
+  `Not added: the field would contain ${countWords(t).toLocaleString()} words / ${t.length.toLocaleString()} characters. The limit is ${large ? '200,000 words or 1,200,000 characters' : '20,000 words or 120,000 characters'}. Use a smaller volume or selected chapters. Existing content was kept; nothing was truncated.`;
 const appendBlock = (current: string, block: string) =>
   current.trim() ? `${current.replace(/\s+$/, '')}\n\n${block}` : block;
 
 function toInput(s: Local): WorkspaceInput {
   return {
-    instructions: '',
+    instructions: s.instructions,
     instructionDraft: s.a,
     sourceDocument: s.b,
     targetWords: TARGET_WORDS,
@@ -50,6 +51,9 @@ function toInput(s: Local): WorkspaceInput {
     thinker: THINKER,
     quotationCount: 0,
     output: s.report,
+    relevanceReport: s.report,
+    rewrittenDraft: s.rewrite,
+    reportProof: s.proof,
     generationError: s.error,
     skeleton: '',
     progress: s.report.trim() ? 100 : 0,
@@ -58,7 +62,10 @@ function toInput(s: Local): WorkspaceInput {
   };
 }
 
-export default function RelevancePortal({ onClose }: { onClose: () => void }) {
+export default function RelevancePortal({ onClose, functionId = 12 }: { onClose: () => void; functionId?: 12 | 14 }) {
+  const FUNCTION_ID = functionId;
+  const finder = functionId === 14;
+  const largeSource = (key: FieldKey) => finder && key === 'b';
   const queryClient = useQueryClient();
   const account = useGetAccount();
   const signedIn = !!account.data?.user;
@@ -82,18 +89,22 @@ export default function RelevancePortal({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState('');
   const [provider, setProvider] = useState('');
   const [running, setRunning] = useState(false);
+  const [instructions, setInstructions] = useState('');
+  const [rewrite, setRewrite] = useState('');
+  const [proof, setProof] = useState('');
+  const [action, setAction] = useState<'report' | 'rewrite'>('report');
   const [saveError, setSaveError] = useState('');
   const [fieldError, setFieldError] = useState<Record<FieldKey, string>>({ a: '', b: '' });
   const [uploading, setUploading] = useState<Record<FieldKey, string>>({ a: '', b: '' });
-  usePaymentDraft(FUNCTION_ID, { instructions: '', instructionDraft: a, sourceDocument: b, targetWords: 500,
-    selectedModel: model, output: report, status: running || Object.values(uploading).some(Boolean) ? 'writing' : report ? 'complete' : 'idle', provider });
+  usePaymentDraft(FUNCTION_ID, { ...toInput({ a, b, instructions, rewrite, proof, report, model, error, provider }),
+    status: running || Object.values(uploading).some(Boolean) ? 'writing' : report ? 'complete' : 'idle' });
   const [dragging, setDragging] = useState<FieldKey | null>(null);
   const [isResetting, setIsResetting] = useState(false);
 
   const initialized = useRef(false);
   const resetting = useRef(false);
   const mounted = useRef(true);
-  const local = useRef<Local>({ a: '', b: '', model: DEFAULT_MODEL, report: '', error: '', provider: '' });
+  const local = useRef<Local>(emptyLocal());
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pending = useRef<WorkspaceInput | null>(null);
   const controllers = useRef(new Set<AbortController>());
@@ -111,10 +122,12 @@ export default function RelevancePortal({ onClose }: { onClose: () => void }) {
     if (!w) return;
     const s: Local = {
       a: w.instructionDraft || '', b: w.sourceDocument || '', model: w.selectedModel || DEFAULT_MODEL,
-      report: w.output || '', error: w.generationError || '', provider: w.provider || '',
+      report: finder ? w.relevanceReport || w.output || '' : w.output || '', error: w.generationError || '', provider: w.provider || '',
+      instructions: w.instructions || '', rewrite: w.rewrittenDraft || '', proof: w.reportProof || '',
     };
     local.current = s;
     setA(s.a); setB(s.b); setModel(s.model); setReport(s.report); setError(s.error); setProvider(s.provider);
+    setInstructions(s.instructions); setRewrite(s.rewrite); setProof(s.proof);
   }, [account.isLoading, signedIn, workspace.isLoading, workspace.data]);
 
   const flush = () => {
@@ -158,7 +171,8 @@ export default function RelevancePortal({ onClose }: { onClose: () => void }) {
   }, []);
 
   const setField = (key: FieldKey, value: string) => {
-    if (key === 'a') { setA(value); commit({ a: value }); } else { setB(value); commit({ b: value }); }
+    setProof(''); setRewrite('');
+    if (key === 'a') { setA(value); commit({ a: value, proof: '', rewrite: '' }); } else { setB(value); commit({ b: value, proof: '', rewrite: '' }); }
   };
   const fieldValue = (key: FieldKey) => (key === 'a' ? local.current.a : local.current.b);
 
@@ -175,7 +189,7 @@ export default function RelevancePortal({ onClose }: { onClose: () => void }) {
         if (controller.signal.aborted) return;
         if (!text) throw new Error(`${file.name} contained no readable text.`);
         const next = appendBlock(current, `=== ${file.name} ===\n\n${text}`);
-        if (overLimit(next)) { setFieldError(e => ({ ...e, [key]: `${file.name}: ${limitMessage(next)}` })); return; }
+        if (overLimit(next, largeSource(key))) { setFieldError(e => ({ ...e, [key]: `${file.name}: ${limitMessage(next, largeSource(key))}` })); return; }
         current = next;
         setField(key, current);
       }
@@ -190,40 +204,52 @@ export default function RelevancePortal({ onClose }: { onClose: () => void }) {
 
   const insertLibrary = (key: FieldKey, block: string) => {
     const next = appendBlock(fieldValue(key), block);
-    if (overLimit(next)) { setFieldError(e => ({ ...e, [key]: limitMessage(next) })); return; }
+    if (overLimit(next, largeSource(key))) { setFieldError(e => ({ ...e, [key]: limitMessage(next, largeSource(key)) })); return; }
     setFieldError(e => ({ ...e, [key]: '' }));
     setField(key, next);
   };
 
   const aOver = overLimit(a);
-  const bOver = overLimit(b);
+  const bOver = overLimit(b, finder);
   const busyUpload = !!uploading.a || !!uploading.b;
   const canRun = !!a.trim() && !!b.trim() && !aOver && !bOver && !running && !busyUpload && !isResetting;
 
-  const handleRun = async () => {
-    if (!canRun) return;
+  const handleRun = async (nextAction: 'report' | 'rewrite' = 'report') => {
+    if (!canRun || (nextAction === 'rewrite' && !local.current.proof)) return;
+    setAction(nextAction);
     flush();
     setRunning(true);
     setError('');
     try {
+      let receivedProof = '';
       const text = await stream.startStream({
         functionId: FUNCTION_ID,
-        instructions: '',
+        instructions: local.current.instructions,
         instructionDraft: local.current.a,
         sourceDocument: local.current.b,
-        targetWords: TARGET_WORDS,
+        targetWords: nextAction === 'rewrite' ? Math.max(100, countWords(local.current.a)) : TARGET_WORDS,
         selectedModel: local.current.model,
         thinker: THINKER,
         quotationCount: 0,
-      });
+        ...(finder ? { relevanceAction: nextAction, relevanceReport: local.current.report, reportProof: local.current.proof } : {}),
+      }, undefined, undefined, event => { receivedProof = event.reportProof || ''; });
       if (!mounted.current || resetting.current) return;
-      setReport(text); setProvider(local.current.model); setError('');
-      commit({ report: text, error: '', provider: local.current.model }, true);
+      setProvider(local.current.model); setError('');
+      if (nextAction === 'rewrite') {
+        setRewrite(text);
+        commit({ rewrite: text, error: '', provider: local.current.model }, true);
+      } else {
+        setReport(text); setProof(receivedProof); setRewrite('');
+        commit({ report: text, proof: receivedProof, rewrite: '', error: '', provider: local.current.model }, true);
+      }
     } catch (e) {
       if (!mounted.current || resetting.current) return;
       const msg = e instanceof GenerationFailure ? e.message : errorMessage(e, 'Relevance assessment failed.');
       setError(msg);
-      commit({ error: msg }, true);
+      if (nextAction === 'rewrite' && e instanceof GenerationFailure && e.partialOutput) {
+        setRewrite(e.partialOutput);
+        commit({ rewrite: e.partialOutput, error: msg }, true);
+      } else commit({ error: msg }, true);
     } finally {
       if (mounted.current) setRunning(false);
     }
@@ -240,7 +266,7 @@ export default function RelevancePortal({ onClose }: { onClose: () => void }) {
     stream.interrupt();
     if (!signedIn) { queryClient.removeQueries({ queryKey: getGetWorkspaceQueryKey(FUNCTION_ID) }); window.location.reload(); return; }
     try {
-      await saveWorkspace.mutateAsync({ functionId: FUNCTION_ID, data: toInput({ a: '', b: '', model: DEFAULT_MODEL, report: '', error: '', provider: '' }) });
+      await saveWorkspace.mutateAsync({ functionId: FUNCTION_ID, data: toInput(emptyLocal()) });
       window.location.reload();
     } catch (e) {
       resetting.current = false;
@@ -252,7 +278,8 @@ export default function RelevancePortal({ onClose }: { onClose: () => void }) {
 
   const handleClose = () => { flush(); onClose(); };
 
-  const shown = running ? stream.output : report;
+  const shown = running && action === 'report' ? stream.output : report;
+  const shownRewrite = running && action === 'rewrite' ? stream.output : rewrite;
   const handleCopy = async () => {
     if (!shown) return;
     try { await navigator.clipboard.writeText(shown); toast.success('Copied to clipboard'); }
@@ -312,21 +339,24 @@ export default function RelevancePortal({ onClose }: { onClose: () => void }) {
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 mt-2 px-1">
           <span className={`text-xs font-medium ${over ? 'text-destructive' : 'text-muted-foreground'}`} data-testid={`text-relevance-count-${key}`}>
-            {words.toLocaleString()} / 20,000 words · {value.length.toLocaleString()} / 120,000 characters
+            {words.toLocaleString()} / {largeSource(key) ? '200,000' : '20,000'} words · {value.length.toLocaleString()} / {largeSource(key) ? '1,200,000' : '120,000'} characters
           </span>
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" disabled={running || !!uploading[key] || isResetting} onClick={() => input.current?.click()}
               className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-xs font-semibold hover:bg-muted disabled:opacity-50" data-testid={`button-relevance-upload-${key}`}>
               {uploading[key] ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />} Upload
             </button>
-            <LibraryPicker disabled={running || !!uploading[key] || isResetting} currentText={value} onInsert={block => insertLibrary(key, block)} />
+            <LibraryPicker disabled={running || !!uploading[key] || isResetting} currentText={value}
+              wordLimit={largeSource(key) ? 200000 : MAX_WORDS} charLimit={largeSource(key) ? 1200000 : MAX_CHARS}
+              onInsert={block => insertLibrary(key, block)} />
           </div>
         </div>
         <input ref={input} type="file" multiple className="hidden" accept={DOCUMENT_UPLOAD_ACCEPT} aria-label={`Upload files to ${title}`}
           data-testid={`input-relevance-file-${key}`}
           onChange={e => { const files = Array.from(e.target.files || []); e.target.value = ''; void handleFiles(key, files); }} />
         {uploading[key] && <p className="text-xs text-muted-foreground mt-2" data-testid={`status-relevance-upload-${key}`}>{uploading[key]}</p>}
-        {over && !fieldError[key] && <p className="text-xs text-destructive mt-2" data-testid={`error-relevance-limit-${key}`}>This field exceeds 20,000 words or 120,000 characters. For long drafts, use individual chapters or excerpts.</p>}
+        {over && !fieldError[key] && <p className="text-xs text-destructive mt-2" data-testid={`error-relevance-limit-${key}`}>{limitMessage(value, largeSource(key))}</p>}
+        {finder && <p className="text-xs text-muted-foreground mt-2">{key === 'b' ? 'Up to 200,000 words or 1,200,000 characters (about 400 pages), scanned in sections. Each uploaded file is limited to 10 MiB. Nothing is silently truncated.' : 'Up to 20,000 words or 120,000 characters (about 40 pages). Use selected chapters for a longer draft.'}</p>}
         {fieldError[key] && <p className="text-xs text-destructive mt-2" role="alert" data-testid={`error-relevance-field-${key}`}>{fieldError[key]}</p>}
       </section>
     );
@@ -341,10 +371,10 @@ export default function RelevancePortal({ onClose }: { onClose: () => void }) {
       <div className="p-6 md:p-8">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
           <div>
-            <div className="text-[11px] font-bold text-primary tracking-widest uppercase mb-2">Function 12</div>
-            <h3 className="text-2xl font-bold text-foreground">Relevance Assessment</h3>
+            <div className="text-[11px] font-bold text-primary tracking-widest uppercase mb-2">Function {functionId}</div>
+            <h3 className="text-2xl font-bold text-foreground">{finder ? 'Relevance Finder' : 'Relevance Assessment'}</h3>
             <p className="text-muted-foreground mt-2 text-sm max-w-2xl">
-              Judge whether a body of material bears on the work you are writing. Both boxes are treated as content, not instructions. The result is a short report with a verdict, a summary and the relevant points, each backed by verbatim quotations.
+              {finder ? 'Find exactly how a relevant text bears on your unfinished work, with verified supporting quotations. Read the report first; then optionally rewrite your draft to incorporate its findings. Your original draft is kept separate.' : 'Judge whether a body of material bears on the work you are writing. Both boxes are treated as content, not instructions. The result is a short report with a verdict, a summary and the relevant points, each backed by verbatim quotations.'}
             </p>
           </div>
           <div className="flex gap-2 self-start shrink-0">
@@ -362,10 +392,16 @@ export default function RelevancePortal({ onClose }: { onClose: () => void }) {
             {renderField('a', 'Box A • Current draft', 'Your current draft',
               'Essay, thesis, dissertation, homework or any work in progress. Type, paste, drop files or upload.',
               'Paste or type your draft here, or drop files...')}
-            {renderField('b', 'Box B • Materials', 'Materials to assess',
-              'Sources whose relevance to your draft should be judged. Multiple files keep their file labels.',
+            {renderField('b', 'Box B • Materials', finder ? 'The relevant text' : 'Materials to assess',
+              finder ? 'The author’s text you want to use. Find its specific connections to your draft. Use chapters or excerpts for long treatises; no input is silently truncated.' : 'Sources whose relevance to your draft should be judged. Multiple files keep their file labels.',
               'Paste the materials here, or drop files...')}
           </div>
+          {finder && <section className="space-y-2">
+            <Label htmlFor="finder-instructions">Custom instructions (optional)</Label>
+            <Textarea id="finder-instructions" data-testid="textarea-finder-instructions" value={instructions} readOnly={running || isResetting} maxLength={10000}
+              placeholder="For example: focus on objections to my account of causation, conceptual distinctions, or evidence I should incorporate."
+              onChange={e => { setInstructions(e.target.value); setProof(''); setRewrite(''); commit({ instructions: e.target.value, proof: '', rewrite: '' }); }} />
+          </section>}
 
           <div className="flex flex-col md:flex-row md:items-end gap-4">
             <div className="space-y-2 md:w-80">
@@ -384,12 +420,12 @@ export default function RelevancePortal({ onClose }: { onClose: () => void }) {
             </div>
             <Button onClick={() => void handleRun()} disabled={!canRun} className="h-10 px-6 text-sm font-semibold" data-testid="button-relevance-run">
               {running ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
-              {running ? 'Assessing...' : 'Assess relevance'}
+              {running ? 'Working...' : finder ? 'Find relevance' : 'Assess relevance'}
             </Button>
-            <p className="text-xs text-muted-foreground md:pb-2">Brief report, about 500 words.{!signedIn && ' Sign in to keep this work; otherwise it is lost on reload.'}</p>
+            <p className="text-xs text-muted-foreground md:pb-2">{finder ? 'Source-grounded report with exact quotations; rewriting is a separate action.' : 'Brief report, about 500 words.'}{!signedIn && ' Sign in to keep this work; otherwise it is lost on reload.'}</p>
           </div>
 
-          {running && <p className="text-xs text-muted-foreground" data-testid="status-relevance-stream">{statusText}</p>}
+          {running && <p className="text-xs text-muted-foreground" data-testid="status-relevance-stream">{stream.message || statusText}</p>}
           {error && <p className="text-xs text-destructive" role="alert" data-testid="error-relevance-run">{error}</p>}
           {saveError && <p className="text-xs text-destructive" role="alert" data-testid="error-relevance-save">{saveError}</p>}
 
@@ -400,7 +436,7 @@ export default function RelevancePortal({ onClose }: { onClose: () => void }) {
                 <Button variant="outline" size="sm" className="h-8 text-xs" disabled={!shown} onClick={() => void handleCopy()} data-testid="button-relevance-copy">
                   <Copy className="w-3 h-3 mr-2" />Copy
                 </Button>
-                <Button variant="outline" size="sm" className="h-8 text-xs" disabled={!shown} onClick={() => downloadText('relevance-assessment', shown)} data-testid="button-relevance-download">
+                <Button variant="outline" size="sm" className="h-8 text-xs" disabled={!shown} onClick={() => downloadText(finder ? 'relevance-finder-report' : 'relevance-assessment', shown)} data-testid="button-relevance-download">
                   <Download className="w-3 h-3 mr-2" />Download
                 </Button>
               </div>
@@ -418,6 +454,22 @@ export default function RelevancePortal({ onClose }: { onClose: () => void }) {
             )}
             {provider && !running && report && <p className="text-[11px] text-muted-foreground mt-4" data-testid="text-relevance-provider">{provider}</p>}
           </section>
+          {finder && <section className="rounded-xl border border-border p-5 md:p-6 space-y-4" data-testid="result-finder-rewrite">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Label>Optional: incorporate the findings into your draft</Label>
+              <Button disabled={!canRun || !proof || !report} onClick={() => void handleRun('rewrite')} data-testid="button-finder-rewrite">
+                {running && action === 'rewrite' && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Rewrite draft using findings
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Your original draft and relevance report remain unchanged. Editing either document or the instructions requires a new report before rewriting. A complete report and full-answer access are required.</p>
+            {shownRewrite ? <>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => void navigator.clipboard.writeText(shownRewrite).then(() => toast.success('Copied rewritten draft')).catch(() => setError('Could not copy. Select and copy the text manually.'))}>Copy rewritten draft</Button>
+                <Button size="sm" variant="outline" onClick={() => downloadText('relevance-finder-rewritten-draft', shownRewrite)}>Download rewritten draft</Button>
+              </div>
+              <div className="text-sm whitespace-pre-wrap break-words leading-relaxed" data-testid="text-finder-rewrite"><MathText text={shownRewrite} /></div>
+            </> : <p className="text-sm text-muted-foreground">Generate and review the report first. A rewrite is produced only when you press the rewrite button.</p>}
+          </section>}
         </div>
       </div>
     </Card>

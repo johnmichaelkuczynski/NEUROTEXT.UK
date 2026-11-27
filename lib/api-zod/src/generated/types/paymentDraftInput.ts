@@ -10,7 +10,7 @@ import type { WorkspaceInput } from './workspaceInput';
 export interface PaymentDraftInput {
   /**
      * @minimum 1
-     * @maximum 13
+     * @maximum 14
      */
   functionId: number;
   workspace: WorkspaceInput;

@@ -62,6 +62,12 @@ export interface WorkspaceInput {
      */
   quotationCount: number;
   output: string;
+  /** @maxLength 40000 */
+  relevanceReport?: string;
+  /** @maxLength 750000 */
+  rewrittenDraft?: string;
+  /** @maxLength 128 */
+  reportProof?: string;
   generationError?: string;
   skeleton: string;
   /**
@@ -76,7 +82,7 @@ export interface WorkspaceInput {
 export interface PaymentDraftInput {
   /**
      * @minimum 1
-     * @maximum 13
+     * @maximum 14
      */
   functionId: number;
   workspace: WorkspaceInput;
@@ -177,7 +183,7 @@ export const FunctionWorkspaceStatus = {
 export interface FunctionWorkspace {
   /**
      * @minimum 1
-     * @maximum 13
+     * @maximum 14
      */
   functionId: number;
   instructions: string;
@@ -197,6 +203,9 @@ export interface FunctionWorkspace {
      */
   quotationCount: number;
   output: string;
+  relevanceReport?: string;
+  rewrittenDraft?: string;
+  reportProof?: string;
   generationError?: string;
   skeleton: string;
   /**
@@ -311,12 +320,13 @@ export const TransferInputDestinationFunctionId = {
   NUMBER_10: 10,
   NUMBER_12: 12,
   NUMBER_13: 13,
+  NUMBER_14: 14,
 } as const;
 
 export interface TransferInput {
   /**
      * @minimum 1
-     * @maximum 13
+     * @maximum 14
      */
   sourceFunctionId: number;
   destinationFunctionId: TransferInputDestinationFunctionId;
@@ -375,6 +385,15 @@ export const StreamInputFunctionId = {
   NUMBER_10: 10,
   NUMBER_12: 12,
   NUMBER_13: 13,
+  NUMBER_14: 14,
+} as const;
+
+export type StreamInputRelevanceAction = typeof StreamInputRelevanceAction[keyof typeof StreamInputRelevanceAction];
+
+
+export const StreamInputRelevanceAction = {
+  report: 'report',
+  rewrite: 'rewrite',
 } as const;
 
 export interface StreamInput {
@@ -397,6 +416,11 @@ export interface StreamInput {
   quotationCount?: number;
   resumeFrom?: string;
   diagnostic?: boolean;
+  relevanceAction?: StreamInputRelevanceAction;
+  /** @maxLength 40000 */
+  relevanceReport?: string;
+  /** @maxLength 128 */
+  reportProof?: string;
 }
 
 export type DiagnosticResultStatus = typeof DiagnosticResultStatus[keyof typeof DiagnosticResultStatus];

@@ -42,6 +42,7 @@ const FUNCTION_LABELS: Record<number, string> = {
   10: 'Homework',
   12: 'Relevance Assessment',
   13: 'Research Advisor',
+  14: 'Relevance Finder',
 };
 
 const FUNCTION_MIN_WORDS: Record<number, number> = {
@@ -400,15 +401,15 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
       toast.error("No output to transfer");
       return;
     }
-    const guestDestination = (id === 12 || id === 13) && !signedIn
+    const guestDestination = (id === 12 || id === 13 || id === 14) && !signedIn
       ? queryClient.getQueryData<FunctionWorkspace>(getGetWorkspaceQueryKey(id))
       : undefined;
     const existingTransferText = id === 13 ? guestDestination?.instructionDraft : guestDestination?.sourceDocument;
     if (existingTransferText?.trim()) {
       docToTransfer = `${existingTransferText.trimEnd()}\n\n${docToTransfer}`;
     }
-    if ((id === 12 || id === 13) && (docToTransfer.trim().split(/\s+/u).length > 20000 || docToTransfer.length > 120000)) {
-      toast.error('The combined materials exceed 20,000 words or 120,000 characters. Nothing was replaced or truncated.');
+    if ((id === 12 || id === 13 || id === 14) && (docToTransfer.trim().split(/\s+/u).length > (id === 14 ? 200000 : 20000) || docToTransfer.length > (id === 14 ? 1200000 : 120000))) {
+      toast.error(`The combined materials exceed ${id === 14 ? '200,000 words or 1,200,000 characters' : '20,000 words or 120,000 characters'}. Nothing was replaced or truncated.`);
       return;
     }
 
@@ -420,7 +421,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
       }
     }, {
       onSuccess: result => {
-        if (id === 12 || id === 13) {
+        if (id === 12 || id === 13 || id === 14) {
           queryClient.setQueryData(getGetWorkspaceQueryKey(id), mergeOcrDestination(result.destination, guestDestination));
           void queryClient.invalidateQueries({ queryKey: getListWorkspacesQueryKey() });
         }
@@ -873,7 +874,7 @@ export default function FunctionPortal({ functionId, workspaces, onClose }: Func
                     <SelectValue placeholder="Send to any function..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13].map(id => (
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14].map(id => (
                       id !== functionId ? (
                         <SelectItem key={id} value={id.toString()} className="text-xs">
                           {id.toString().padStart(2, '0')} • {FUNCTION_LABELS[id]}

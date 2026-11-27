@@ -11,6 +11,7 @@ export type StreamEvent =
       provider: string;
       validated: boolean;
       preview?: boolean;
+      reportProof?: string;
     }
   | { type: "error"; message: string; code: string };
 

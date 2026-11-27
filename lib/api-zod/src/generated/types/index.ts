@@ -35,6 +35,7 @@ export * from './libraryState';
 export * from './paymentDraftInput';
 export * from './streamInput';
 export * from './streamInputFunctionId';
+export * from './streamInputRelevanceAction';
 export * from './transferInput';
 export * from './transferInputDestinationFunctionId';
 export * from './transferResult';

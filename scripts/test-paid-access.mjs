@@ -74,6 +74,11 @@ try {
   assert.equal((await request("/api/auth/me")).status, 200);
   assert.equal((await (await request("/api/auth/me", ownerCookie)).json()).owner, true);
   assert.equal((await status(ownerCookie)).fullAccess, true, "Designated verified owner must not need Stripe or OWNER_EMAIL env");
+  await pool.query("INSERT INTO neurotext_billing(user_id,access_status,access_until) VALUES($1,'paid',now()-interval '1 day')", [owner]);
+  assert.equal((await status(ownerCookie)).fullAccess, true, "Expired billing must never revoke owner access");
+  await pool.query("UPDATE neurotext_billing SET access_status='unpaid' WHERE user_id=$1", [owner]);
+  assert.equal((await status(ownerCookie)).fullAccess, true, "Unpaid, cancelled or refunded billing must never revoke owner access");
+  assert.equal((await (await request("/api/usage", ownerCookie)).json()).accessState, "owner");
   assert.equal((await status(userCookie)).fullAccess, false, "Google sign-in alone is not paid access");
   assert.equal((await request("/api/billing/checkout", undefined, {})).status, 401);
   assert.equal((await (await request("/api/usage", undefined, undefined, { "X-Forwarded-Host": "spoof.replit.dev" })).json()).accessState, "anonymous");
@@ -133,6 +138,7 @@ try {
   assert.equal((await status(userCookie)).fullAccess, true, "Invalid webhooks must not change access");
   assert.equal((await webhook(signature)).status, 200);
   assert.equal((await status(userCookie)).fullAccess, false, "Cancellation must revoke access");
+  assert.equal((await status(ownerCookie)).fullAccess, true, "Stripe cancellation processing must not affect the owner exemption");
   assert.equal((await webhook(signature)).status, 200);
   assert.equal((await status(userCookie)).fullAccess, false, "A replay must not resurrect cancelled access");
   console.log("PASS: production owner exemption, no development-host spoofing, Google-only denial, exact half previews, long previews below 10%, no hidden full SSE output, resume denial, checkout ownership, verified payment unlock, signed cancellation, replay safety and no live Stripe charges.");

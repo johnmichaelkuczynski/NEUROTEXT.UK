@@ -31,6 +31,8 @@ export interface StreamInput {
   relevanceAction?: StreamInputRelevanceAction;
   /** @maxLength 40000 */
   relevanceReport?: string;
+  /** @maxLength 10000 */
+  rewriteInstructions?: string;
   /** @maxLength 128 */
   reportProof?: string;
 }

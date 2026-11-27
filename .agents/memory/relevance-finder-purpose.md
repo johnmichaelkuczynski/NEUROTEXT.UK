@@ -6,6 +6,12 @@ Relevance Finder takes the user's unfinished draft and another author's text bel
 
 Only a separate, optional action rewrites the draft using those findings. Preserve the original draft and report separately; preserve the user's argument and intellectual direction, and distinguish imported contributions through attribution and accurate quotations.
 
+The rewrite has its own optional custom instructions, separate from the report's relevance instructions. Changing rewrite instructions must not require regenerating the report.
+
+**Why:** Dr. Kuczynski requested that users be able to insert custom instructions concerning the rewrite.
+
+**How to apply:** Save rewrite directions with private work and apply them only during rewriting. Keep the report, original documents and existing rewritten draft available when the user edits these directions.
+
 **Why:** Dr. Kuczynski requested these two stages, reviewed this interpretation and explicitly authorized creating Function 14. It differs from Function 12, which first asks whether candidate material is relevant; do not replace or merge that function.
 
 **How to apply:** Keep both document roles separate from optional instructions. Long treatises must be processed in sections with evidence from later sections retained, not silently reduced to the beginning of a model context window. Do not force a connection or invent quotations, attribution or page numbers.

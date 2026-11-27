@@ -113,9 +113,20 @@ try {
   const found = await generate(ownerCookie, finderInput);
   assert(found.text.includes("How to use it:"));
   assert(found.done.reportProof);
-  const rewritten = await generate(ownerCookie, { ...finderInput, relevanceAction: "rewrite", relevanceReport: found.text, reportProof: found.done.reportProof });
+  const rewriteDirections = "Preserve my voice and expand the objections section.";
+  const rewritten = await generate(ownerCookie, { ...finderInput, relevanceAction: "rewrite", relevanceReport: found.text, reportProof: found.done.reportProof, rewriteInstructions: rewriteDirections });
   assert(rewritten.text.includes(finderInput.instructionDraft));
   assert(rewritten.text.includes("The supplied source (Box B)"));
+  const originalWorkspace = await (await request("/api/functions/workspaces/14", ownerCookie)).json();
+  const savedRewriteDirections = await fetch(base + "/api/functions/workspaces/14", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", Cookie: ownerCookie, "X-Forwarded-Proto": "https", "X-Neurotext-Request": "1" },
+    body: JSON.stringify({ ...originalWorkspace, ...finderInput, relevanceReport: found.text, output: found.text, reportProof: found.done.reportProof, rewriteInstructions: rewriteDirections }),
+  });
+  assert.equal(savedRewriteDirections.status, 200);
+  const restoredDirections = await (await request("/api/functions/workspaces/14", ownerCookie)).json();
+  assert.equal(restoredDirections.rewriteInstructions, rewriteDirections, "Rewrite directions must survive saving and reloading");
+  assert.equal(restoredDirections.reportProof, found.done.reportProof, "Saving rewrite directions must preserve report reuse");
   assert.equal((await request("/api/functions/stream", ownerCookie, { ...input, ...finderInput, instructions: "Changed instructions", relevanceAction: "rewrite", relevanceReport: found.text, reportProof: found.done.reportProof })).status, 400);
   assert.equal((await request("/api/functions/stream", userCookie, { ...input, ...finderInput, relevanceAction: "rewrite", relevanceReport: found.text, reportProof: found.done.reportProof })).status, 402);
   const checkout = await request("/api/billing/checkout", userCookie, {});

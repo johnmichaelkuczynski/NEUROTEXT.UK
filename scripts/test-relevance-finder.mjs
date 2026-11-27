@@ -82,6 +82,7 @@ try {
   }, () => {}, () => false), /automatic correction/i);
   const proof = f.reportProof(input, rendered, "owner");
   assert(f.validReportProof(input, rendered, proof, "owner"));
+  assert(f.validReportProof({ ...input, rewriteInstructions: "Expand objections and preserve my voice." }, rendered, proof, "owner"), "Rewrite-only directions must not invalidate the report");
   for (const key of ["instructions", "instructionDraft", "sourceDocument"]) assert(!f.validReportProof({ ...input, [key]: input[key] + " changed" }, rendered, proof, "owner"));
   assert(!f.validReportProof(input, rendered + " forged", proof, "owner"));
   assert(!f.validReportProof(input, rendered, proof, "other-user"));
@@ -156,9 +157,10 @@ try {
     sourceUses: [{ passage: "Direct awareness can provide a basis distinct from propositional inference.", sourceQuote: "Direct awareness is not an inference from prior beliefs.", sourceLabel: "Box B" }],
   }), draft, source, draft), /in-text source attribution/i, "Metadata cannot replace in-text credit");
   let rewriteAttempts = 0, correctedRewrite = "", providerReturned = false;
-  await f.rewriteWithFindings(input, rendered, async (_system, prompt, consume) => {
+  await f.rewriteWithFindings({ ...input, rewriteInstructions: "Expand objections and preserve my voice." }, rendered, async (_system, prompt, consume) => {
     rewriteAttempts++;
     assert(JSON.parse(prompt).relevanceReport);
+    assert.equal(JSON.parse(prompt).rewriteInstructions, "Expand objections and preserve my voice.");
     consume("A working draft with ");
     assert.equal(correctedRewrite, "A working draft with ", "Words must reach the user before the model call completes");
     consume('“wording requiring author review.”');

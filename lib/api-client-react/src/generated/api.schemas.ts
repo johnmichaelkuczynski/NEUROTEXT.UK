@@ -66,6 +66,8 @@ export interface WorkspaceInput {
   relevanceReport?: string;
   /** @maxLength 750000 */
   rewrittenDraft?: string;
+  /** @maxLength 10000 */
+  rewriteInstructions?: string;
   /** @maxLength 128 */
   reportProof?: string;
   generationError?: string;
@@ -205,6 +207,8 @@ export interface FunctionWorkspace {
   output: string;
   relevanceReport?: string;
   rewrittenDraft?: string;
+  /** @maxLength 10000 */
+  rewriteInstructions?: string;
   reportProof?: string;
   generationError?: string;
   skeleton: string;
@@ -419,6 +423,8 @@ export interface StreamInput {
   relevanceAction?: StreamInputRelevanceAction;
   /** @maxLength 40000 */
   relevanceReport?: string;
+  /** @maxLength 10000 */
+  rewriteInstructions?: string;
   /** @maxLength 128 */
   reportProof?: string;
 }

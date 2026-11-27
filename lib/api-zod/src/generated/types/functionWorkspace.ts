@@ -32,6 +32,8 @@ export interface FunctionWorkspace {
   output: string;
   relevanceReport?: string;
   rewrittenDraft?: string;
+  /** @maxLength 10000 */
+  rewriteInstructions?: string;
   reportProof?: string;
   generationError?: string;
   skeleton: string;

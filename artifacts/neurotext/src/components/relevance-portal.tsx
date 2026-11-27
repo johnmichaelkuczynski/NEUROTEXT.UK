@@ -32,8 +32,8 @@ const SAVE_DELAY = 1000;
 
 type FieldKey = 'a' | 'b';
 type Local = { a: string; b: string; model: string; report: string; error: string; provider: string;
-  instructions: string; rewrite: string; proof: string };
-const emptyLocal = (): Local => ({ a: '', b: '', model: DEFAULT_MODEL, report: '', error: '', provider: '', instructions: '', rewrite: '', proof: '' });
+  instructions: string; rewriteInstructions: string; rewrite: string; proof: string };
+const emptyLocal = (): Local => ({ a: '', b: '', model: DEFAULT_MODEL, report: '', error: '', provider: '', instructions: '', rewriteInstructions: '', rewrite: '', proof: '' });
 
 const overLimit = (t: string, large = false) => countWords(t) > (large ? 200000 : MAX_WORDS) || t.length > (large ? 1200000 : MAX_CHARS);
 const limitMessage = (t: string, large = false) =>
@@ -53,6 +53,7 @@ function toInput(s: Local): WorkspaceInput {
     output: s.report,
     relevanceReport: s.report,
     rewrittenDraft: s.rewrite,
+    rewriteInstructions: s.rewriteInstructions,
     reportProof: s.proof,
     generationError: s.error,
     skeleton: '',
@@ -90,13 +91,14 @@ export default function RelevancePortal({ onClose, functionId = 12 }: { onClose:
   const [provider, setProvider] = useState('');
   const [running, setRunning] = useState(false);
   const [instructions, setInstructions] = useState('');
+  const [rewriteInstructions, setRewriteInstructions] = useState('');
   const [rewrite, setRewrite] = useState('');
   const [proof, setProof] = useState('');
   const [action, setAction] = useState<'report' | 'rewrite'>('report');
   const [saveError, setSaveError] = useState('');
   const [fieldError, setFieldError] = useState<Record<FieldKey, string>>({ a: '', b: '' });
   const [uploading, setUploading] = useState<Record<FieldKey, string>>({ a: '', b: '' });
-  usePaymentDraft(FUNCTION_ID, { ...toInput({ a, b, instructions, rewrite, proof, report, model, error, provider }),
+  usePaymentDraft(FUNCTION_ID, { ...toInput({ a, b, instructions, rewriteInstructions, rewrite, proof, report, model, error, provider }),
     status: running || Object.values(uploading).some(Boolean) ? 'writing' : report ? 'complete' : 'idle' });
   const [dragging, setDragging] = useState<FieldKey | null>(null);
   const [isResetting, setIsResetting] = useState(false);
@@ -123,11 +125,11 @@ export default function RelevancePortal({ onClose, functionId = 12 }: { onClose:
     const s: Local = {
       a: w.instructionDraft || '', b: w.sourceDocument || '', model: w.selectedModel || DEFAULT_MODEL,
       report: finder ? w.relevanceReport || w.output || '' : w.output || '', error: w.generationError || '', provider: w.provider || '',
-      instructions: w.instructions || '', rewrite: w.rewrittenDraft || '', proof: w.reportProof || '',
+      instructions: w.instructions || '', rewriteInstructions: w.rewriteInstructions || '', rewrite: w.rewrittenDraft || '', proof: w.reportProof || '',
     };
     local.current = s;
     setA(s.a); setB(s.b); setModel(s.model); setReport(s.report); setError(s.error); setProvider(s.provider);
-    setInstructions(s.instructions); setRewrite(s.rewrite); setProof(s.proof);
+    setInstructions(s.instructions); setRewriteInstructions(s.rewriteInstructions); setRewrite(s.rewrite); setProof(s.proof);
   }, [account.isLoading, signedIn, workspace.isLoading, workspace.data]);
 
   const flush = () => {
@@ -231,7 +233,7 @@ export default function RelevancePortal({ onClose, functionId = 12 }: { onClose:
         selectedModel: local.current.model,
         thinker: THINKER,
         quotationCount: 0,
-        ...(finder ? { relevanceAction: nextAction, relevanceReport: local.current.report, reportProof: local.current.proof } : {}),
+        ...(finder ? { relevanceAction: nextAction, relevanceReport: local.current.report, reportProof: local.current.proof, rewriteInstructions: local.current.rewriteInstructions } : {}),
       }, undefined, undefined, event => { receivedProof = event.reportProof || ''; });
       if (!mounted.current || resetting.current) return;
       setProvider(local.current.model); setError('');
@@ -461,7 +463,15 @@ export default function RelevancePortal({ onClose, functionId = 12 }: { onClose:
                 {running && action === 'rewrite' && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Rewrite draft using findings
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">Your original draft and relevance report remain unchanged. Editing either document or the instructions requires a new report before rewriting. A complete report and full-answer access are required.</p>
+            <div className="space-y-2">
+              <Label htmlFor="finder-rewrite-instructions">Rewrite instructions (optional)</Label>
+              <Textarea id="finder-rewrite-instructions" data-testid="textarea-finder-rewrite-instructions"
+                value={rewriteInstructions} readOnly={running || isResetting} maxLength={10000}
+                placeholder="For example: preserve my voice, expand the objections section, or incorporate only the findings about distributed knowledge."
+                onChange={e => { setRewriteInstructions(e.target.value); commit({ rewriteInstructions: e.target.value }); }} />
+              <p className="text-xs text-muted-foreground">These instructions apply only to the rewrite. You can change them without generating another relevance report.</p>
+            </div>
+            <p className="text-xs text-muted-foreground">Your original draft and relevance report remain unchanged. Editing either document or the report instructions requires a new report before rewriting. A complete report and full-answer access are required.</p>
             {shownRewrite ? <>
               <p className="text-xs text-muted-foreground" data-testid="text-finder-review-notice">Working draft for your review. Check quotations, source attribution and factual claims before using or submitting it; these have not been independently certified.</p>
               <div className="flex gap-2">

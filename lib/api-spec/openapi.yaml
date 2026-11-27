@@ -568,6 +568,7 @@ components:
         output: { type: string }
         relevanceReport: { type: string }
         rewrittenDraft: { type: string }
+        rewriteInstructions: { type: string, maxLength: 10000 }
         reportProof: { type: string }
         generationError: { type: string }
         skeleton: { type: string }
@@ -595,6 +596,7 @@ components:
         output: { type: string }
         relevanceReport: { type: string, maxLength: 40000 }
         rewrittenDraft: { type: string, maxLength: 750000 }
+        rewriteInstructions: { type: string, maxLength: 10000 }
         reportProof: { type: string, maxLength: 128 }
         generationError: { type: string }
         skeleton: { type: string }
@@ -660,6 +662,7 @@ components:
         diagnostic: { type: boolean }
         relevanceAction: { type: string, enum: [report, rewrite] }
         relevanceReport: { type: string, maxLength: 40000 }
+        rewriteInstructions: { type: string, maxLength: 10000 }
         reportProof: { type: string, maxLength: 128 }
     DiagnosticResult:
       type: object

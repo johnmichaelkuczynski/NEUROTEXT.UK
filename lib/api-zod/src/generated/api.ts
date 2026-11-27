@@ -52,6 +52,8 @@ export const preservePaymentDraftBodyWorkspaceRelevanceReportMax = 40000;
 
 export const preservePaymentDraftBodyWorkspaceRewrittenDraftMax = 750000;
 
+export const preservePaymentDraftBodyWorkspaceRewriteInstructionsMax = 10000;
+
 export const preservePaymentDraftBodyWorkspaceReportProofMax = 128;
 
 export const preservePaymentDraftBodyWorkspaceProgressMin = 0;
@@ -72,6 +74,7 @@ export const PreservePaymentDraftBody = zod.object({
   "output": zod.string(),
   "relevanceReport": zod.string().max(preservePaymentDraftBodyWorkspaceRelevanceReportMax).optional(),
   "rewrittenDraft": zod.string().max(preservePaymentDraftBodyWorkspaceRewrittenDraftMax).optional(),
+  "rewriteInstructions": zod.string().max(preservePaymentDraftBodyWorkspaceRewriteInstructionsMax).optional(),
   "reportProof": zod.string().max(preservePaymentDraftBodyWorkspaceReportProofMax).optional(),
   "generationError": zod.string().optional(),
   "skeleton": zod.string(),
@@ -208,6 +211,8 @@ export const getHistoryWorkResponseTwoWorkspaceTargetWordsMax = 100000;
 export const getHistoryWorkResponseTwoWorkspaceQuotationCountMin = 0;
 export const getHistoryWorkResponseTwoWorkspaceQuotationCountMax = 20;
 
+export const getHistoryWorkResponseTwoWorkspaceRewriteInstructionsMax = 10000;
+
 export const getHistoryWorkResponseTwoWorkspaceProgressMin = 0;
 export const getHistoryWorkResponseTwoWorkspaceProgressMax = 100;
 
@@ -232,6 +237,7 @@ export const GetHistoryWorkResponse = zod.object({
   "output": zod.string(),
   "relevanceReport": zod.string().optional(),
   "rewrittenDraft": zod.string().optional(),
+  "rewriteInstructions": zod.string().max(getHistoryWorkResponseTwoWorkspaceRewriteInstructionsMax).optional(),
   "reportProof": zod.string().optional(),
   "generationError": zod.string().optional(),
   "skeleton": zod.string(),
@@ -328,6 +334,8 @@ export const listWorkspacesResponseTargetWordsMax = 100000;
 export const listWorkspacesResponseQuotationCountMin = 0;
 export const listWorkspacesResponseQuotationCountMax = 20;
 
+export const listWorkspacesResponseRewriteInstructionsMax = 10000;
+
 export const listWorkspacesResponseProgressMin = 0;
 export const listWorkspacesResponseProgressMax = 100;
 
@@ -345,6 +353,7 @@ export const ListWorkspacesResponseItem = zod.object({
   "output": zod.string(),
   "relevanceReport": zod.string().optional(),
   "rewrittenDraft": zod.string().optional(),
+  "rewriteInstructions": zod.string().max(listWorkspacesResponseRewriteInstructionsMax).optional(),
   "reportProof": zod.string().optional(),
   "generationError": zod.string().optional(),
   "skeleton": zod.string(),
@@ -372,6 +381,8 @@ export const getWorkspaceResponseTargetWordsMax = 100000;
 export const getWorkspaceResponseQuotationCountMin = 0;
 export const getWorkspaceResponseQuotationCountMax = 20;
 
+export const getWorkspaceResponseRewriteInstructionsMax = 10000;
+
 export const getWorkspaceResponseProgressMin = 0;
 export const getWorkspaceResponseProgressMax = 100;
 
@@ -389,6 +400,7 @@ export const GetWorkspaceResponse = zod.object({
   "output": zod.string(),
   "relevanceReport": zod.string().optional(),
   "rewrittenDraft": zod.string().optional(),
+  "rewriteInstructions": zod.string().max(getWorkspaceResponseRewriteInstructionsMax).optional(),
   "reportProof": zod.string().optional(),
   "generationError": zod.string().optional(),
   "skeleton": zod.string(),
@@ -417,6 +429,8 @@ export const saveWorkspaceBodyRelevanceReportMax = 40000;
 
 export const saveWorkspaceBodyRewrittenDraftMax = 750000;
 
+export const saveWorkspaceBodyRewriteInstructionsMax = 10000;
+
 export const saveWorkspaceBodyReportProofMax = 128;
 
 export const saveWorkspaceBodyProgressMin = 0;
@@ -435,6 +449,7 @@ export const SaveWorkspaceBody = zod.object({
   "output": zod.string(),
   "relevanceReport": zod.string().max(saveWorkspaceBodyRelevanceReportMax).optional(),
   "rewrittenDraft": zod.string().max(saveWorkspaceBodyRewrittenDraftMax).optional(),
+  "rewriteInstructions": zod.string().max(saveWorkspaceBodyRewriteInstructionsMax).optional(),
   "reportProof": zod.string().max(saveWorkspaceBodyReportProofMax).optional(),
   "generationError": zod.string().optional(),
   "skeleton": zod.string(),
@@ -450,6 +465,8 @@ export const saveWorkspaceResponseTargetWordsMax = 100000;
 
 export const saveWorkspaceResponseQuotationCountMin = 0;
 export const saveWorkspaceResponseQuotationCountMax = 20;
+
+export const saveWorkspaceResponseRewriteInstructionsMax = 10000;
 
 export const saveWorkspaceResponseProgressMin = 0;
 export const saveWorkspaceResponseProgressMax = 100;
@@ -468,6 +485,7 @@ export const SaveWorkspaceResponse = zod.object({
   "output": zod.string(),
   "relevanceReport": zod.string().optional(),
   "rewrittenDraft": zod.string().optional(),
+  "rewriteInstructions": zod.string().max(saveWorkspaceResponseRewriteInstructionsMax).optional(),
   "reportProof": zod.string().optional(),
   "generationError": zod.string().optional(),
   "skeleton": zod.string(),
@@ -500,6 +518,8 @@ export const transferDocumentResponseDestinationTargetWordsMax = 100000;
 export const transferDocumentResponseDestinationQuotationCountMin = 0;
 export const transferDocumentResponseDestinationQuotationCountMax = 20;
 
+export const transferDocumentResponseDestinationRewriteInstructionsMax = 10000;
+
 export const transferDocumentResponseDestinationProgressMin = 0;
 export const transferDocumentResponseDestinationProgressMax = 100;
 
@@ -520,6 +540,7 @@ export const TransferDocumentResponse = zod.object({
   "output": zod.string(),
   "relevanceReport": zod.string().optional(),
   "rewrittenDraft": zod.string().optional(),
+  "rewriteInstructions": zod.string().max(transferDocumentResponseDestinationRewriteInstructionsMax).optional(),
   "reportProof": zod.string().optional(),
   "generationError": zod.string().optional(),
   "skeleton": zod.string(),
@@ -562,6 +583,8 @@ export const streamFunctionBodyQuotationCountMax = 20;
 
 export const streamFunctionBodyRelevanceReportMax = 40000;
 
+export const streamFunctionBodyRewriteInstructionsMax = 10000;
+
 export const streamFunctionBodyReportProofMax = 128;
 
 
@@ -579,6 +602,7 @@ export const StreamFunctionBody = zod.object({
   "diagnostic": zod.boolean().optional(),
   "relevanceAction": zod.enum(['report', 'rewrite']).optional(),
   "relevanceReport": zod.string().max(streamFunctionBodyRelevanceReportMax).optional(),
+  "rewriteInstructions": zod.string().max(streamFunctionBodyRewriteInstructionsMax).optional(),
   "reportProof": zod.string().max(streamFunctionBodyReportProofMax).optional()
 })
 
@@ -595,6 +619,8 @@ export const streamCoherenceBodyQuotationCountMin = 0;
 export const streamCoherenceBodyQuotationCountMax = 20;
 
 export const streamCoherenceBodyRelevanceReportMax = 40000;
+
+export const streamCoherenceBodyRewriteInstructionsMax = 10000;
 
 export const streamCoherenceBodyReportProofMax = 128;
 
@@ -613,6 +639,7 @@ export const StreamCoherenceBody = zod.object({
   "diagnostic": zod.boolean().optional(),
   "relevanceAction": zod.enum(['report', 'rewrite']).optional(),
   "relevanceReport": zod.string().max(streamCoherenceBodyRelevanceReportMax).optional(),
+  "rewriteInstructions": zod.string().max(streamCoherenceBodyRewriteInstructionsMax).optional(),
   "reportProof": zod.string().max(streamCoherenceBodyReportProofMax).optional()
 })
 

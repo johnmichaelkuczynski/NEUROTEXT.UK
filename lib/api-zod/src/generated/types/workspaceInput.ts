@@ -29,6 +29,8 @@ export interface WorkspaceInput {
   relevanceReport?: string;
   /** @maxLength 750000 */
   rewrittenDraft?: string;
+  /** @maxLength 10000 */
+  rewriteInstructions?: string;
   /** @maxLength 128 */
   reportProof?: string;
   generationError?: string;

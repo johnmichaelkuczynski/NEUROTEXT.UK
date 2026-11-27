@@ -463,6 +463,7 @@ export default function RelevancePortal({ onClose, functionId = 12 }: { onClose:
             </div>
             <p className="text-xs text-muted-foreground">Your original draft and relevance report remain unchanged. Editing either document or the instructions requires a new report before rewriting. A complete report and full-answer access are required.</p>
             {shownRewrite ? <>
+              <p className="text-xs text-muted-foreground" data-testid="text-finder-review-notice">Working draft for your review. Check quotations, source attribution and factual claims before using or submitting it; these have not been independently certified.</p>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" onClick={() => void navigator.clipboard.writeText(shownRewrite).then(() => toast.success('Copied rewritten draft')).catch(() => setError('Could not copy. Select and copy the text manually.'))}>Copy rewritten draft</Button>
                 <Button size="sm" variant="outline" onClick={() => downloadText('relevance-finder-rewritten-draft', shownRewrite)}>Download rewritten draft</Button>

@@ -14,7 +14,7 @@ export default class OpenAIMock {
       const data = JSON.parse(options.messages[1].content);
       const quote = data.sourceEvidence.split(/(?<=\.)\s/u)[0].trim();
       const passage = 'The supplied source (Box B) clarifies this distinction: “' + quote + '”';
-      content = JSON.stringify({ text: data.segmentToRewrite + '\n\n' + passage, sourceUses: [{ passage, sourceQuote: quote, sourceLabel: 'Box B' }] });
+      content = data.segmentToRewrite + '\n\n' + passage;
     }
     yield { choices: [{ delta: { content } }] };
   })() } };

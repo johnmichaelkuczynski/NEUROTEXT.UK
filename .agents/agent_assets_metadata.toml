@@ -42,3 +42,17 @@ mtime_ms = 1795750788340
 storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:6783c699-c6fc-4d2b-8171-1c5755990192/d752b7d5-ecd7-4aa2-a449-3fcdd35dc21e/359aa146-d253-4b97-8c1d-f04da368bbfb"
 storage_version_token = "1795750852715740"
 content_type = "text/plain"
+
+[[outputs]]
+id = "5tasK7Q7Tr-_W5Sie7pD9"
+uri = "file://.local/verification/relevance-rewrite-anthropic-latest.txt"
+type = "text"
+title = "Working rewrite for your review"
+description = "The exact draft produced from your latest saved documents with the non-blocking rewrite flow. Quotations and claims remain for author review."
+logical_id = "68397dda-77ab-4814-aae6-ed41d04dddb6"
+content_hash = "sha256:663d472afe98a1453274d8a0c7cea69a65dd608114fd8db9bb9407080279dc3c"
+size = 22337
+mtime_ms = 1795756080255
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:6783c699-c6fc-4d2b-8171-1c5755990192/68397dda-77ab-4814-aae6-ed41d04dddb6/3b80d84b-1651-4231-8e92-f0e5bb04a253"
+storage_version_token = "1795756151560259"
+content_type = "text/plain"

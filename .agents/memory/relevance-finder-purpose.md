@@ -10,11 +10,11 @@ Only a separate, optional action rewrites the draft using those findings. Preser
 
 **How to apply:** Keep both document roles separate from optional instructions. Long treatises must be processed in sections with evidence from later sections retained, not silently reduced to the beginning of a model context window. Do not force a connection or invent quotations, attribution or page numbers.
 
-Validate source attribution in the rewrite rather than relying only on a prompt.
+Deliver the generated working rewrite without blocking it on quotation or attribution certification. The author can review it.
 
-**Why:** A live provider check initially produced a fluent rewrite that presented imported claims without attribution despite being told to attribute them. Checking only quotations in the report does not prevent this.
+**Why:** Dr. Kuczynski explicitly rejected withholding useful output because of “fussy protocols about verification of quotes.” He said not to let the app totally fabricate, but not to hold it to absurd standards or waste the user's time.
 
-**How to apply:** Require source-derived additions to have explicit in-text attribution and verifiable supporting evidence; verbatim borrowing must be quoted. Reject or correct unsupported additions before displaying a rewritten section.
+**How to apply:** Ground generation in the supplied source and report, instruct the model not to invent quotations or bibliographic facts, prefer attributed paraphrase when wording is uncertain, and show a review notice alongside the delivered draft. Do not restore strict quotation-matching gates, metadata requirements, or quality-retry loops before displaying prose. Preserve actual provider-error handling, authentication/payment enforcement and the original draft/report.
 
 Do not reject otherwise verified relevance findings because a model supplied an unverified document title or source label. Use the neutral input identifier “Box B” instead; continue to reject unsupported quotations.
 
@@ -28,8 +28,8 @@ Quotation-validation failures must trigger bounded automatic correction, retaini
 
 **How to apply:** Accept harmless typographic substitutions only when the quotation can be recovered from the actual document, displaying its original wording. Never use semantic/fuzzy matches to certify a quotation. Omit unsupported points with an explicit notice if correction fails but verified findings remain; do not misreport failed validation as absence of relevance.
 
-Rewrite evidence checks must distinguish missing attribution or invented words from harmless quotation formatting.
+Use the user's latest saved draft and report for realistic rewrite checks, not just the older development-owner workspace. Local fixes do not automatically update Coolify.
 
-**Why:** Real provider outputs included evidence inside longer quotations, attribution in a preceding sentence of the same paragraph, and editorial terminal punctuation. Strict whole-string checks blocked valid rewrites. Generic correction messages also caused repeated failures because the model could not identify which quoted passages failed.
+**Why:** A successful run against an older development draft did not establish that the newer signed-in draft worked, and screenshots from the live site did not appear in development logs.
 
-**How to apply:** Verify attribution in the relevant paragraph, check actual borrowed words rather than requiring exact surrounding quotation marks, and mechanically quote verified substantial verbatim borrowing when needed. Give correction attempts the previous answer and the specific invalid quotations without putting document excerpts in server error logs. Exercise rewrites with the user's saved report and the selected/default providers, not just synthetic reports.
+**How to apply:** Keep test reads read-only and do not modify saved originals. Distinguish development verification from a live deployment update. A successful generated draft is not independently certified scholarship.

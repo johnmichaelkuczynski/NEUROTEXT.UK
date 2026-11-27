@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { randomUUID } from "node:crypto";
-import { rm } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 const { build } = createRequire(new URL("../artifacts/api-server/package.json", import.meta.url))("esbuild");
 const out = new URL(`../artifacts/api-server/dist/finder-unit-${randomUUID()}.mjs`, import.meta.url);
 try {
-  await build({ stdin: { contents: 'export * from "./src/services/relevance-finder.ts"', resolveDir: new URL("../artifacts/api-server/", import.meta.url).pathname },
+  await build({ stdin: { contents: 'export * from "./src/services/relevance-finder.ts"; export { getAnthropic } from "@workspace/integrations-anthropic-ai";', resolveDir: new URL("../artifacts/api-server/", import.meta.url).pathname },
     bundle: true, platform: "node", format: "esm", outfile: out.pathname, logLevel: "silent" });
   const f = await import(out.href);
   const draft = "Knowledge need not always depend on inference. Perception may supply knowledge directly.";
@@ -113,24 +113,73 @@ try {
   assert.throws(() => f.validateRewrite(JSON.stringify({ text: attributed + ' “This quotation was never in either document.”',
     sourceUses: [{ passage: attributed, sourceQuote: "Direct awareness is not an inference from prior beliefs.", sourceLabel: "Box B" }] }), draft, source, draft), /unverified/i);
   assert.throws(() => f.validateRewrite(JSON.stringify({ text: draft + " More source-derived material." }), draft, source, draft), /attribute/i);
+  const longerQuote = 'As the supplied source (Box B) explains: “Direct awareness is not an inference from prior beliefs. Inferential knowledge instead depends on other propositions.”';
+  assert.equal(f.validateRewrite(JSON.stringify({ text: longerQuote, sourceUses: [{
+    passage: longerQuote, sourceQuote: "Direct awareness is not an inference from prior beliefs.", sourceLabel: "Box B",
+  }] }), draft, source, draft), longerQuote, "Evidence nested within a longer quotation is valid");
+  const commaQuote = longerQuote.replace('propositions.”', 'propositions,”');
+  assert.equal(f.validateRewrite(JSON.stringify({ text: commaQuote, sourceUses: [{
+    passage: commaQuote, sourceQuote: "Direct awareness is not an inference from prior beliefs.", sourceLabel: "Box B",
+  }] }), draft, source, draft), commaQuote, "Editorial terminal punctuation does not invent quoted words");
+  const attributedParagraph = 'The supplied source (Box B) distinguishes epistemic relations. Direct awareness can provide a basis distinct from propositional inference.';
+  assert.equal(f.validateRewrite(JSON.stringify({ text: attributedParagraph, sourceUses: [{
+    passage: "Direct awareness can provide a basis distinct from propositional inference.",
+    sourceQuote: "Direct awareness is not an inference from prior beliefs.", sourceLabel: "the supplied source (Box B)",
+  }] }), draft, source, draft), attributedParagraph, "Attribution in the preceding sentence of the paragraph is valid");
+  const formattedBorrowing = f.validateRewrite(JSON.stringify({ text: "The supplied source (Box B) explains: Direct awareness is not an inference from prior beliefs.",
+    sourceUses: [{ passage: "Direct awareness is not an inference from prior beliefs.", sourceQuote: "Direct awareness is not an inference from prior beliefs.", sourceLabel: "Box B" }],
+  }), draft, source, draft);
+  assert(formattedBorrowing.includes("“Direct awareness is not an inference from prior beliefs.”"), "Verified borrowing is automatically enclosed in quotation marks");
+  assert.throws(() => f.validateRewrite(JSON.stringify({ text: "Direct awareness can provide a basis distinct from propositional inference.",
+    sourceUses: [{ passage: "Direct awareness can provide a basis distinct from propositional inference.", sourceQuote: "Direct awareness is not an inference from prior beliefs.", sourceLabel: "Box B" }],
+  }), draft, source, draft), /in-text source attribution/i, "Metadata cannot replace in-text credit");
+  let rewriteAttempts = 0, correctedRewrite = "";
+  await f.rewriteWithFindings(input, rendered, async (_system, prompt, consume) => {
+    rewriteAttempts++;
+    const p = JSON.parse(prompt);
+    if (rewriteAttempts === 1) consume(JSON.stringify({
+      text: attributed + ' “A made up philosophical quotation.”',
+      sourceUses: [{ passage: attributed, sourceQuote: "Direct awareness is not an inference from prior beliefs.", sourceLabel: "Box B" }],
+    }));
+    else {
+      assert(p.previousAnswer.includes("made up"));
+      assert(p.correctionRequired.includes("A made up philosophical quotation."));
+      consume(JSON.stringify({ text: attributed,
+        sourceUses: [{ passage: attributed, sourceQuote: "Direct awareness is not an inference from prior beliefs.", sourceLabel: "Box B" }],
+      }));
+    }
+  }, value => { correctedRewrite += value; }, () => {}, () => false);
+  assert.equal(rewriteAttempts, 2);
+  assert.equal(correctedRewrite, attributed);
   console.log("PASS: exact quotations, source labels, owner/input-bound report proofs, long-source limits and late-section coverage, segmented rewrite coverage and invented-quotation rejection.");
-  if (process.argv.includes("--live") || process.argv.includes("--saved")) {
+  if (process.argv.includes("--live") || process.argv.includes("--saved") || process.argv.includes("--saved-rewrite")) {
     const OpenAI = createRequire(new URL("../artifacts/api-server/package.json", import.meta.url))("openai").default;
     const client = new OpenAI({ apiKey: process.env.PERPLEXITY_API_KEY, baseURL: "https://api.perplexity.ai", timeout: 90000, maxRetries: 0 });
     const liveGenerate = async (system, prompt, consume, maxTokens) => {
+      if (process.argv.includes("--anthropic")) {
+        const result = await f.getAnthropic().messages.create({
+          model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5",
+          max_tokens: maxTokens || 8192, system, messages: [{ role: "user", content: prompt }],
+        });
+        consume(result.content.filter(block => block.type === "text").map(block => block.text).join(""));
+        return;
+      }
       const result = await client.chat.completions.create({ model: "sonar-pro", messages: [{ role: "system", content: system }, { role: "user", content: prompt }], max_tokens: Math.min(maxTokens, 5000), temperature: 0.2 });
       consume(result.choices[0]?.message?.content || "");
     };
     let liveData = { ...input, instructionDraft: draft + " My paper must explain how a belief can have an epistemic basis without being inferred from a premise. It must also distinguish causal dependence among events from logical dependence among propositions.",
       sourceDocument: source + " Causal dependence holds among events or states. A perceptual belief can depend causally on an object and sensory processes without being inferred from a proposition describing those processes. Causal connection alone does not guarantee knowledge: perception can mislead. Reliability is a separate question from whether a person reasons from premises. These distinctions identify different problems; they do not by themselves refute skepticism." };
-    if (process.argv.includes("--saved")) {
+    let savedReport = "";
+    if (process.argv.includes("--saved") || process.argv.includes("--saved-rewrite")) {
       const response = await fetch(`https://${process.env.REPLIT_DEV_DOMAIN}/api/functions/workspaces/14`);
       assert(response.ok);
       const saved = await response.json();
       assert(saved.instructionDraft && saved.sourceDocument);
       liveData = { instructionDraft: saved.instructionDraft, sourceDocument: saved.sourceDocument, instructions: saved.instructions || "" };
+      savedReport = saved.relevanceReport || saved.output || "";
     }
-    const liveReport = await f.generateFinderReport(liveData, liveGenerate, () => {}, () => false);
+    const liveReport = process.argv.includes("--saved-rewrite") ? savedReport : await f.generateFinderReport(liveData, liveGenerate, () => {}, () => false);
+    assert(liveReport.trim());
     if (process.argv.includes("--saved")) {
       assert(liveReport.includes("How to use it:"));
       console.log(`SAVED DOCUMENTS PASS: report generated from the saved draft and all ${f.documentChunks(liveData.sourceDocument, 16000, 95000).length} source sections; ${[...liveReport.matchAll(/How to use it:/g)].length} connections with checked quotations. Saved workspace was not modified.`);
@@ -139,7 +188,13 @@ try {
     await f.rewriteWithFindings(liveData, liveReport, liveGenerate, text => { liveRewrite += text; }, () => {}, () => false);
     assert(liveRewrite.trim());
     console.log("LIVE DEFAULT PROVIDER PASS: report and rewrite returned valid structured output; quotations matched the supplied texts.");
-    console.log("REPORT:\n" + liveReport + "\nREWRITTEN DRAFT:\n" + liveRewrite);
+    if (process.argv.includes("--saved-rewrite")) {
+      const outputDir = new URL("../.local/verification/", import.meta.url);
+      await mkdir(outputDir, { recursive: true });
+      const providerName = process.argv.includes("--anthropic") ? "anthropic" : "perplexity";
+      await writeFile(new URL(`relevance-rewrite-${providerName}.txt`, outputDir), liveRewrite);
+      console.log(`SAVED REWRITE PASS (${providerName}): ${liveRewrite.length} characters; original draft and saved report were not modified.`);
+    } else console.log("REPORT:\n" + liveReport + "\nREWRITTEN DRAFT:\n" + liveRewrite);
     }
   }
 } finally { await rm(out, { force: true }); }

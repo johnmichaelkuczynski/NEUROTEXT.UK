@@ -27,3 +27,9 @@ Quotation-validation failures must trigger bounded automatic correction, retaini
 **Why:** After the source-label fix, the user encountered a second blocked report when the provider altered quotation wording. A single bad point must not erase valid findings.
 
 **How to apply:** Accept harmless typographic substitutions only when the quotation can be recovered from the actual document, displaying its original wording. Never use semantic/fuzzy matches to certify a quotation. Omit unsupported points with an explicit notice if correction fails but verified findings remain; do not misreport failed validation as absence of relevance.
+
+Rewrite evidence checks must distinguish missing attribution or invented words from harmless quotation formatting.
+
+**Why:** Real provider outputs included evidence inside longer quotations, attribution in a preceding sentence of the same paragraph, and editorial terminal punctuation. Strict whole-string checks blocked valid rewrites. Generic correction messages also caused repeated failures because the model could not identify which quoted passages failed.
+
+**How to apply:** Verify attribution in the relevant paragraph, check actual borrowed words rather than requiring exact surrounding quotation marks, and mechanically quote verified substantial verbatim borrowing when needed. Give correction attempts the previous answer and the specific invalid quotations without putting document excerpts in server error logs. Exercise rewrites with the user's saved report and the selected/default providers, not just synthetic reports.

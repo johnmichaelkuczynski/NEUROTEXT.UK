@@ -60,7 +60,7 @@ const FUNCTION_MIN_WORDS: Record<number, number> = {
 };
 
 const DEFAULT_INSTRUCTION = "Turn the source material into a rigorous 5,000-word scholarly essay, replete with relevant legitimate scholarly studies and evidence. Include supported APA-style in-text citations and a complete APA 7 References bibliography. Do not invent sources, quotations, findings, authors, titles, dates, or publication details.";
-const DEFAULT_MODEL = 'ZHI 6 · Perplexity Sonar Pro';
+const DEFAULT_MODEL = 'ZHI 2 · Anthropic Claude Sonnet 5';
 const LEGACY_DEFAULT_MODEL = 'ZHI 1 · OpenAI GPT-5.6 Terra';
 
 function workspaceModel(workspace: FunctionWorkspace) {

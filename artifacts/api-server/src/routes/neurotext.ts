@@ -62,7 +62,7 @@ const FUNCTION_NAMES = [
 const MINIMUMS = [4000, 6500, 4000, 4000, 4000, 8000, 4000, 20000, 45000, 100, 100, 100, 100, 100];
 const DEFAULT_INSTRUCTION =
   "Turn the source material into a rigorous 5,000-word scholarly essay, replete with relevant legitimate scholarly studies and evidence. Include supported APA-style in-text citations and a complete APA 7 References bibliography. Do not invent sources, quotations, findings, authors, titles, dates, or publication details.";
-const DEFAULT_MODEL = "ZHI 6 · Perplexity Sonar Pro";
+const DEFAULT_MODEL = "ZHI 2 · Anthropic Claude Sonnet 5";
 const LEGACY_DEFAULT_MODEL = "ZHI 1 · OpenAI GPT-5.6 Terra";
 
 function selectedProvider(label: string) {
@@ -84,7 +84,7 @@ function selectedProvider(label: string) {
   if (label.startsWith("ZHI 1")) {
     return { kind: "openai" as const, model: process.env.OPENAI_MODEL || "gpt-5", name: "OpenAI" };
   }
-  return { kind: "perplexity" as const, model: "sonar-pro", name: "Perplexity Sonar Pro" };
+  return { kind: "anthropic" as const, model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5", name: "Anthropic" };
 }
 
 function directClient(kind: "openai" | "perplexity" | "xai" | "deepseek" | "venice") {

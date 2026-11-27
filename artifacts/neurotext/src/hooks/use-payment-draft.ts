@@ -10,7 +10,7 @@ export function usePaymentDraft(functionId: number, value: Partial<WorkspaceInpu
       const detail = (event as CustomEvent<{ draft?: Handoff }>).detail;
       detail.draft = { functionId, workspace: {
         instructions: '', instructionDraft: '', sourceDocument: '', targetWords: 500,
-        selectedModel: 'ZHI 6 · Perplexity Sonar Pro', thinker: '', quotationCount: 0,
+        selectedModel: 'ZHI 2 · Anthropic Claude Sonnet 5', thinker: '', quotationCount: 0,
         output: '', skeleton: '', progress: 0, status: 'idle', provider: '', ...latest.current,
       } };
     };

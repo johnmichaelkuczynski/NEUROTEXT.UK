@@ -26,7 +26,7 @@ import { useFunctionStream, GenerationFailure } from '@/hooks/use-function-strea
 const MAX_WORDS = 20_000;
 const MAX_CHARS = 120_000;
 const TARGET_WORDS = 500;
-const DEFAULT_MODEL = 'ZHI 6 · Perplexity Sonar Pro';
+const DEFAULT_MODEL = 'ZHI 2 · Anthropic Claude Sonnet 5';
 const THINKER = 'Standard NEUROTEXT style';
 const SAVE_DELAY = 1000;
 

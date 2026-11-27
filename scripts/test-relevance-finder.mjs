@@ -28,6 +28,36 @@ try {
   assert(f.renderFinderReport(report, draft, noTitleSource).includes("Source (Box B):"), "Pasted text need not contain a title");
   assert.throws(() => f.renderFinderReport(report.replace("Knowledge need not always depend on inference.", "An invented draft quotation."), draft, source), /quotation/i);
   const input = { instructionDraft: draft, sourceDocument: source, instructions: "Focus on logical dependence." };
+  const mixed = JSON.parse(report);
+  mixed.points.push({ ...mixed.points[0], connection: "UNSUPPORTED CLAIM MUST NOT APPEAR", materialQuote: "This was never in the source." });
+  const partial = f.renderFinderReport(JSON.stringify(mixed), draft, source);
+  assert(partial.includes("How to use it:"));
+  assert(partial.includes("omitted"));
+  assert(!partial.includes("UNSUPPORTED CLAIM"));
+  const typographyReport = JSON.parse(report);
+  typographyReport.points[0].materialQuote = "The source's distinction—direct knowledge.";
+  const typography = f.renderFinderReport(JSON.stringify(typographyReport), draft, "The source’s distinction–direct knowledge.");
+  assert(typography.includes("The source’s distinction–direct knowledge."), "Display the document's original punctuation");
+  let corrections = 0;
+  const correctedReport = await f.generateFinderReport(input, async (_system, prompt, consume) => {
+    corrections++;
+    const p = JSON.parse(prompt);
+    if (corrections === 2) assert(p.correctionRequired.includes("quotation") && p.previousAnswer);
+    consume(corrections === 1 ? report.replace("Direct awareness is not an inference", "A paraphrase that is not a quotation") : report);
+  }, () => {}, () => false);
+  assert.equal(corrections, 2);
+  assert(correctedReport.includes("How to use it:"));
+  let partialCalls = 0;
+  const preserved = await f.generateFinderReport(input, async (_system, _prompt, consume) => {
+    partialCalls++;
+    consume(JSON.stringify(mixed));
+  }, () => {}, () => false);
+  assert.equal(partialCalls, 2);
+  assert(preserved.includes("How to use it:") && preserved.includes("omitted"));
+  assert(!preserved.includes("UNSUPPORTED CLAIM"));
+  await assert.rejects(() => f.generateFinderReport(input, async (_system, _prompt, consume) => {
+    consume(report.replace("Direct awareness is not an inference", "Fabricated source evidence"));
+  }, () => {}, () => false), /automatic correction/i);
   const proof = f.reportProof(input, rendered, "owner");
   assert(f.validReportProof(input, rendered, proof, "owner"));
   for (const key of ["instructions", "instructionDraft", "sourceDocument"]) assert(!f.validReportProof({ ...input, [key]: input[key] + " changed" }, rendered, proof, "owner"));
@@ -84,20 +114,32 @@ try {
     sourceUses: [{ passage: attributed, sourceQuote: "Direct awareness is not an inference from prior beliefs.", sourceLabel: "Box B" }] }), draft, source, draft), /unverified/i);
   assert.throws(() => f.validateRewrite(JSON.stringify({ text: draft + " More source-derived material." }), draft, source, draft), /attribute/i);
   console.log("PASS: exact quotations, source labels, owner/input-bound report proofs, long-source limits and late-section coverage, segmented rewrite coverage and invented-quotation rejection.");
-  if (process.argv.includes("--live")) {
+  if (process.argv.includes("--live") || process.argv.includes("--saved")) {
     const OpenAI = createRequire(new URL("../artifacts/api-server/package.json", import.meta.url))("openai").default;
     const client = new OpenAI({ apiKey: process.env.PERPLEXITY_API_KEY, baseURL: "https://api.perplexity.ai", timeout: 90000, maxRetries: 0 });
     const liveGenerate = async (system, prompt, consume, maxTokens) => {
       const result = await client.chat.completions.create({ model: "sonar-pro", messages: [{ role: "system", content: system }, { role: "user", content: prompt }], max_tokens: Math.min(maxTokens, 5000), temperature: 0.2 });
       consume(result.choices[0]?.message?.content || "");
     };
-    const liveData = { ...input, instructionDraft: draft + " My paper must explain how a belief can have an epistemic basis without being inferred from a premise. It must also distinguish causal dependence among events from logical dependence among propositions.",
+    let liveData = { ...input, instructionDraft: draft + " My paper must explain how a belief can have an epistemic basis without being inferred from a premise. It must also distinguish causal dependence among events from logical dependence among propositions.",
       sourceDocument: source + " Causal dependence holds among events or states. A perceptual belief can depend causally on an object and sensory processes without being inferred from a proposition describing those processes. Causal connection alone does not guarantee knowledge: perception can mislead. Reliability is a separate question from whether a person reasons from premises. These distinctions identify different problems; they do not by themselves refute skepticism." };
+    if (process.argv.includes("--saved")) {
+      const response = await fetch(`https://${process.env.REPLIT_DEV_DOMAIN}/api/functions/workspaces/14`);
+      assert(response.ok);
+      const saved = await response.json();
+      assert(saved.instructionDraft && saved.sourceDocument);
+      liveData = { instructionDraft: saved.instructionDraft, sourceDocument: saved.sourceDocument, instructions: saved.instructions || "" };
+    }
     const liveReport = await f.generateFinderReport(liveData, liveGenerate, () => {}, () => false);
+    if (process.argv.includes("--saved")) {
+      assert(liveReport.includes("How to use it:"));
+      console.log(`SAVED DOCUMENTS PASS: report generated from the saved draft and all ${f.documentChunks(liveData.sourceDocument, 16000, 95000).length} source sections; ${[...liveReport.matchAll(/How to use it:/g)].length} connections with checked quotations. Saved workspace was not modified.`);
+    } else {
     let liveRewrite = "";
     await f.rewriteWithFindings(liveData, liveReport, liveGenerate, text => { liveRewrite += text; }, () => {}, () => false);
     assert(liveRewrite.trim());
     console.log("LIVE DEFAULT PROVIDER PASS: report and rewrite returned valid structured output; quotations matched the supplied texts.");
     console.log("REPORT:\n" + liveReport + "\nREWRITTEN DRAFT:\n" + liveRewrite);
+    }
   }
 } finally { await rm(out, { force: true }); }

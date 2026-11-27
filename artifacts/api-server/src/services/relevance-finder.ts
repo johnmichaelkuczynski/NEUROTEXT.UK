@@ -53,27 +53,71 @@ function field(value: unknown, name: string, max: number) {
   if (typeof value !== "string" || !value.trim() || value.length > max) throw new Error(`The relevance report contained an invalid ${name}. Please try again.`);
   return normalize(value);
 }
-export function renderFinderReport(raw: string, draft: string, source: string) {
+// Match harmless typographic substitutions, but return the document's wording.
+// Do not use fuzzy/semantic matching: it could turn a paraphrase into a quotation.
+function documentQuote(value: string, document: string) {
+  const text = normalize(document);
+  if (text.includes(value)) return value;
+  const typography = (s: string) => s.replace(/[‘’]/gu, "'").replace(/[“”]/gu, '"').replace(/[–—]/gu, "-");
+  const index = typography(text).indexOf(typography(value));
+  return index < 0 ? null : text.slice(index, index + value.length);
+}
+export function renderFinderReport(raw: string, draft: string, source: string, rejected?: (message: string) => void) {
   const value = parse(raw);
   if (!value || !Array.isArray(value.points) || value.points.length > 10) throw new Error("The provider did not return a usable list of connections.");
   const summary = field(value.summary, "summary", 2500);
   const a = normalize(draft), b = normalize(source);
-  const points = value.points.map((p: any) => {
+  const failures: string[] = [];
+  const points = value.points.flatMap((p: any, index: number) => {
+    try {
     const connection = field(p?.connection, "connection", 1400);
     const application = field(p?.application, "application", 1000);
-    const draftQuote = field(p?.draftQuote, "draft quotation", 600);
-    const materialQuote = field(p?.materialQuote, "source quotation", 1000);
+    const draftQuote = documentQuote(field(p?.draftQuote, "draft quotation", 600), a);
+    const materialQuote = documentQuote(field(p?.materialQuote, "source quotation", 1000), b);
     // Model-supplied metadata is not evidence. Keep an exact supplied label when
     // available; otherwise identify the actual input without inventing a title.
     const candidate = typeof p?.sourceLabel === "string" && p.sourceLabel.length <= 250
       ? normalize(p.sourceLabel) : "";
     const label = candidate && (candidate === "Box B" || b.includes(candidate)) ? candidate : "Box B";
-    if (!a.includes(draftQuote) || !b.includes(materialQuote)) throw new Error("A quotation did not match the supplied documents. The report was rejected rather than showing invented evidence.");
-    return `• ${connection}\n  • Your draft: “${draftQuote}”\n  • Source (${label}): “${materialQuote}”\n  • How to use it: ${application}`;
+    if (!draftQuote || !materialQuote) throw new Error(`Connection ${index + 1}: ${!draftQuote ? "draft" : "source"} quotation did not match the supplied document. Copy a short continuous excerpt exactly; do not paraphrase or join passages.`);
+    return [`• ${connection}\n  • Your draft: “${draftQuote}”\n  • Source (${label}): “${materialQuote}”\n  • How to use it: ${application}`];
+    } catch (error) {
+      failures.push(error instanceof Error ? error.message : "Invalid connection.");
+      return [];
+    }
   });
-  const result = `Relevance Finder\n\n${summary}\n\n${points.length ? "Specific connections and how to use them\n\n" + points.join("\n\n") : "No supported connection was identified. A rewrite should not manufacture one."}`;
+  if (failures.length) rejected?.(failures.join("\n"));
+  if (failures.length && !points.length) throw new Error(failures.join("\n"));
+  const result = `Relevance Finder\n\n${failures.length ? "The following connections have quotations verified against both supplied documents. Additional proposed connections were omitted because their evidence could not be verified." : summary}\n\n${points.length ? "Specific connections and how to use them\n\n" + points.join("\n\n") : "No supported connection was identified. A rewrite should not manufacture one."}`;
   if (result.length > 40000) throw new Error("The report was too long. Please request a narrower focus.");
   return result;
+}
+async function checkedReport(prompt: object, draft: string, source: string, generate: Generate, status: (text: string) => void, closed: () => boolean) {
+  let feedback = "", previous = "", best = "";
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (closed()) return "";
+    try {
+      let raw = "";
+      await generate(REPORT_SYSTEM, JSON.stringify({ ...prompt, ...(attempt ? {
+        correctionRequired: feedback,
+        previousAnswer: previous,
+        correctionTask: "Correct the evidence, not the documents. Retain valid connections. Use short EXACT continuous quotations copied from the provided draft and source (or verified section reports). Remove a connection if you cannot support it. Do not turn evidence-validation failure into a claim of no relevance.",
+      } : {}) }), t => { raw += t; }, 12288);
+      previous = raw;
+      if (attempt && Array.isArray(parse(raw)?.points) && parse(raw).points.length === 0) {
+        throw new Error("The correction removed every connection rather than providing verified evidence.");
+      }
+      feedback = "";
+      const report = renderFinderReport(raw, draft, source, message => { feedback = message; });
+      if (!feedback) return report;
+      best = report;
+    } catch (error) {
+      feedback = error instanceof Error ? error.message : "Invalid structured report.";
+    }
+    if (!attempt) status("Correcting quotations automatically; retaining connections whose evidence has already been verified");
+  }
+  if (best) return best;
+  throw new Error("The model could not supply verifiable quotations after automatic correction. Your documents are unchanged. " + feedback);
 }
 export async function generateFinderReport(data: Input, generate: Generate, status: (text: string) => void, closed: () => boolean) {
   const chunks = documentChunks(data.sourceDocument, 16000, 95000);
@@ -81,9 +125,7 @@ export async function generateFinderReport(data: Input, generate: Generate, stat
   for (const [i, source] of chunks.entries()) {
     if (closed()) return "";
     status(`Reading source section ${i + 1} of ${chunks.length}; checking quotations against the documents`);
-    let raw = "";
-    await generate(REPORT_SYSTEM, JSON.stringify({ customInstructions: data.instructions, draft: data.instructionDraft, relevantText: source }), t => { raw += t; }, 12288);
-    notes.push(renderFinderReport(raw, data.instructionDraft || "", source));
+    notes.push(await checkedReport({ customInstructions: data.instructions, draft: data.instructionDraft, relevantText: source }, data.instructionDraft || "", source, generate, status, closed));
   }
   if (chunks.length === 1) return notes[0];
   while (notes.join("\n").length > 100000) {
@@ -91,17 +133,13 @@ export async function generateFinderReport(data: Input, generate: Generate, stat
     for (let i = 0; i < notes.length; i += 3) {
       if (closed()) return "";
       status("Consolidating verified source sections within the model's context limit");
-      let raw = "";
-      await generate(REPORT_SYSTEM, JSON.stringify({ customInstructions: data.instructions, draft: data.instructionDraft, verifiedSectionReports: notes.slice(i, i + 3), task: "Consolidate these verified reports, preserving their exact quotations and strongest connections. Do not introduce any new quotations." }), t => { raw += t; }, 12288);
-      reduced.push(renderFinderReport(raw, data.instructionDraft || "", data.sourceDocument));
+      reduced.push(await checkedReport({ customInstructions: data.instructions, draft: data.instructionDraft, verifiedSectionReports: notes.slice(i, i + 3), task: "Consolidate these verified reports, preserving their exact quotations and strongest connections. Do not introduce any new quotations." }, data.instructionDraft || "", data.sourceDocument, generate, status, closed));
     }
     notes = reduced;
   }
   if (closed()) return "";
   status("Synthesizing verified findings from all source sections");
-  let raw = "";
-  await generate(REPORT_SYSTEM, JSON.stringify({ task: "Consolidate these verified section reports into the strongest non-repetitive connections. Copy quotations only from these notes; do not invent any. State that all supplied sections were examined, without claiming exhaustive interpretation.", customInstructions: data.instructions, draft: data.instructionDraft, verifiedSectionReports: notes }), t => { raw += t; }, 12288);
-  return renderFinderReport(raw, data.instructionDraft || "", data.sourceDocument);
+  return checkedReport({ task: "Consolidate these verified section reports into the strongest non-repetitive connections. Copy quotations only from these notes; do not invent any. State that all supplied sections were examined, without claiming exhaustive interpretation.", customInstructions: data.instructions, draft: data.instructionDraft, verifiedSectionReports: notes }, data.instructionDraft || "", data.sourceDocument, generate, status, closed);
 }
 export function validateRewrite(raw: string, draft: string, source: string, segment: string) {
   const parsed = parse(raw);

@@ -21,3 +21,9 @@ Do not reject otherwise verified relevance findings because a model supplied an 
 **Why:** Uploaded or pasted text need not contain its filename or title. Treating model-generated metadata as a mandatory exact textual match blocked a user's entire report.
 
 **How to apply:** Keep bibliographic metadata separate from evidence validation. Never display an invented title, and do not require another model call just to repair a source label.
+
+Quotation-validation failures must trigger bounded automatic correction, retaining verified connections rather than discarding the entire report.
+
+**Why:** After the source-label fix, the user encountered a second blocked report when the provider altered quotation wording. A single bad point must not erase valid findings.
+
+**How to apply:** Accept harmless typographic substitutions only when the quotation can be recovered from the actual document, displaying its original wording. Never use semantic/fuzzy matches to certify a quotation. Omit unsupported points with an explicit notice if correction fails but verified findings remain; do not misreport failed validation as absence of relevance.
